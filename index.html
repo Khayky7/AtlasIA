@@ -8,11 +8,17 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.5/purify.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<!-- marked/DOMPurify são usados em toda mensagem, mas com "defer" o navegador
+     baixa em paralelo sem travar a primeira renderização da página. -->
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.5/purify.min.js"></script>
+<!-- Supabase: login de usuário + banco de dados na nuvem, pra sincronizar
+     conversas/memória/configurações entre aparelhos (ver window.onload). -->
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- pdf.js, xlsx e Chart.js NÃO são carregados aqui — são grandes e só usados
+     quando a pessoa realmente anexa um arquivo. Ficam com carregamento sob
+     demanda (ver loadScriptOnce), pra não pesar o carregamento inicial,
+     principalmente no celular. -->
 <style>
   :root{
     --bg:#000000;
@@ -1228,9 +1234,128 @@
     #webBtn, #suggestBtn{ display:none; }
     .feature-card-grid{ grid-template-columns:1fr; }
   }
+
+  /* ===================== LOGIN OPCIONAL (nuvem) ===================== */
+  #authOverlay{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.55);
+    z-index:200;
+    align-items:center;
+    justify-content:center;
+    padding:16px;
+  }
+  #authOverlay.show{ display:flex; }
+  .auth-card{
+    width:100%;
+    max-width:380px;
+    max-height:calc(100vh - 32px);
+    overflow-y:auto;
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:24px;
+    box-shadow:0 20px 60px rgba(0,0,0,.45);
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+  .auth-card-header{ display:flex; align-items:center; gap:10px; }
+  .auth-card-header img{ width:34px; height:34px; border-radius:8px; }
+  .auth-card-title{ font-size:17px; font-weight:800; margin:0; }
+  .auth-card-subtitle{ color:var(--text-dim); font-size:12.5px; line-height:1.5; margin:0; }
+  .auth-tabs{ display:flex; gap:8px; }
+  .auth-tab{
+    flex:1;
+    background:var(--bg);
+    border:1px solid var(--border);
+    color:var(--text-dim);
+    font-weight:700;
+    font-size:13px;
+    padding:9px 10px;
+    border-radius:8px;
+    cursor:pointer;
+  }
+  .auth-tab.active{
+    border-color:var(--accent);
+    color:var(--text);
+    box-shadow:0 0 0 1px var(--accent) inset;
+  }
+  .auth-field{ display:flex; flex-direction:column; gap:5px; }
+  .auth-field label{ color:var(--text-dim); font-size:11.5px; font-weight:600; }
+  .auth-field input{
+    background:var(--bg);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:10px 12px;
+    border-radius:8px;
+    font-size:16px;
+  }
+  .auth-status{
+    display:none;
+    font-size:12.5px;
+    line-height:1.5;
+    padding:8px 10px;
+    border-radius:8px;
+  }
+  .auth-status.auth-error{ display:block; color:var(--danger); background:rgba(224,87,95,.1); border:1px solid rgba(224,87,95,.35); }
+  .auth-status.auth-info{ display:block; color:var(--accent-2); background:rgba(99,166,255,.1); border:1px solid rgba(99,166,255,.35); }
+  .auth-submit-btn{
+    background:var(--accent);
+    color:white;
+    border:none;
+    padding:11px 14px;
+    border-radius:8px;
+    font-size:14px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .auth-submit-btn:disabled{ opacity:.7; cursor:default; }
+  .auth-skip-btn{
+    background:transparent;
+    border:none;
+    color:var(--text-dim);
+    font-size:12.5px;
+    text-decoration:underline;
+    cursor:pointer;
+    padding:2px;
+    align-self:center;
+  }
+
+  /* ===================== CONTA (dentro de Configurações) ===================== */
+  .account-box{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .account-email{ font-size:13px; font-weight:600; }
+  .account-status-dot{
+    width:8px; height:8px; border-radius:50%;
+    background:#2fbf6e; flex-shrink:0;
+  }
 </style>
 </head>
 <body>
+<div id="authOverlay">
+  <div class="auth-card">
+    <div class="auth-card-header">
+      <h2 class="auth-card-title">Entrar no AtlasIA</h2>
+    </div>
+    <p class="auth-card-subtitle">Opcional: entre pra sincronizar suas conversas, memória e configurações entre aparelhos. Se preferir, pode continuar só neste navegador.</p>
+    <div class="auth-tabs">
+      <button type="button" id="authTabLogin" class="auth-tab active" onclick="setAuthTab('login')">Entrar</button>
+      <button type="button" id="authTabSignup" class="auth-tab" onclick="setAuthTab('signup')">Criar conta</button>
+    </div>
+    <div class="auth-field">
+      <label for="authEmail">E-mail</label>
+      <input type="email" id="authEmail" placeholder="voce@exemplo.com" autocomplete="email">
+    </div>
+    <div class="auth-field">
+      <label for="authPassword">Senha</label>
+      <input type="password" id="authPassword" placeholder="Pelo menos 6 caracteres" autocomplete="current-password">
+    </div>
+    <div id="authStatus" class="auth-status"></div>
+    <button type="button" id="authSubmitBtn" class="auth-submit-btn" onclick="submitAuth()">Entrar</button>
+    <button type="button" class="auth-skip-btn" onclick="skipAuth()">Continuar sem entrar, por enquanto</button>
+  </div>
+</div>
 <div class="layout">
   <header>
     <div class="brand">
@@ -1351,6 +1476,20 @@
       <div class="hint">Toca um som curto quando a Lumi termina de responder — útil se você troca de aba enquanto espera.</div>
       <div class="settings-row">
         <button type="button" id="notifySoundToggle" class="provider-btn" onclick="toggleNotifySound()">🔕 Som desativado</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">Conta</div>
+      <div id="accountLoggedOut" class="account-box" style="display:flex">
+        <div class="hint" style="flex:1">Entre pra sincronizar conversas, memória e configurações entre aparelhos.</div>
+        <button type="button" onclick="showAuthOverlay()">Entrar / criar conta</button>
+      </div>
+      <div id="accountLoggedIn" class="account-box" style="display:none">
+        <span class="account-status-dot"></span>
+        <span class="account-email" id="accountEmail"></span>
+        <div style="flex:1"></div>
+        <button type="button" class="secondary" onclick="signOutCloud()">Sair</button>
       </div>
     </div>
 
@@ -2409,6 +2548,191 @@ function showAgentsPlaceholder(){
    ========================================================= */
 const STORAGE_KEY = 'atlasia_state_v1';
 
+/* =========================================================
+   NUVEM (Supabase) — login e sincronização entre aparelhos
+   O app continua funcionando 100% sem login (guardando só neste
+   navegador, como sempre foi). Login é opcional: quando ativo, o
+   mesmo "pacote" de dados que hoje vai pro localStorage também é
+   guardado numa tabela do Supabase, atrelada ao usuário logado —
+   assim dá pra abrir a mesma conta em outro aparelho.
+   ========================================================= */
+const SUPABASE_URL = 'https://bzliafclhhawiofdfnqw.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_uBuLkkJsJVbd2BnDESVFtA_LNEMwP4W';
+let sb = null;
+let cloudUser = null; // sessão atual do Supabase (null = sem login / modo só-local)
+let cloudSyncTimer = null;
+let cloudLoadedOnce = false;
+
+function getSupabaseClient(){
+  if(sb) return sb;
+  if(typeof supabase === 'undefined' || !supabase.createClient) return null;
+  try{
+    sb = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+      auth: { persistSession: true, autoRefreshToken: true }
+    });
+  }catch(e){ sb = null; }
+  return sb;
+}
+
+/* Sobe o estado atual pra nuvem, com um pequeno atraso (debounce) — assim
+   digitar/trocar de conversa várias vezes seguidas não dispara uma
+   gravação de rede a cada tecla, só depois que a pessoa dá uma pausa. */
+function scheduleCloudSync(){
+  if(!cloudUser) return;
+  clearTimeout(cloudSyncTimer);
+  cloudSyncTimer = setTimeout(() => { syncStateToCloud(); }, 900);
+}
+
+async function syncStateToCloud(){
+  const client = getSupabaseClient();
+  if(!client || !cloudUser) return;
+  try{
+    const nameInput = document.getElementById('profileNameInput');
+    const appState = {
+      v: 1,
+      apiKey, apiProvider, preferredModel,
+      profileName: nameInput ? nameInput.value : 'Você',
+      conversations, currentConvId, convCounter,
+      currentMode, memoryNotes,
+      themeMode, accentColor, notifySound
+    };
+    await client.from('profiles').update({
+      app_state: appState,
+      updated_at: new Date().toISOString()
+    }).eq('id', cloudUser.id);
+  }catch(e){ /* falha de rede pontual: os dados continuam salvos aqui neste navegador também */ }
+}
+
+async function loadStateFromCloud(){
+  const client = getSupabaseClient();
+  if(!client || !cloudUser) return null;
+  try{
+    const { data, error } = await client
+      .from('profiles')
+      .select('app_state')
+      .eq('id', cloudUser.id)
+      .single();
+    if(error) return null;
+    return data && data.app_state && Object.keys(data.app_state).length ? data.app_state : null;
+  }catch(e){ return null; }
+}
+
+/* =========================================================
+   TELA DE LOGIN (opcional) — cadastro/entrada com e-mail e senha
+   ========================================================= */
+let authMode = 'login'; // 'login' | 'signup'
+
+function setAuthTab(mode){
+  authMode = mode;
+  document.getElementById('authTabLogin').classList.toggle('active', mode === 'login');
+  document.getElementById('authTabSignup').classList.toggle('active', mode === 'signup');
+  document.getElementById('authSubmitBtn').textContent = mode === 'login' ? 'Entrar' : 'Criar conta';
+  const statusEl = document.getElementById('authStatus');
+  statusEl.style.display = 'none';
+}
+
+function showAuthOverlay(){
+  const el = document.getElementById('authOverlay');
+  if(el) el.classList.add('show');
+}
+
+function hideAuthOverlay(){
+  const el = document.getElementById('authOverlay');
+  if(el) el.classList.remove('show');
+}
+
+function skipAuth(){
+  try{ window.localStorage.setItem('atlasia_skip_auth', '1'); }catch(e){}
+  hideAuthOverlay();
+}
+
+function setAuthStatus(message, kind){
+  const statusEl = document.getElementById('authStatus');
+  if(!statusEl) return;
+  statusEl.textContent = message;
+  statusEl.className = 'auth-status ' + (kind === 'info' ? 'auth-info' : 'auth-error');
+  statusEl.style.display = message ? 'block' : 'none';
+}
+
+function translateAuthError(msg){
+  if(!msg) return 'Algo deu errado. Tente de novo em instantes.';
+  if(/already registered|already exists|user already/i.test(msg)) return 'Já existe uma conta com esse e-mail. Tente "Entrar" em vez de criar conta.';
+  if(/invalid login credentials/i.test(msg)) return 'E-mail ou senha incorretos.';
+  if(/password.*(least|6|characters|weak)/i.test(msg)) return 'A senha precisa ter pelo menos 6 caracteres.';
+  if(/valid email|email.*invalid/i.test(msg)) return 'Digite um e-mail válido.';
+  if(/rate limit|too many/i.test(msg)) return 'Muitas tentativas seguidas — espere um pouco e tente de novo.';
+  return msg;
+}
+
+async function submitAuth(){
+  const client = getSupabaseClient();
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const btn = document.getElementById('authSubmitBtn');
+  setAuthStatus('');
+
+  if(!client){
+    setAuthStatus('Não consegui conectar com o serviço de login (verifique sua conexão e recarregue a página).');
+    return;
+  }
+  if(!email || !password){
+    setAuthStatus('Preencha e-mail e senha.');
+    return;
+  }
+
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Um momento...';
+  try{
+    const result = authMode === 'login'
+      ? await client.auth.signInWithPassword({ email, password })
+      : await client.auth.signUp({ email, password });
+
+    if(result.error){
+      setAuthStatus(translateAuthError(result.error.message));
+      return;
+    }
+    if(authMode === 'signup' && (!result.data || !result.data.session)){
+      setAuthStatus('Conta criada! Verifique seu e-mail pra confirmar o cadastro e depois volte aqui pra entrar.', 'info');
+      return;
+    }
+    cloudUser = result.data.session.user;
+    await reconcileCloudState();
+  }catch(e){
+    setAuthStatus('Algo deu errado. Tente de novo em instantes.');
+  }finally{
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+}
+
+async function signOutCloud(){
+  const client = getSupabaseClient();
+  if(client){
+    try{ await client.auth.signOut(); }catch(e){ /* ignora — de qualquer forma zeramos cloudUser abaixo */ }
+  }
+  cloudUser = null;
+  updateAccountUI();
+  addBotMessage('Você saiu da conta. Seus dados continuam salvos na nuvem — é só entrar de novo pra sincronizar novamente.', false);
+}
+
+/* Atualiza a seção "Conta" dentro de Configurações, mostrando se está
+   logado (com qual e-mail) ou oferecendo o botão de entrar. */
+function updateAccountUI(){
+  const loggedBox = document.getElementById('accountLoggedIn');
+  const loggedOutBox = document.getElementById('accountLoggedOut');
+  const emailEl = document.getElementById('accountEmail');
+  if(!loggedBox || !loggedOutBox) return;
+  if(cloudUser){
+    loggedBox.style.display = 'flex';
+    loggedOutBox.style.display = 'none';
+    if(emailEl) emailEl.textContent = cloudUser.email || '';
+  } else {
+    loggedBox.style.display = 'none';
+    loggedOutBox.style.display = 'flex';
+  }
+}
+
 function getStorage(){
   try{
     const testKey = '__atlasia_test__';
@@ -2422,19 +2746,23 @@ function getStorage(){
 const persistentStorage = getStorage();
 
 function saveState(){
-  if(!persistentStorage) return;
-  try{
-    const nameInput = document.getElementById('profileNameInput');
-    const state = {
-      v: 1,
-      apiKey, apiProvider, preferredModel,
-      profileName: nameInput ? nameInput.value : 'Você',
-      conversations, currentConvId, convCounter,
-      currentMode, memoryNotes,
-      themeMode, accentColor, notifySound
-    };
-    persistentStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }catch(e){ /* armazenamento indisponível/cheio: ignora silenciosamente, o app continua funcionando */ }
+  if(persistentStorage){
+    try{
+      const nameInput = document.getElementById('profileNameInput');
+      const state = {
+        v: 1,
+        apiKey, apiProvider, preferredModel,
+        profileName: nameInput ? nameInput.value : 'Você',
+        conversations, currentConvId, convCounter,
+        currentMode, memoryNotes,
+        themeMode, accentColor, notifySound
+      };
+      persistentStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }catch(e){ /* armazenamento indisponível/cheio: ignora silenciosamente, o app continua funcionando */ }
+  }
+  // Se tiver login ativo, também agenda uma sincronização com a nuvem
+  // (independente do localStorage ter funcionado ou não).
+  scheduleCloudSync();
 }
 
 function loadState(){
@@ -2992,6 +3320,23 @@ function hideTyping(){
    O texto extraído fica só na memória da aba (não é salvo no
    localStorage, pra não estourar o limite de armazenamento).
    ========================================================= */
+/* Carregamento sob demanda das bibliotecas pesadas (pdf.js, xlsx, Chart.js)
+   — só baixa cada uma na primeira vez que é realmente necessária, em vez de
+   travar o carregamento inicial da página (isso pesava bastante,
+   principalmente no celular). Cacheia a Promise pra nunca carregar 2x. */
+const loadedScriptPromises = {};
+function loadScriptOnce(url){
+  if(loadedScriptPromises[url]) return loadedScriptPromises[url];
+  loadedScriptPromises[url] = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = url;
+    script.onload = () => resolve();
+    script.onerror = () => { delete loadedScriptPromises[url]; reject(new Error('Falha ao carregar ' + url)); };
+    document.head.appendChild(script);
+  });
+  return loadedScriptPromises[url];
+}
+
 let currentAttachment = null;
 
 function truncateText(text, max){
@@ -2999,6 +3344,13 @@ function truncateText(text, max){
 }
 
 async function extractPdfText(file){
+  if(typeof pdfjsLib === 'undefined'){
+    try{
+      await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.js');
+    }catch(e){
+      throw new Error('A biblioteca de leitura de PDF não carregou (verifique sua conexão) — tente recarregar a página.');
+    }
+  }
   if(typeof pdfjsLib === 'undefined'){
     throw new Error('A biblioteca de leitura de PDF não carregou (verifique sua conexão) — tente recarregar a página.');
   }
@@ -3017,6 +3369,13 @@ async function extractPdfText(file){
 }
 
 async function extractSpreadsheetText(file){
+  if(typeof XLSX === 'undefined'){
+    try{
+      await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
+    }catch(e){
+      throw new Error('A biblioteca de leitura de planilha não carregou (verifique sua conexão) — tente recarregar a página.');
+    }
+  }
   if(typeof XLSX === 'undefined'){
     throw new Error('A biblioteca de leitura de planilha não carregou (verifique sua conexão) — tente recarregar a página.');
   }
@@ -3062,7 +3421,7 @@ async function handleFileSelect(event){
     }
 
     if(result.rows && result.rows.length){
-      renderQuickChart(result.rows, file.name);
+      await renderQuickChart(result.rows, file.name);
     }
   }catch(err){
     chip.classList.remove('show');
@@ -3149,7 +3508,12 @@ function toggleSuggestPopover(){
    Heurística simples: primeira coluna de texto vira rótulo,
    primeira coluna numérica vira os valores do gráfico.
    ========================================================= */
-function renderQuickChart(rows, fileName){
+async function renderQuickChart(rows, fileName){
+  if(typeof Chart === 'undefined'){
+    try{
+      await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js');
+    }catch(e){ return; }
+  }
   if(typeof Chart === 'undefined') return;
   const sample = rows[0];
   const keys = Object.keys(sample);
@@ -3724,6 +4088,110 @@ function handleInputKeydown(event){
 }
 
 // inicialização
+/* Aplica um "pacote" de estado salvo (venha do localStorage ou da nuvem —
+   o formato é o mesmo nos dois) na tela, exatamente como o app já fazia
+   pra retomar a última visita. Fica numa função à parte pra poder ser
+   chamada tanto no boot local normal quanto depois de logar numa conta. */
+function applyLoadedState(saved){
+  apiKey = saved.apiKey || null;
+  apiProvider = saved.apiProvider || 'gemini';
+  preferredModel = saved.preferredModel || preferredModel;
+  conversations = saved.conversations || [];
+  currentConvId = saved.currentConvId;
+  convCounter = saved.convCounter || conversations.length;
+  currentMode = MODES[saved.currentMode] ? saved.currentMode : 'credenciamento';
+  memoryNotes = Array.isArray(saved.memoryNotes) ? saved.memoryNotes : [];
+  themeMode = saved.themeMode === 'light' ? 'light' : 'dark';
+  accentColor = ACCENT_PRESETS[saved.accentColor] ? saved.accentColor : 'azul';
+  notifySound = !!saved.notifySound;
+
+  selectProvider(apiProvider);
+  document.getElementById('profileNameInput').value = saved.profileName || 'Você';
+  updateProfileName();
+  if(apiKey){
+    document.getElementById('apiKeyInput').value = apiKey;
+    updateStatusPill(true);
+  }
+  applyModeUI(currentMode);
+  renderMemoryList();
+  applyTheme(themeMode);
+  renderThemeToggle();
+  applyAccentColor(accentColor);
+  renderAccentSwatches();
+  renderNotifySettings();
+
+  if(!conversations.length){
+    showHomeView();
+    return;
+  }
+  const current = conversations.find(c => c.id === currentConvId)
+    || conversations.find(c => convMode(c) === currentMode)
+    || conversations[0];
+  currentConvId = current.id;
+  currentMode = convMode(current);
+  currentView = 'mode';
+  applyModeUI(currentMode);
+  updateNavActiveStates();
+  renderConversationList();
+  replayConversation(current);
+}
+
+/* =========================================================
+   LOGIN OPCIONAL — checa sessão de nuvem por baixo dos panos, sem
+   travar o app (que já abriu no modo local de sempre logo acima).
+   ========================================================= */
+async function initCloudAuth(){
+  const client = getSupabaseClient();
+  if(!client) return; // Supabase não carregou (sem internet, bloqueado etc.) — segue só local
+
+  if(client.auth.onAuthStateChange){
+    client.auth.onAuthStateChange((event, session) => {
+      if(event === 'SIGNED_IN' && session && session.user && !cloudUser){
+        cloudUser = session.user;
+        reconcileCloudState();
+      }
+      if(event === 'SIGNED_OUT'){
+        cloudUser = null;
+      }
+    });
+  }
+
+  try{
+    const { data } = await client.auth.getSession();
+    if(data && data.session && data.session.user){
+      cloudUser = data.session.user;
+      await reconcileCloudState();
+      return;
+    }
+  }catch(e){ /* segue no modo local, sem travar o app */ }
+
+  let skip = false;
+  try{ skip = window.localStorage.getItem('atlasia_skip_auth') === '1'; }catch(e){}
+  if(!skip) showAuthOverlay();
+}
+
+/* Depois de logar (ou detectar sessão já ativa): busca o que já existe na
+   nuvem pra esse usuário. Se não existir nada ainda (primeiro login), sobe
+   o que tiver salvo neste navegador como ponto de partida — assim ninguém
+   perde histórico ao criar a conta. */
+async function reconcileCloudState(){
+  hideAuthOverlay();
+  try{ window.localStorage.removeItem('atlasia_skip_auth'); }catch(e){}
+  const cloudState = await loadStateFromCloud();
+  if(cloudState && cloudState.conversations && cloudState.conversations.length){
+    applyLoadedState(cloudState);
+    addBotMessage("🔗 Conectado à sua conta — sincronizei suas conversas, memória e configurações salvas na nuvem.", false);
+  } else {
+    const local = loadState();
+    if(local && local.conversations && local.conversations.length){
+      applyLoadedState(local);
+    }
+    await syncStateToCloud();
+    addBotMessage("🔗 Conta conectada! A partir de agora suas conversas, memória e configurações ficam salvas na nuvem também — abra de qualquer aparelho com este login.", false);
+  }
+  updateAccountUI();
+}
+
 window.onload = () => {
   renderTemplatesGrid();
 
@@ -3747,43 +4215,7 @@ window.onload = () => {
 
   const saved = loadState();
   if(saved && saved.conversations && saved.conversations.length){
-    apiKey = saved.apiKey || null;
-    apiProvider = saved.apiProvider || 'gemini';
-    preferredModel = saved.preferredModel || preferredModel;
-    conversations = saved.conversations;
-    currentConvId = saved.currentConvId;
-    convCounter = saved.convCounter || conversations.length;
-    currentMode = MODES[saved.currentMode] ? saved.currentMode : 'credenciamento';
-    memoryNotes = Array.isArray(saved.memoryNotes) ? saved.memoryNotes : [];
-    themeMode = saved.themeMode === 'light' ? 'light' : 'dark';
-    accentColor = ACCENT_PRESETS[saved.accentColor] ? saved.accentColor : 'azul';
-    notifySound = !!saved.notifySound;
-
-    selectProvider(apiProvider);
-    document.getElementById('profileNameInput').value = saved.profileName || 'Você';
-    updateProfileName();
-    if(apiKey){
-      document.getElementById('apiKeyInput').value = apiKey;
-      updateStatusPill(true);
-    }
-    applyModeUI(currentMode);
-    renderMemoryList();
-    applyTheme(themeMode);
-    renderThemeToggle();
-    applyAccentColor(accentColor);
-    renderAccentSwatches();
-    renderNotifySettings();
-
-    const current = conversations.find(c => c.id === currentConvId)
-      || conversations.find(c => convMode(c) === currentMode)
-      || conversations[0];
-    currentConvId = current.id;
-    currentMode = convMode(current);
-    currentView = 'mode';
-    applyModeUI(currentMode);
-    updateNavActiveStates();
-    renderConversationList();
-    replayConversation(current);
+    applyLoadedState(saved);
     addBotMessage("Bem-vindo de volta! Lembrei da sua última conversa e das suas configurações neste navegador.", false);
   } else {
     selectProvider('gemini');
@@ -3793,6 +4225,19 @@ window.onload = () => {
     renderAccentSwatches();
     renderNotifySettings();
     showHomeView();
+  }
+
+  // Login é opcional e não bloqueia nada acima — o app já abriu no modo
+  // local de sempre. Isso só confere, por baixo dos panos, se existe uma
+  // sessão de nuvem ativa (ou convida a pessoa a criar uma).
+  initCloudAuth();
+
+  // Se o navegador não deixa salvar nada (ex: aba anônima/privada, ou
+  // "bloquear todos os cookies e dados de sites" ativado nas configurações
+  // do navegador), avisa a pessoa — pra não parecer um bug misterioso toda
+  // vez que a chave de API "some" e precisa ser colada de novo.
+  if(!persistentStorage){
+    addBotMessage("⚠️ Seu navegador não está deixando eu salvar dados neste dispositivo (isso costuma acontecer em aba anônima/privada, ou quando \"bloquear cookies e dados de sites\" está ativado nas configurações do navegador). Por causa disso, a chave de IA, o histórico e as configurações não vão ficar salvos entre uma visita e outra — você vai precisar colar a chave de novo sempre que abrir o app assim. Pra resolver: abra o link numa aba normal (não anônima) e confira se o navegador permite dados de site para essa página.", false);
   }
 
   const input = document.getElementById('userInput');

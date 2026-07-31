@@ -1034,6 +1034,33 @@
     max-width:520px;
     line-height:1.35;
   }
+  .home-recent-chip{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    max-width:100%;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    border-radius:999px;
+    padding:8px 16px;
+    cursor:pointer;
+    font-family:inherit;
+    color:var(--text);
+  }
+  .home-recent-chip:hover{ border-color:var(--accent); }
+  .home-recent-label{
+    font-size:12px;
+    color:var(--text-dim);
+    white-space:nowrap;
+  }
+  .home-recent-title{
+    font-size:13px;
+    font-weight:600;
+    max-width:220px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
   .empty-state .quick-replies{
     justify-content:center;
     align-self:center;
@@ -1553,6 +1580,51 @@
     padding:max(16px, env(safe-area-inset-top, 16px)) max(16px, env(safe-area-inset-right, 16px)) max(16px, env(safe-area-inset-bottom, 16px)) max(16px, env(safe-area-inset-left, 16px));
   }
   #authOverlay.show{ display:flex; }
+  #shortcutsOverlay{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.55);
+    z-index:210;
+    align-items:center;
+    justify-content:center;
+    padding:16px;
+  }
+  #shortcutsOverlay.show{ display:flex; }
+  .shortcuts-card{
+    width:100%;
+    max-width:420px;
+    max-height:calc(100vh - 32px);
+    max-height:calc(100dvh - 32px);
+    overflow-y:auto;
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:22px;
+    box-shadow:0 20px 60px rgba(0,0,0,.45);
+  }
+  .shortcuts-card-header{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:6px;
+  }
+  .shortcuts-card-header h2{ font-size:16px; margin:0; }
+  .shortcuts-close-btn{
+    background:transparent; border:none; color:var(--text-dim);
+    font-size:20px; line-height:1; cursor:pointer; padding:4px 6px;
+  }
+  .shortcuts-close-btn:hover{ color:var(--text); }
+  .shortcuts-list{ display:flex; flex-direction:column; gap:2px; margin-top:10px; }
+  .shortcuts-row{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:9px 2px; border-bottom:1px solid var(--border);
+    font-size:13.5px; color:var(--text);
+  }
+  .shortcuts-row:last-child{ border-bottom:none; }
+  .shortcuts-row kbd{
+    background:var(--panel-2); border:1px solid var(--border);
+    border-radius:6px; padding:2px 7px; font-size:12px; font-family:inherit;
+    color:var(--text-dim); white-space:nowrap;
+  }
   .auth-card{
     width:100%;
     max-width:380px;
@@ -1659,7 +1731,7 @@
   <div class="boot-brand">Atlas<span class="brand-ia">IA</span></div>
   <div class="boot-status">Preparando sua assistente…</div>
 </div>
-<div id="authOverlay">
+<div id="authOverlay" onclick="if(event.target===this) skipAuth()">
   <div class="auth-card">
     <div class="auth-card-header">
       <h2 class="auth-card-title">Entrar no AtlasIA</h2>
@@ -1680,6 +1752,25 @@
     <div id="authStatus" class="auth-status"></div>
     <button type="button" id="authSubmitBtn" class="auth-submit-btn" onclick="submitAuth()">Entrar</button>
     <button type="button" class="auth-skip-btn" onclick="skipAuth()">Continuar sem entrar, por enquanto</button>
+  </div>
+</div>
+<div id="shortcutsOverlay" onclick="if(event.target===this) closeShortcutsHelp()">
+  <div class="shortcuts-card">
+    <div class="shortcuts-card-header">
+      <h2>Atalhos de teclado</h2>
+      <button type="button" class="shortcuts-close-btn" onclick="closeShortcutsHelp()" title="Fechar" aria-label="Fechar">×</button>
+    </div>
+    <div class="shortcuts-list">
+      <div class="shortcuts-row"><span>Enviar mensagem</span><kbd>Enter</kbd></div>
+      <div class="shortcuts-row"><span>Quebrar linha no campo</span><kbd>Shift + Enter</kbd></div>
+      <div class="shortcuts-row"><span>Ver modelos prontos ("/")</span><kbd>/</kbd></div>
+      <div class="shortcuts-row"><span>Buscar conversas</span><kbd>Ctrl/⌘ + K</kbd></div>
+      <div class="shortcuts-row"><span>Nova conversa</span><kbd>Ctrl/⌘ + N</kbd></div>
+      <div class="shortcuts-row"><span>Mostrar/ocultar barra lateral</span><kbd>Ctrl/⌘ + B</kbd></div>
+      <div class="shortcuts-row"><span>Abrir Configurações</span><kbd>Ctrl/⌘ + ,</kbd></div>
+      <div class="shortcuts-row"><span>Fechar o que estiver aberto</span><kbd>Esc</kbd></div>
+      <div class="shortcuts-row"><span>Mostrar esta lista</span><kbd>?</kbd></div>
+    </div>
   </div>
 </div>
 <div class="layout">
@@ -1712,6 +1803,7 @@
       </div>
       <button type="button" class="header-icon-btn" title="Memória" onclick="toggleSettings()"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3a4 4 0 0 0-4 4 3.5 3.5 0 0 0-1 6.8A3.5 3.5 0 0 0 7.5 19H9V3z"/><path d="M15 3a4 4 0 0 1 4 4 3.5 3.5 0 0 1 1 6.8A3.5 3.5 0 0 1 16.5 19H15V3z"/><line x1="12" y1="19" x2="12" y2="22"/></svg></button>
       <button type="button" class="header-icon-btn" title="Agentes (em breve)" onclick="showAgentsPlaceholder()"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="9" width="14" height="10" rx="3"/><circle cx="9.5" cy="14" r="1.4" class="filled"/><circle cx="14.5" cy="14" r="1.4" class="filled"/><line x1="12" y1="9" x2="12" y2="5"/><circle cx="12" cy="3.5" r="1.5"/><line x1="3" y1="13" x2="5" y2="13"/><line x1="19" y1="13" x2="21" y2="13"/></svg></button>
+      <button type="button" class="header-icon-btn" title="Atalhos de teclado (?)" onclick="showShortcutsHelp()"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="6" width="19" height="13" rx="2.2"/><line x1="6" y1="10" x2="6" y2="10.01"/><line x1="9.5" y1="10" x2="9.5" y2="10.01"/><line x1="13" y1="10" x2="13" y2="10.01"/><line x1="16.5" y1="10" x2="16.5" y2="10.01"/><line x1="6" y1="13.3" x2="6" y2="13.31"/><line x1="9.5" y1="13.3" x2="9.5" y2="13.31"/><line x1="13" y1="13.3" x2="13" y2="13.31"/><line x1="16.5" y1="13.3" x2="16.5" y2="13.31"/><line x1="7.5" y1="16.3" x2="15.5" y2="16.3"/></svg></button>
       <div class="header-avatar-wrap" onclick="toggleSettings()" title="Configurações">
         <div class="avatar header-avatar" id="headerAvatarInitials">V</div>
         <span class="pill-caret">▾</span>
@@ -1731,7 +1823,7 @@
     </div>
     <div class="conv-search" id="convSearchRow" style="display:none">
       <span class="conv-search-icon">🔍</span>
-      <input type="text" id="convSearchInput" placeholder="Buscar conversas..." oninput="renderConversationList()">
+      <input type="text" id="convSearchInput" placeholder="Buscar conversas..." oninput="handleConvSearchInput()">
       <span class="conv-search-hint">Ctrl K</span>
     </div>
     <div class="conversation-list" id="conversationList"></div>
@@ -2515,27 +2607,69 @@ function hapticTap(){
   try{ if(navigator.vibrate) navigator.vibrate(10); }catch(e){}
 }
 
+/* ===================== NAVEGAÇÃO / OVERLAYS (central) =====================
+   Ponto único que sabe fechar qualquer painel flutuante do app: Configurações,
+   Atalhos, busca de conversas, menu de "/" e popover de sugestões — e, no
+   celular, a gaveta lateral. Todo lugar que ABRE um desses overlays chama
+   isso primeiro (passando o nome do que está abrindo em `except`, pra não
+   fechar ele mesmo), garantindo que só um fique visível por vez. E todo
+   lugar que precisa fechar tudo de uma vez (Esc, clique fora, trocar de
+   conversa/modo/aba) chama sem argumento nenhum.
+   Isso corrige o bug em que abrir Configurações no celular (pelo ícone de
+   engrenagem na gaveta lateral) deixava o painel escondido atrás da própria
+   gaveta/backdrop — agora abrir qualquer painel fecha a gaveta primeiro. */
+function closeOverlayPanels(except){
+  if(except !== 'settings'){
+    const settingsPanel = document.getElementById('settingsPanel');
+    if(settingsPanel) settingsPanel.classList.remove('open');
+  }
+  if(except !== 'templates'){
+    const templatesPanel = document.getElementById('templatesPanel');
+    if(templatesPanel) templatesPanel.classList.remove('open');
+  }
+  if(except !== 'slash') closeSlashMenu();
+  if(except !== 'suggest'){
+    const pop = document.getElementById('suggestPopover');
+    if(pop) pop.style.display = 'none';
+  }
+  if(except !== 'convSearch'){
+    const row = document.getElementById('convSearchRow');
+    if(row && row.style.display !== 'none'){
+      row.style.display = 'none';
+      const input = document.getElementById('convSearchInput');
+      if(input && input.value){ input.value = ''; renderConversationList(); }
+    }
+  }
+  if(except !== 'shortcuts') closeShortcutsHelp();
+  if(except !== 'sidebar') closeSidebarIfMobile();
+}
+
+/* Painel de ajuda com a lista de atalhos de teclado — abre com "?" (fora de
+   campos de texto) ou pelo botão de atalhos, fecha com Esc/clique fora. */
+function showShortcutsHelp(){
+  closeOverlayPanels('shortcuts');
+  const el = document.getElementById('shortcutsOverlay');
+  if(el) el.classList.add('show');
+}
+function closeShortcutsHelp(){
+  const el = document.getElementById('shortcutsOverlay');
+  if(el) el.classList.remove('show');
+}
+
 function toggleSettings(){
   hapticTap();
-  document.getElementById('templatesPanel').classList.remove('open');
-  document.getElementById('settingsPanel').classList.toggle('open');
+  const panel = document.getElementById('settingsPanel');
+  const willOpen = !!panel && !panel.classList.contains('open');
+  closeOverlayPanels(willOpen ? 'settings' : null);
+  if(panel) panel.classList.toggle('open');
 }
 
 function toggleTemplates(){
   hapticTap();
-  document.getElementById('settingsPanel').classList.remove('open');
-  document.getElementById('templatesPanel').classList.toggle('open');
-}
-
-/* Fecha os painéis de Configurações e Atalhos (se estiverem abertos). Chamada
-   sempre que o usuário navega pra outro lugar do app (outro modo/aba, outra
-   conversa, nova conversa), pra eles não ficarem "presos" abertos por cima
-   do conteúdo que o usuário pediu pra ver. */
-function closeOverlayPanels(){
-  const settingsPanel = document.getElementById('settingsPanel');
-  const templatesPanel = document.getElementById('templatesPanel');
-  if(settingsPanel) settingsPanel.classList.remove('open');
-  if(templatesPanel) templatesPanel.classList.remove('open');
+  const panel = document.getElementById('templatesPanel');
+  const willOpen = !!panel && !panel.classList.contains('open');
+  closeOverlayPanels(willOpen ? 'templates' : null);
+  if(panel) panel.classList.toggle('open');
 }
 
 function renderTemplatesGrid(){
@@ -2809,12 +2943,30 @@ const HOME_FEATURE_CARDS = [
   }
 ];
 
-/* Linhas fixas de saudação, usadas tanto na tela Início quanto no início
-   de cada conversa por especialista. */
+/* "Bom dia"/"Boa tarde"/"Boa noite" de acordo com o horário local do
+   aparelho — usado na saudação da Home pra ela não ser sempre a mesma
+   frase estática o dia inteiro. */
+function getTimeOfDayGreeting(){
+  const hour = new Date().getHours();
+  if(hour < 5) return 'Boa madrugada';
+  if(hour < 12) return 'Bom dia';
+  if(hour < 18) return 'Boa tarde';
+  return 'Boa noite';
+}
+
+/* Saudação usada na tela Início e no início de cada conversa por
+   especialista. Varia por horário do dia e, se a pessoa já personalizou o
+   nome no rodapé da barra lateral (em vez de deixar o padrão "Você"), inclui
+   o nome — assim a Home deixa de ser sempre o mesmo texto fixo. */
 function buildGreetingBlock(){
   const greeting = document.createElement('div');
   greeting.className = 'empty-state-greeting';
-  greeting.innerHTML = 'Olá, eu sou a <span class="lumi-highlight">Lumi</span>. 👋';
+  const nameInput = document.getElementById('profileNameInput');
+  const name = nameInput ? nameInput.value.trim() : '';
+  const hasCustomName = !!name && name !== 'Você';
+  greeting.innerHTML = hasCustomName
+    ? getTimeOfDayGreeting() + ', ' + escapeHtml(name) + '. Eu sou a <span class="lumi-highlight">Lumi</span>. 👋'
+    : 'Olá, eu sou a <span class="lumi-highlight">Lumi</span>. 👋';
 
   const subtitle = document.createElement('div');
   subtitle.className = 'empty-state-subtitle';
@@ -2833,6 +2985,21 @@ function renderHomeView(){
   wrap.id = 'emptyState';
 
   buildGreetingBlock().forEach(el => wrap.appendChild(el));
+
+  // Atalho pra retomar a conversa mais recente que já tem alguma mensagem
+  // (ignora uma "Nova conversa" vazia que só foi aberta e não usada) — assim
+  // a Home deixa de ser só um ponto de partida genérico todo santo dia.
+  const recentConv = conversations.find(c => c.messages && c.messages.length > 0);
+  if(recentConv){
+    const recentChip = document.createElement('button');
+    recentChip.type = 'button';
+    recentChip.className = 'home-recent-chip';
+    recentChip.innerHTML =
+      '<span class="home-recent-label">Continuar de onde parou</span>' +
+      '<span class="home-recent-title">' + escapeHtml(recentConv.title || 'Conversa sem título') + '</span>';
+    recentChip.onclick = () => switchConversation(recentConv.id);
+    wrap.appendChild(recentChip);
+  }
 
   const heading = document.createElement('div');
   heading.className = 'empty-state-heading';
@@ -2873,6 +3040,10 @@ function renderHomeView(){
   chat.appendChild(wrap);
 }
 
+/* Navega para a tela Início: fecha qualquer painel aberto, limpa qual
+   conversa está "atual" (nenhuma) e redesenha a lista do histórico + a
+   própria Home. Chamada pelo botão "Início" e sempre que não faz sentido
+   mais nenhuma conversa específica estar selecionada. */
 function showHomeView(){
   closeOverlayPanels();
   currentView = 'home';
@@ -3190,6 +3361,11 @@ function getStorage(){
 }
 const persistentStorage = getStorage();
 
+/* Empacota tudo que precisa sobreviver a um refresh/nova visita (conversas,
+   preferências de tema/fonte/estilo de resposta, chave e provedor de IA
+   escolhidos, memórias, etc.) num único objeto simples — usado tanto pra
+   salvar no localStorage quanto, se a pessoa estiver logada, pra sincronizar
+   na nuvem (mesmo formato nos dois casos, ver applyLoadedState). */
 function buildStateSnapshot(){
   const nameInput = document.getElementById('profileNameInput');
   return {
@@ -3203,6 +3379,10 @@ function buildStateSnapshot(){
   };
 }
 
+/* Grava o estado atual (buildStateSnapshot()) no localStorage deste
+   navegador e, se houver login na nuvem ativo, agenda também uma
+   sincronização remota. Chamada depois de qualquer mudança que precise
+   persistir — nova mensagem, configuração alterada, tema trocado, etc. */
 function saveState(){
   if(persistentStorage){
     try{
@@ -3231,6 +3411,11 @@ function saveState(){
   scheduleCloudSync();
 }
 
+/* Lê o estado salvo deste navegador (localStorage) na inicialização do app.
+   Devolve o objeto salvo (mesmo formato de buildStateSnapshot()) ou null se
+   nunca houve nada salvo / o navegador bloqueia armazenamento. Quem chama
+   isso ainda precisa passar o resultado pra applyLoadedState() pra de fato
+   aplicar na tela. */
 function loadState(){
   if(!persistentStorage) return null;
   try{
@@ -3286,6 +3471,10 @@ function recordMessage(entry){
   saveState();
 }
 
+/* Cria uma conversa vazia no modo/especialista atual, a coloca no topo do
+   histórico (mais recente primeiro) e torna ela a conversa selecionada.
+   Aplica o limite de conversas salvas (trimConversations) logo em seguida,
+   já que uma conversa nova pode estourar o teto configurado. */
 function startNewConversation(){
   closeOverlayPanels();
   currentView = 'mode';
@@ -3302,6 +3491,10 @@ function startNewConversation(){
   closeSidebarIfMobile();
 }
 
+/* Troca a conversa "atual" pra uma já existente do histórico (pelo id),
+   reconstrói a UI no modo/especialista dela e reproduz as mensagens salvas
+   na tela (replayConversation) — usada ao clicar num item da lista lateral
+   ou pelo atalho de "continuar de onde parou" na Home. */
 function switchConversation(id){
   const conv = conversations.find(c => c.id === id);
   if(!conv) return;
@@ -3355,6 +3548,7 @@ function replayConversation(conv){
 }
 
 function openConvSearch(){
+  closeOverlayPanels('convSearch');
   const row = document.getElementById('convSearchRow');
   if(row) row.style.display = 'flex';
 }
@@ -3368,6 +3562,7 @@ function toggleConvSearch(){
     const input = document.getElementById('convSearchInput');
     if(input && input.value){ input.value = ''; renderConversationList(); }
   } else {
+    closeOverlayPanels('convSearch');
     row.style.display = 'flex';
     const input = document.getElementById('convSearchInput');
     if(input) input.focus();
@@ -3379,6 +3574,10 @@ const MOBILE_BREAKPOINT = 720;
 function toggleSidebar(){
   const sidebar = document.getElementById('sidebarEl');
   if(!sidebar) return;
+  const willOpen = sidebar.classList.contains('collapsed');
+  // Abrir a gaveta lateral fecha os outros painéis primeiro (exceto ela
+  // mesma), pra nunca ter dois overlays disputando espaço na tela.
+  if(willOpen) closeOverlayPanels('sidebar');
   sidebar.classList.toggle('collapsed');
   syncSidebarBackdrop();
 }
@@ -3417,6 +3616,24 @@ function dateBucket(ts){
   return 'Mais antigas';
 }
 
+/* Reconstrói a lista inteira do histórico (limpa e recria todos os itens),
+   então digitar rápido na busca chamando isso a cada tecla pesa desnecessário
+   — esse wrapper agrupa as teclas digitadas em rajada numa única
+   re-renderização, 150ms depois da pessoa parar de digitar. Usado só pelo
+   campo de busca; outros lugares que precisam da lista atualizada na hora
+   (nova conversa, deletar, trocar de conversa) continuam chamando
+   renderConversationList() direto. */
+let convSearchDebounceTimer = null;
+function handleConvSearchInput(){
+  clearTimeout(convSearchDebounceTimer);
+  convSearchDebounceTimer = setTimeout(renderConversationList, 150);
+}
+
+/* Redesenha a lista de conversas na barra lateral do zero: filtra pelo texto
+   de busca (se houver), agrupa por data com dateBucket() ("Hoje"/"Ontem"/
+   "Esta semana"/"Mais antigas") e cria os itens clicáveis de cada grupo.
+   Chamada sempre que o histórico muda de alguma forma (nova conversa,
+   deletar, trocar de conversa, terminar de digitar na busca). */
 function renderConversationList(){
   const list = document.getElementById('conversationList');
   list.innerHTML = '';
@@ -3521,7 +3738,8 @@ const ICONS = {
   bell: '<path d="M6 8a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 21a2 2 0 0 0 4 0"/>',
   moon: '<path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/>',
   sun: '<circle cx="12" cy="12" r="4.5"/><line x1="12" y1="2" x2="12" y2="4.5"/><line x1="12" y1="19.5" x2="12" y2="22"/><line x1="2" y1="12" x2="4.5" y2="12"/><line x1="19.5" y1="12" x2="22" y2="12"/><line x1="4.9" y1="4.9" x2="6.6" y2="6.6"/><line x1="17.4" y1="17.4" x2="19.1" y2="19.1"/><line x1="4.9" y1="19.1" x2="6.6" y2="17.4"/><line x1="17.4" y1="6.6" x2="19.1" y2="4.9"/>',
-  paperclip: '<path d="M19 11.5l-7.4 7.4a4.5 4.5 0 0 1-6.4-6.4l8.1-8.1a3 3 0 0 1 4.2 4.2l-8 8a1.5 1.5 0 0 1-2.1-2.1l7-7"/>'
+  paperclip: '<path d="M19 11.5l-7.4 7.4a4.5 4.5 0 0 1-6.4-6.4l8.1-8.1a3 3 0 0 1 4.2 4.2l-8 8a1.5 1.5 0 0 1-2.1-2.1l7-7"/>',
+  keyboard: '<rect x="2.5" y="6" width="19" height="13" rx="2.2"/><line x1="6" y1="10" x2="6" y2="10.01"/><line x1="9.5" y1="10" x2="9.5" y2="10.01"/><line x1="13" y1="10" x2="13" y2="10.01"/><line x1="16.5" y1="10" x2="16.5" y2="10.01"/><line x1="6" y1="13.3" x2="6" y2="13.31"/><line x1="9.5" y1="13.3" x2="9.5" y2="13.31"/><line x1="13" y1="13.3" x2="13" y2="13.31"/><line x1="16.5" y1="13.3" x2="16.5" y2="13.31"/><line x1="7.5" y1="16.3" x2="15.5" y2="16.3"/>'
 };
 
 function iconSvg(name, extraClass){
@@ -4171,6 +4389,7 @@ function toggleSuggestPopover(){
     pop.style.display = 'none';
     return;
   }
+  closeOverlayPanels('suggest');
   pop.innerHTML = '';
   const title = document.createElement('div');
   title.className = 'suggest-popover-title';
@@ -4302,20 +4521,18 @@ function extractJsonFromAiText(text){
    dashboard em JSON), sem misturar com o tom de voz / KB da conversa.
    ========================================================= */
 async function askOpenAIRaw(systemPrompt, userText){
-  let lastErr = null;
-  for(const model of getModelOrder('openai')){
-    try{ return await callOpenAIModel(model, systemPrompt, userText); }
-    catch(err){ lastErr = err; if(err.status === 429 || err.status === 404){ continue; } break; }
+  try{
+    return await tryModelsInOrder('openai', (model) => callOpenAIModel(model, systemPrompt, userText));
+  }catch(err){
+    throw err || new Error('Falha ao chamar a OpenAI.');
   }
-  throw lastErr || new Error('Falha ao chamar a OpenAI.');
 }
 async function askGeminiRaw(systemPrompt, userText){
-  let lastErr = null;
-  for(const model of getModelOrder('gemini')){
-    try{ return await callGeminiModel(model, systemPrompt, userText); }
-    catch(err){ lastErr = err; if(err.status === 429 || err.status === 404){ continue; } break; }
+  try{
+    return await tryModelsInOrder('gemini', (model) => callGeminiModel(model, systemPrompt, userText));
+  }catch(err){
+    throw err || new Error('Falha ao chamar o Gemini.');
   }
-  throw lastErr || new Error('Falha ao chamar o Gemini.');
 }
 async function askAIRaw(systemPrompt, userText){
   return apiProvider === 'gemini' ? askGeminiRaw(systemPrompt, userText) : askOpenAIRaw(systemPrompt, userText);
@@ -4359,12 +4576,33 @@ function aggregateForChart(rows, spec){
 
 /* Desenha um card de gráfico do dashboard (bar/line/pie), no mesmo
    estilo visual do gráfico rápido, mas com legenda de insight embaixo. */
+/* Garante que a lib Chart.js está disponível, carregando sob demanda na
+   primeira vez que algum gráfico precisar ser desenhado (dashboard com IA ou
+   a prévia simples) — devolve false se não deu pra carregar (ex: sem
+   internet), caso em que quem chamou deve desistir de desenhar sem quebrar
+   o resto do app. */
+async function ensureChartJsLoaded(){
+  if(typeof Chart !== 'undefined') return true;
+  try{ await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js'); }
+  catch(e){ return false; }
+  return typeof Chart !== 'undefined';
+}
+
+/* Lê do CSS as cores atuais do tema (claro/escuro, e a cor de destaque
+   escolhida em Configurações) pra desenhar os gráficos combinando com o
+   resto da interface — mesma leitura usada tanto no dashboard com IA quanto
+   na prévia simples. */
+function getChartThemeColors(){
+  const rootStyle = getComputedStyle(document.documentElement);
+  const tickColor = rootStyle.getPropertyValue('--text-dim').trim() || '#8fa0c2';
+  const accentColorVal = rootStyle.getPropertyValue('--accent').trim() || '#2f7dff';
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  const gridColor = isLight ? 'rgba(0,0,0,.06)' : 'rgba(255,255,255,.05)';
+  return { tickColor, accentColorVal, isLight, gridColor };
+}
+
 async function renderDashboardChart(spec, data){
-  if(typeof Chart === 'undefined'){
-    try{ await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js'); }
-    catch(e){ return; }
-  }
-  if(typeof Chart === 'undefined') return;
+  if(!(await ensureChartJsLoaded())) return;
 
   const chat = document.getElementById('chat');
   const div = document.createElement('div');
@@ -4386,11 +4624,7 @@ async function renderDashboardChart(spec, data){
   chat.scrollTop = chat.scrollHeight;
 
   try{
-    const rootStyle = getComputedStyle(document.documentElement);
-    const tickColor = rootStyle.getPropertyValue('--text-dim').trim() || '#8fa0c2';
-    const accentColorVal = rootStyle.getPropertyValue('--accent').trim() || '#2f7dff';
-    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
-    const gridColor = isLight ? 'rgba(0,0,0,.06)' : 'rgba(255,255,255,.05)';
+    const { tickColor, accentColorVal, gridColor } = getChartThemeColors();
     const chartType = (spec.type === 'line' || spec.type === 'pie') ? spec.type : 'bar';
     const palette = ['#2f7dff','#63a6ff','#7cc4ff','#a78bfa','#22d3ee','#fbbf24','#f472b6','#f87171'];
 
@@ -4471,12 +4705,7 @@ async function generateAiDashboard(rows, fileName){
    com IA falhar por qualquer motivo.
    ========================================================= */
 async function renderQuickChart(rows, fileName){
-  if(typeof Chart === 'undefined'){
-    try{
-      await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js');
-    }catch(e){ return; }
-  }
-  if(typeof Chart === 'undefined') return;
+  if(!(await ensureChartJsLoaded())) return;
   const sample = rows[0];
   const keys = Object.keys(sample);
   let labelKey = null, numKey = null;
@@ -4506,11 +4735,7 @@ async function renderQuickChart(rows, fileName){
   chat.scrollTop = chat.scrollHeight;
 
   try{
-    const rootStyle = getComputedStyle(document.documentElement);
-    const tickColor = rootStyle.getPropertyValue('--text-dim').trim() || '#8fa0c2';
-    const accentColorVal = rootStyle.getPropertyValue('--accent').trim() || '#2f7dff';
-    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
-    const gridColor = isLight ? 'rgba(0,0,0,.06)' : 'rgba(255,255,255,.05)';
+    const { tickColor, accentColorVal, gridColor } = getChartThemeColors();
     new Chart(canvas.getContext('2d'), {
       type: 'bar',
       data: { labels, datasets: [{ label: numKey, data: values, backgroundColor: accentColorVal + '99', borderColor: accentColorVal, borderWidth: 1 }] },
@@ -4697,6 +4922,12 @@ function addImageMessage(dataUrl, prompt){
 
 let isSendingMessage = false; // trava contra envio duplicado (ex: Enter repetido rápido enquanto a IA ainda responde)
 
+/* Ponto central de envio de mensagem: pega o texto (ou imagem pendente) do
+   campo, mostra a bolha do usuário, decide entre resposta local de FAQ ou
+   chamada de IA (askOpenAI/askGemini, conforme apiProvider) e mostra a
+   resposta — cobrindo também os atalhos especiais ("lembre que...", tags
+   [[MEMORIZE:]] da IA, comandos "/"). isSendingMessage evita disparos
+   duplicados enquanto uma chamada já está em andamento. */
 async function sendMessage(){
   if(isSendingMessage) return;
   const input = document.getElementById('userInput');
@@ -4853,6 +5084,46 @@ async function fetchWithTimeout(url, options, timeoutMs){
   }
 }
 
+/* Lê o corpo de uma resposta HTTP malsucedida da API da OpenAI ou do Gemini
+   e monta um Error com .status (código HTTP) e .detail (mensagem da API,
+   quando o corpo é JSON) — mesmo parsing que os dois provedores precisam. */
+async function buildApiError(res){
+  const errBody = await res.text();
+  let detail = '';
+  try{
+    const parsed = JSON.parse(errBody);
+    detail = parsed?.error?.message || parsed?.error?.code || '';
+  }catch(e){ /* corpo não era JSON, ignora */ }
+  const err = new Error(detail || ('HTTP ' + res.status));
+  err.status = res.status;
+  err.detail = detail;
+  return err;
+}
+
+/* Tenta, em ordem, cada modelo de getModelOrder(provider) — pula pro próximo
+   em caso de 429 (cota) ou 404 (modelo descontinuado), e desiste nos demais
+   erros. Devolve o resultado da primeira chamada bem-sucedida, ou lança o
+   último erro (com .status/.detail/.isTimeout, quando aplicável). Usado
+   tanto pelas chamadas "cruas" (askOpenAIRaw/askGeminiRaw) quanto por
+   askOpenAI/askGemini, que envolvem isso com mensagens de erro explicativas
+   pro usuário (ver hint building em cada uma). */
+async function tryModelsInOrder(provider, callModel){
+  let lastErr = null;
+  for(const model of getModelOrder(provider)){
+    try{ return await callModel(model); }
+    catch(err){
+      lastErr = err;
+      if(err.status === 429 || err.status === 404){ continue; }
+      break;
+    }
+  }
+  throw lastErr || new Error('Nenhum modelo de ' + provider + ' pôde ser tentado.');
+}
+
+/* Uma chamada de verdade à API da OpenAI (Chat Completions) com um modelo
+   específico. Lança um Error com .status/.detail em caso de falha HTTP —
+   quem chama (tryModelsInOrder, dentro de askOpenAI) decide se tenta o
+   próximo modelo ou desiste. */
 async function callOpenAIModel(model, systemPrompt, userText, image){
   const userContent = image
     ? [
@@ -4876,53 +5147,40 @@ async function callOpenAIModel(model, systemPrompt, userText, image){
     })
   }, AI_CALL_TIMEOUT_MS);
 
-  if(!res.ok){
-    const errBody = await res.text();
-    let detail = '';
-    try{
-      const parsed = JSON.parse(errBody);
-      detail = parsed?.error?.message || parsed?.error?.code || '';
-    }catch(e){ /* corpo não era JSON, ignora */ }
-    const err = new Error(detail || ('HTTP ' + res.status));
-    err.status = res.status;
-    err.detail = detail;
-    throw err;
-  }
+  if(!res.ok) throw await buildApiError(res);
   const data = await res.json();
   return data.choices?.[0]?.message?.content?.trim() || "Não consegui gerar uma resposta agora.";
 }
 
+/* API pública usada por sendMessage() quando o provedor ativo é a OpenAI:
+   monta o system prompt da persona, tenta os modelos em ordem de preferência
+   (tryModelsInOrder) e, se todos falharem, transforma o erro técnico numa
+   mensagem explicativa em português pro usuário (cota/billing, chave
+   inválida, timeout, sem conexão, etc.). */
 async function askOpenAI(userText, image){
   const systemPrompt = buildSystemPrompt();
-  let lastErr = null;
-
-  for(const model of getModelOrder('openai')){
-    try{
-      return await callOpenAIModel(model, systemPrompt, userText, image);
-    }catch(err){
-      lastErr = err;
-      if(err.status === 429 || err.status === 404){ continue; }
-      break;
+  try{
+    return await tryModelsInOrder('openai', (model) => callOpenAIModel(model, systemPrompt, userText, image));
+  }catch(lastErr){
+    if(lastErr?.isTimeout){
+      throw new Error('A resposta da OpenAI demorou mais de ' + Math.round(AI_CALL_TIMEOUT_MS / 1000) + 's e foi cancelada automaticamente. Tente de novo — pode ter sido só uma instabilidade momentânea de rede ou da própria OpenAI.');
     }
+    if(lastErr && lastErr.status === undefined){
+      throw new Error(
+        'Não consegui nem conectar à OpenAI (a chamada falhou antes de qualquer resposta). ' +
+        'Isso costuma acontecer quando o arquivo é aberto direto no navegador (endereço começando com "file://") — abra por um servidor local ou pelo link publicado do site.'
+      );
+    }
+    let hint = 'Verifique a chave e o billing da conta.';
+    if(lastErr?.status === 429){
+      hint = 'Isso geralmente indica falta de crédito/billing configurado na conta da OpenAI (não é erro na chave), ou muitas chamadas em pouco tempo. Confira em platform.openai.com/settings/organization/billing/overview.';
+    } else if(lastErr?.status === 401){
+      hint = 'A chave parece inválida ou foi revogada. Gere uma nova em platform.openai.com/api-keys.';
+    } else if(lastErr?.status === 404){
+      hint = 'Os modelos testados não estão mais disponíveis na API da OpenAI. Me avise para eu atualizar a lista de modelos do app.';
+    }
+    throw new Error('Falha na chamada à OpenAI (' + (lastErr?.status || '?') + ').' + (lastErr?.detail ? ' Detalhe: ' + lastErr.detail + '.' : '') + ' ' + hint);
   }
-
-  let hint = 'Verifique a chave e o billing da conta.';
-  if(lastErr?.status === 429){
-    hint = 'Isso geralmente indica falta de crédito/billing configurado na conta da OpenAI (não é erro na chave), ou muitas chamadas em pouco tempo. Confira em platform.openai.com/settings/organization/billing/overview.';
-  } else if(lastErr?.status === 401){
-    hint = 'A chave parece inválida ou foi revogada. Gere uma nova em platform.openai.com/api-keys.';
-  } else if(lastErr?.status === 404){
-    hint = 'Os modelos testados não estão mais disponíveis na API da OpenAI. Me avise para eu atualizar a lista de modelos do app.';
-  } else if(lastErr?.isTimeout){
-    throw new Error('A resposta da OpenAI demorou mais de ' + Math.round(AI_CALL_TIMEOUT_MS / 1000) + 's e foi cancelada automaticamente. Tente de novo — pode ter sido só uma instabilidade momentânea de rede ou da própria OpenAI.');
-  } else if(lastErr && lastErr.status === undefined){
-    throw new Error(
-      'Não consegui nem conectar à OpenAI (a chamada falhou antes de qualquer resposta). ' +
-      'Isso costuma acontecer quando o arquivo é aberto direto no navegador (endereço começando com "file://") — abra por um servidor local ou pelo link publicado do site.'
-    );
-  }
-
-  throw new Error('Falha na chamada à OpenAI (' + (lastErr?.status || '?') + ').' + (lastErr?.detail ? ' Detalhe: ' + lastErr.detail + '.' : '') + ' ' + hint);
 }
 
 // Modelos disponíveis por provedor, e o modelo preferido de cada um (o
@@ -4990,6 +5248,10 @@ function setResponseStyle(style){
   saveState();
 }
 
+/* Uma chamada de verdade à API do Gemini (generateContent) com um modelo
+   específico. Mesmo contrato de callOpenAIModel: lança Error com
+   .status/.detail em caso de falha, pra tryModelsInOrder decidir o próximo
+   passo. */
 async function callGeminiModel(model, systemPrompt, userText, image){
   const parts = [{ text: userText }];
   if(image){
@@ -5005,57 +5267,39 @@ async function callGeminiModel(model, systemPrompt, userText, image){
     })
   }, AI_CALL_TIMEOUT_MS);
 
-  if(!res.ok){
-    const errBody = await res.text();
-    let detail = '';
-    try{
-      const parsed = JSON.parse(errBody);
-      detail = parsed?.error?.message || '';
-    }catch(e){ /* corpo não era JSON, ignora */ }
-    const err = new Error(detail || ('HTTP ' + res.status));
-    err.status = res.status;
-    err.detail = detail;
-    throw err;
-  }
+  if(!res.ok) throw await buildApiError(res);
   const data = await res.json();
   return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "Não consegui gerar uma resposta agora.";
 }
 
+/* Equivalente a askOpenAI(), mas para o Gemini como provedor ativo — mesma
+   estratégia de retry entre modelos e de tradução do erro técnico numa
+   mensagem explicativa em português (cota, chave inválida, timeout, etc.). */
 async function askGemini(userText, image){
   const systemPrompt = buildSystemPrompt();
-  let lastErr = null;
-
-  for(const model of getModelOrder('gemini')){
-    try{
-      return await callGeminiModel(model, systemPrompt, userText, image);
-    }catch(err){
-      lastErr = err;
-      // cota zerada/excedida (429) ou modelo descontinuado (404) nesse modelo
-      // específico: tenta o próximo da lista
-      if(err.status === 429 || err.status === 404){ continue; }
-      // outros erros (chave inválida, etc.) não melhoram trocando de modelo
-      break;
+  try{
+    return await tryModelsInOrder('gemini', (model) => callGeminiModel(model, systemPrompt, userText, image));
+  }catch(lastErr){
+    if(lastErr?.isTimeout){
+      throw new Error('A resposta do Gemini demorou mais de ' + Math.round(AI_CALL_TIMEOUT_MS / 1000) + 's e foi cancelada automaticamente. Tente de novo — pode ter sido só uma instabilidade momentânea de rede ou da própria Google.');
     }
+    if(lastErr && lastErr.status === undefined){
+      throw new Error(
+        'Não consegui nem conectar ao Gemini (a chamada falhou antes de qualquer resposta). ' +
+        'Isso costuma acontecer quando o arquivo é aberto direto no navegador (endereço começando com "file://") — alguns navegadores bloqueiam esse tipo de chamada a APIs externas nesse modo. ' +
+        'Solução: abra o AtlasIA através de um servidor local em vez de abrir o arquivo direto — no VS Code, instale a extensão "Live Server", clique com o botão direito no arquivo .html e escolha "Open with Live Server" (ele abre um endereço tipo http://127.0.0.1:5500/... no navegador, e aí a chamada funciona).'
+      );
+    }
+    let hint = 'Verifique se a chave foi copiada corretamente do Google AI Studio.';
+    if(lastErr?.status === 429){
+      hint = 'A Google não está liberando cota gratuita pela API pra nenhum dos modelos testados nesta chave/projeto no momento (isso é uma mudança recente deles, não é um limite específico da sua conta). Considere ativar o faturamento no Google AI Studio, ou usar o modo FAQ local / OpenAI como alternativa.';
+    } else if(lastErr?.status === 404){
+      hint = 'Os modelos testados não estão mais disponíveis na API da Google (ela descontinua modelos com frequência). Me avise para eu atualizar a lista de modelos do app.';
+    } else if(lastErr?.status === 400 || lastErr?.status === 403){
+      hint = 'A chave parece inválida, expirada, ou sem permissão. Gere uma nova em aistudio.google.com/apikey.';
+    }
+    throw new Error('Falha na chamada ao Gemini (' + (lastErr?.status || '?') + ').' + (lastErr?.detail ? ' Detalhe: ' + lastErr.detail + '.' : '') + ' ' + hint);
   }
-
-  let hint = 'Verifique se a chave foi copiada corretamente do Google AI Studio.';
-  if(lastErr?.status === 429){
-    hint = 'A Google não está liberando cota gratuita pela API pra nenhum dos modelos testados nesta chave/projeto no momento (isso é uma mudança recente deles, não é um limite específico da sua conta). Considere ativar o faturamento no Google AI Studio, ou usar o modo FAQ local / OpenAI como alternativa.';
-  } else if(lastErr?.status === 404){
-    hint = 'Os modelos testados não estão mais disponíveis na API da Google (ela descontinua modelos com frequência). Me avise para eu atualizar a lista de modelos do app.';
-  } else if(lastErr?.status === 400 || lastErr?.status === 403){
-    hint = 'A chave parece inválida, expirada, ou sem permissão. Gere uma nova em aistudio.google.com/apikey.';
-  } else if(lastErr?.isTimeout){
-    throw new Error('A resposta do Gemini demorou mais de ' + Math.round(AI_CALL_TIMEOUT_MS / 1000) + 's e foi cancelada automaticamente. Tente de novo — pode ter sido só uma instabilidade momentânea de rede ou da própria Google.');
-  } else if(lastErr && lastErr.status === undefined){
-    throw new Error(
-      'Não consegui nem conectar ao Gemini (a chamada falhou antes de qualquer resposta). ' +
-      'Isso costuma acontecer quando o arquivo é aberto direto no navegador (endereço começando com "file://") — alguns navegadores bloqueiam esse tipo de chamada a APIs externas nesse modo. ' +
-      'Solução: abra o AtlasIA através de um servidor local em vez de abrir o arquivo direto — no VS Code, instale a extensão "Live Server", clique com o botão direito no arquivo .html e escolha "Open with Live Server" (ele abre um endereço tipo http://127.0.0.1:5500/... no navegador, e aí a chamada funciona).'
-    );
-  }
-
-  throw new Error('Falha na chamada ao Gemini (' + (lastErr?.status || '?') + ').' + (lastErr?.detail ? ' Detalhe: ' + lastErr.detail + '.' : '') + ' ' + hint);
 }
 
 /* =========================================================
@@ -5467,16 +5711,62 @@ window.onload = () => {
         templatesPanel.classList.remove('open');
       }
     }
+
+    // Busca de conversas: mesmo tratamento — fecha (e limpa) ao clicar fora,
+    // sem contar o próprio botão de busca que abre/fecha ela.
+    const searchRow = document.getElementById('convSearchRow');
+    const searchBtn = document.getElementById('histSearchBtn');
+    const isSearchToggleTrigger = e.target === searchBtn || (searchBtn && searchBtn.contains(e.target));
+    if(searchRow && searchRow.style.display !== 'none' && !searchRow.contains(e.target) && !isSearchToggleTrigger){
+      toggleConvSearch();
+    }
   });
+
+  /* Atalhos de teclado globais do app. Ignorados enquanto a pessoa está
+     digitando num campo de texto (exceto Escape, que sempre deve funcionar
+     pra fechar o que estiver aberto — inclusive o próprio teclado/menu de
+     sugestões do celular perdendo o foco do campo). */
   document.addEventListener('keydown', (e) => {
-    if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k'){
-      const searchInput = document.getElementById('convSearchInput');
-      if(searchInput){
-        e.preventDefault();
-        openConvSearch();
-        searchInput.focus();
-        searchInput.select();
+    const isTypingTarget = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable;
+
+    if(e.key === 'Escape'){
+      closeShortcutsHelp();
+      closeOverlayPanels();
+      if(document.activeElement && document.activeElement !== document.body){
+        document.activeElement.blur();
       }
+      return;
+    }
+
+    if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k'){
+      e.preventDefault();
+      const searchInput = document.getElementById('convSearchInput');
+      openConvSearch();
+      if(searchInput){ searchInput.focus(); searchInput.select(); }
+      return;
+    }
+
+    if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n'){
+      e.preventDefault();
+      startNewConversation();
+      return;
+    }
+
+    if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b'){
+      e.preventDefault();
+      toggleSidebar();
+      return;
+    }
+
+    if((e.ctrlKey || e.metaKey) && e.key === ','){
+      e.preventDefault();
+      toggleSettings();
+      return;
+    }
+
+    if(e.key === '?' && !isTypingTarget){
+      e.preventDefault();
+      showShortcutsHelp();
     }
   });
 

@@ -1474,11 +1474,23 @@
     .feature-card{ padding:12px; }
 
     footer{ padding:10px 10px calc(10px + env(safe-area-inset-bottom, 0px)); }
-    .input-row{ gap:5px; }
-    .icon-btn{ width:36px; height:36px; font-size:14px; }
-    .send-btn{ width:36px; height:36px; font-size:16px; }
-    /* font-size 16px no campo evita o zoom automático do Safari/iOS ao focar */
-    footer input{ font-size:16px; padding:10px 12px; }
+    .input-row{ gap:6px; }
+    /* Alvos de toque maiores no celular (recomendação Apple/Google é ~44px;
+       antes estavam em 36px, apertados demais pra tocar com o dedo). */
+    .icon-btn{ width:40px; height:40px; font-size:16px; }
+    .send-btn{ width:40px; height:40px; font-size:18px; }
+    /* font-size 16px evita o zoom automático do Safari/iOS ao focar — precisa
+       valer tanto pro <input> quanto pro <textarea> do campo de mensagem
+       (o campo principal é um <textarea>, que antes ficava de fora dessa
+       regra e continuava em 14px, menor que o resto da interface). */
+    footer input, footer textarea{ font-size:16px; padding:12px 14px; }
+    footer textarea{ max-height:120px; }
+    /* Em telas estreitas, os botões (anexo/imagem/mic/enviar) deixam pouco
+       espaço horizontal pro campo de texto — o placeholder (mais longo que
+       qualquer mensagem digitada de verdade) pode quebrar linha e ficar
+       cortado pela altura fixa do campo. Reduz só o placeholder (não afeta
+       o texto digitado nem o zoom do iOS, que olha o font-size do campo). */
+    footer textarea::placeholder{ font-size:13.5px; }
     .suggest-popover{ left:10px; right:10px; }
     /* iOS dá zoom automático em qualquer campo com fonte menor que 16px ao
        focar — garante 16px em todo campo de texto do app, não só no chat. */
@@ -1846,7 +1858,7 @@
       <button type="button" id="webBtn" class="icon-btn" title="Busca na web (em breve)" onclick="showWebSearchToast()"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c2.5 2.5 4 5.5 4 9s-1.5 6.5-4 9c-2.5-2.5-4-5.5-4-9s1.5-6.5 4-9z"/><circle cx="12" cy="12" r="9"/><line x1="3" y1="12" x2="21" y2="12"/></svg></button>
       <button type="button" id="imageBtn" class="icon-btn" title="Gerar imagem com IA" onclick="insertImageShortcut()"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5.5-5.5a1.5 1.5 0 0 0-2.1 0L4 19"/></svg></button>
       <button type="button" id="suggestBtn" class="icon-btn" title="Sugestões de prompt" onclick="toggleSuggestPopover()"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2 6 6 2-6 2-2 6-2-6-6-2 6-2z" class="filled"/><path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9z" class="filled"/></svg></button>
-      <textarea id="userInput" name="atlasia-chat-message" rows="1" placeholder="Digite sua pergunta (Shift+Enter para pular linha), ou &quot;/&quot; para ver os modelos prontos..." autocomplete="off" data-lpignore="true" data-1p-ignore data-form-type="other"></textarea>
+      <textarea id="userInput" name="atlasia-chat-message" rows="1" placeholder="Digite sua pergunta..." autocomplete="off" data-lpignore="true" data-1p-ignore data-form-type="other"></textarea>
       <button type="button" id="micBtn" class="icon-btn" title="Falar em vez de digitar" onclick="toggleVoiceInput()"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="10" rx="3"/><path d="M6 11a6 6 0 0 0 12 0"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="9" y1="21" x2="15" y2="21"/></svg></button>
       <button id="sendBtn" class="send-btn" onclick="sendMessage()" title="Enviar">↑</button>
     </div>

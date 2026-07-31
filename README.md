@@ -1,2 +1,2 @@
 # AtlasIA
-Sistema inteligente para automação do credenciamento.
+Transformando ideias em resultados.

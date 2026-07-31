@@ -47,24 +47,19 @@
   body{
     margin:0;
     font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    background:radial-gradient(1200px 600px at 10% -10%, #0a1024 0%, var(--bg) 55%);
+    background:var(--bg);
     color:var(--text);
     display:flex;
     justify-content:center;
-    padding:24px;
+    overflow:hidden;
   }
   .layout{
     width:100%;
-    max-width:1180px;
-    height:calc(100vh - 48px);
+    height:100vh;
     min-height:560px;
     display:flex;
     flex-direction:column;
     background:var(--panel);
-    border:1px solid var(--border);
-    border-radius:20px;
-    overflow:hidden;
-    box-shadow:0 20px 60px rgba(0,0,0,.35);
   }
   .layout-body{
     flex:1;
@@ -354,11 +349,16 @@
      from grid auto-placement) never shifts .chat/footer into the wrong track.
      header now lives outside .app (it's the full-width topbar), so .app
      only has 4 tracks: mode-banner / settings-or-templates / chat / footer. */
-  .mode-banner{ grid-row:1; }
-  .settings{ grid-row:2; }
-  .templates{ grid-row:2; }
-  .chat{ grid-row:3; min-height:0; }
-  footer{ grid-row:4; }
+  /* min-width:0 é essencial aqui: itens de grid, por padrão, nunca ficam
+     mais estreitos que o conteúdo interno (min-content) — sem isso, uma
+     linha de ícones que não cabe força a trilha do grid (e o .app inteiro)
+     a ficar mais larga que a tela, e o que passa da borda fica cortado
+     (inclusive impossível de tocar) pelo overflow:hidden do .app. */
+  .mode-banner{ grid-row:1; min-width:0; }
+  .settings{ grid-row:2; min-width:0; }
+  .templates{ grid-row:2; min-width:0; }
+  .chat{ grid-row:3; min-height:0; min-width:0; }
+  footer{ grid-row:4; min-width:0; }
   header{
     flex-shrink:0;
     display:flex;
@@ -968,6 +968,7 @@
   }
   footer input{
     flex:1;
+    min-width:0;
     background:var(--panel-2);
     border:1px solid var(--border);
     color:var(--text);
@@ -1158,6 +1159,75 @@
 
   ::-webkit-scrollbar{ width:8px; }
   ::-webkit-scrollbar-thumb{ background:var(--border); border-radius:8px; }
+
+  /* ===================== CELULAR ===================== */
+  .sidebar-backdrop{ display:none; }
+  @media (max-width: 720px){
+    header{ padding:10px 12px; gap:8px; }
+    .brand{ gap:8px; min-width:0; }
+    .brand p{ display:none; }
+    .brand h1{ font-size:14.5px; }
+    .logo{ width:30px; height:30px; }
+    .sidebar-toggle-btn{ width:28px; height:28px; }
+
+    .header-actions{
+      overflow-x:auto;
+      -webkit-overflow-scrolling:touch;
+      scrollbar-width:none;
+      max-width:56vw;
+    }
+    .header-actions::-webkit-scrollbar{ display:none; }
+    .status-pill{ flex-shrink:0; white-space:nowrap; font-size:11px; padding:5px 8px; }
+    #modelPillText{ max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:inline-block; vertical-align:middle; }
+    .header-icon-btn{ width:28px; height:28px; font-size:12px; flex-shrink:0; }
+    .header-avatar-wrap .avatar{ width:28px; height:28px; font-size:11px; }
+
+    /* Sidebar vira uma gaveta (drawer) que desliza por cima do conteúdo,
+       em vez de dividir a tela — assim a área de chat/input sempre tem a
+       largura inteira da tela, sem precisar rolar de lado pra alcançar nada. */
+    .sidebar{
+      position:fixed;
+      top:0; left:0; bottom:0;
+      width:82vw;
+      max-width:300px;
+      z-index:60;
+      transform:translateX(0);
+      transition:transform .25s ease;
+      box-shadow:10px 0 40px rgba(0,0,0,.45);
+    }
+    .sidebar.collapsed{
+      transform:translateX(-100%);
+      width:82vw;
+      min-width:0;
+      border-right:1px solid var(--border);
+    }
+    .sidebar-backdrop{
+      display:none;
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.5);
+      z-index:55;
+    }
+    .sidebar-backdrop.show{ display:block; }
+
+    .app{ width:100%; }
+    .empty-state{ padding:16px; gap:16px; }
+    .empty-state-heading{ font-size:20px; }
+    .feature-card-grid{ grid-template-columns:1fr 1fr; gap:8px; max-width:100%; }
+    .feature-card{ padding:12px; }
+
+    footer{ padding:10px 10px calc(10px + env(safe-area-inset-bottom, 0px)); }
+    .input-row{ gap:5px; }
+    .icon-btn{ width:36px; height:36px; font-size:14px; }
+    .send-btn{ width:36px; height:36px; font-size:16px; }
+    /* font-size 16px no campo evita o zoom automático do Safari/iOS ao focar */
+    footer input{ font-size:16px; padding:10px 12px; }
+    .suggest-popover{ left:10px; right:10px; }
+  }
+  @media (max-width: 460px){
+    #webBtn, #suggestBtn{ display:none; }
+    .feature-card-grid{ grid-template-columns:1fr; }
+  }
 </style>
 </head>
 <body>
@@ -1194,6 +1264,7 @@
     </div>
   </header>
   <div class="layout-body">
+  <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
   <aside class="sidebar" id="sidebarEl">
     <button type="button" class="new-chat-btn" onclick="startNewConversation()">+ Nova conversa</button>
     <button type="button" class="nav-btn active" id="navHomeBtn" onclick="showHomeView()">🏠 Início</button>
@@ -2258,6 +2329,7 @@ function showHomeView(){
   document.getElementById('modeBanner').classList.remove('show');
   renderConversationList();
   renderHomeView();
+  closeSidebarIfMobile();
 }
 
 /* Tela inicial de conversa vazia (dentro de um modo/especialista), no
@@ -2404,6 +2476,7 @@ function startNewConversation(){
   renderConversationList();
   renderEmptyState();
   saveState();
+  closeSidebarIfMobile();
 }
 
 function switchConversation(id){
@@ -2417,6 +2490,7 @@ function switchConversation(id){
   renderConversationList();
   replayConversation(conv);
   saveState();
+  closeSidebarIfMobile();
 }
 
 function deleteConversation(id, event){
@@ -2476,9 +2550,33 @@ function toggleConvSearch(){
   }
 }
 
+const MOBILE_BREAKPOINT = 720;
+
 function toggleSidebar(){
   const sidebar = document.getElementById('sidebarEl');
-  if(sidebar) sidebar.classList.toggle('collapsed');
+  if(!sidebar) return;
+  sidebar.classList.toggle('collapsed');
+  syncSidebarBackdrop();
+}
+
+function syncSidebarBackdrop(){
+  const sidebar = document.getElementById('sidebarEl');
+  const backdrop = document.getElementById('sidebarBackdrop');
+  if(!sidebar || !backdrop) return;
+  const isOpen = !sidebar.classList.contains('collapsed');
+  backdrop.classList.toggle('show', isOpen && window.innerWidth <= MOBILE_BREAKPOINT);
+}
+
+/* No celular a barra lateral vira uma gaveta por cima do conteúdo — depois
+   de escolher uma conversa/especialista por lá, fecha sozinha pra deixar a
+   tela toda livre pro chat e pro campo de digitar. */
+function closeSidebarIfMobile(){
+  if(window.innerWidth > MOBILE_BREAKPOINT) return;
+  const sidebar = document.getElementById('sidebarEl');
+  if(sidebar && !sidebar.classList.contains('collapsed')){
+    sidebar.classList.add('collapsed');
+  }
+  syncSidebarBackdrop();
 }
 
 function dateBucket(ts){
@@ -2745,6 +2843,7 @@ function switchMode(mode){
     renderConversationList();
     replayConversation(target);
     saveState();
+    closeSidebarIfMobile();
   } else {
     startNewConversation();
   }
@@ -3627,6 +3726,13 @@ function handleInputKeydown(event){
 // inicialização
 window.onload = () => {
   renderTemplatesGrid();
+
+  // No celular a gaveta lateral começa fechada, pra tela toda ficar livre
+  // pro chat e pro campo de digitar assim que o app abre.
+  if(window.innerWidth <= MOBILE_BREAKPOINT){
+    const sidebar = document.getElementById('sidebarEl');
+    if(sidebar) sidebar.classList.add('collapsed');
+  }
 
   updateOnlineStatus();
   window.addEventListener('online', updateOnlineStatus);

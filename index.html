@@ -108,26 +108,62 @@
      interface "pulando" pra posição final. Some com um fade suave. */
   .boot-screen{
     position:fixed; inset:0; z-index:9999;
-    background:#000000;
+    background:radial-gradient(circle at 50% 40%, #0a1a34 0%, #000000 65%);
     display:flex; flex-direction:column; align-items:center; justify-content:center;
-    gap:20px;
-    transition:opacity .4s ease, visibility .4s ease;
+    gap:18px;
+    overflow:hidden;
+    transition:opacity .5s ease, visibility .5s ease;
   }
   .boot-screen.hide{ opacity:0; visibility:hidden; pointer-events:none; }
+  /* Brilho ambiente pulsando atrás do logo, pra dar profundidade sem pesar. */
+  .boot-glow{
+    position:absolute;
+    width:320px; height:320px;
+    background:radial-gradient(circle, rgba(47,125,255,.32) 0%, rgba(47,125,255,0) 70%);
+    filter:blur(6px);
+    animation:boot-glow-pulse 3s ease-in-out infinite;
+  }
+  @keyframes boot-glow-pulse{ 0%,100%{ transform:scale(1); opacity:.65; } 50%{ transform:scale(1.18); opacity:1; } }
+  .boot-logo-wrap{
+    position:relative; z-index:1;
+    width:108px; height:108px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .boot-ring{
+    position:absolute; inset:0;
+    width:108px; height:108px;
+    transform:rotate(-90deg);
+  }
+  .boot-ring-track{ fill:none; stroke:rgba(255,255,255,.08); stroke-width:2.5; }
+  .boot-ring-progress{
+    fill:none; stroke:url(#bootRingGrad); stroke-width:2.5; stroke-linecap:round;
+    stroke-dasharray:264; stroke-dashoffset:198;
+    transform-origin:50% 50%;
+    animation:boot-ring-spin 1.4s cubic-bezier(.65,0,.35,1) infinite;
+  }
+  @keyframes boot-ring-spin{
+    0%{ stroke-dashoffset:234; transform:rotate(0deg); }
+    50%{ stroke-dashoffset:50; transform:rotate(200deg); }
+    100%{ stroke-dashoffset:234; transform:rotate(360deg); }
+  }
   .boot-logo{
-    width:84px; height:84px; border-radius:20px;
-    animation:boot-pulse 1.6s ease-in-out infinite;
+    width:78px; height:78px; border-radius:19px;
+    box-shadow:0 0 30px rgba(47,125,255,.5);
+    animation:boot-pulse 1.8s ease-in-out infinite;
   }
-  @keyframes boot-pulse{ 0%,100%{ transform:scale(1); opacity:1; } 50%{ transform:scale(.92); opacity:.7; } }
-  .boot-spinner{
-    width:26px; height:26px; border-radius:50%;
-    border:3px solid rgba(255,255,255,.15);
-    border-top-color:#2f7dff;
-    animation:boot-spin .8s linear infinite;
+  @keyframes boot-pulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(.94); } }
+  .boot-brand{
+    font-size:21px; font-weight:800; letter-spacing:.2px; color:#fff;
+    opacity:0; animation:boot-fade-up .55s ease .15s forwards;
   }
-  @keyframes boot-spin{ to{ transform:rotate(360deg); } }
+  .boot-status{
+    font-size:12.5px; color:rgba(255,255,255,.42); letter-spacing:.2px;
+    opacity:0; animation:boot-fade-up .55s ease .3s forwards;
+  }
+  @keyframes boot-fade-up{ from{ opacity:0; transform:translateY(4px); } to{ opacity:1; transform:translateY(0); } }
   @media (prefers-reduced-motion: reduce){
-    .boot-logo, .boot-spinner{ animation:none; }
+    .boot-logo, .boot-glow, .boot-ring-progress{ animation:none; }
+    .boot-brand, .boot-status{ animation:none; opacity:1; transform:none; }
   }
 
   .layout{
@@ -1606,8 +1642,22 @@
 </head>
 <body>
 <div id="bootScreen" class="boot-screen" aria-hidden="true">
-  <img src="icons/icon-192.png" alt="" class="boot-logo" width="88" height="88">
-  <div class="boot-spinner"></div>
+  <div class="boot-glow"></div>
+  <div class="boot-logo-wrap">
+    <svg class="boot-ring" viewBox="0 0 108 108" aria-hidden="true">
+      <defs>
+        <linearGradient id="bootRingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#2f7dff"/>
+          <stop offset="100%" stop-color="#63a6ff"/>
+        </linearGradient>
+      </defs>
+      <circle class="boot-ring-track" cx="54" cy="54" r="42"/>
+      <circle class="boot-ring-progress" cx="54" cy="54" r="42"/>
+    </svg>
+    <img src="icons/icon-192.png" alt="" class="boot-logo" width="78" height="78">
+  </div>
+  <div class="boot-brand">Atlas<span class="brand-ia">IA</span></div>
+  <div class="boot-status">Preparando sua assistente…</div>
 </div>
 <div id="authOverlay">
   <div class="auth-card">
@@ -5373,7 +5423,7 @@ window.onload = () => {
     const boot = document.getElementById('bootScreen');
     if(boot){
       boot.classList.add('hide');
-      setTimeout(() => boot.remove(), 450);
+      setTimeout(() => boot.remove(), 550);
     }
   });
 

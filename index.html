@@ -2453,98 +2453,9 @@ const TRABALHO_QUICK_REPLIES = [
 ];
 
 /* =========================================================
-   CRIATIVIDADE — Escrita, Apresentações, Design, Imagens
+   CRIATIVIDADE — Imagens (Escrita/Apresentações/Design foram removidos por
+   não terem sido pedidos)
    ========================================================= */
-const ESCRITA_KB = [
-  {
-    id: "melhorar-texto",
-    keywords: ["melhorar texto", "revisar texto", "deixar texto mais claro", "reescrever"],
-    title: "Como deixar um texto mais claro",
-    answer: "Passos que mais ajudam: cortar palavras que não mudam o sentido (\"muito\", \"bastante\", \"de certa forma\"), preferir frases curtas a frases longas com várias vírgulas, usar verbos na voz ativa em vez de passiva, e ler em voz alta — se você tropeça ao ler, quem lê também vai tropeçar."
-  },
-  {
-    id: "tom-de-voz",
-    keywords: ["tom de voz", "adaptar tom", "escrever formal", "escrever informal"],
-    title: "Adaptando o tom de um texto ao público",
-    answer: "Pra um público formal/corporativo: frases mais objetivas, evite gírias, prefira \"você\" a apelidos. Pra redes sociais/público geral: frases mais curtas, mais próximas da fala, pode usar emoji com moderação. Me diga o público e o objetivo (informar, vender, engajar) que eu adapto o tom junto com você."
-  },
-  {
-    id: "bloqueio-criativo",
-    keywords: ["bloqueio criativo", "nao sei por onde comecar", "ideias para escrever"],
-    title: "Destravando um bloqueio de escrita",
-    answer: "Truque simples: não tente escrever a versão final de primeira. Escreva um rascunho \"ruim\" só pra colocar as ideias no papel, na ordem que vierem — revisar depois é muito mais fácil do que começar do zero. Também ajuda escrever primeiro em tópicos soltos e só depois transformar em texto corrido."
-  }
-];
-
-const ESCRITA_GREETING = "Olá! Sou a Lumi, aqui no modo Escrita do AtlasIA. Posso ajudar a criar, revisar ou reescrever qualquer tipo de texto — do rascunho ao ajuste fino de tom e clareza. O que vamos escrever hoje?";
-
-const ESCRITA_QUICK_REPLIES = [
-  "Revisar e melhorar este texto",
-  "Me ajuda a começar um texto do zero",
-  "Adaptar o tom para outro público",
-  "Estou com bloqueio criativo"
-];
-
-const APRESENTACOES_KB = [
-  {
-    id: "estrutura-apresentacao",
-    keywords: ["estrutura de apresentacao", "como montar slides", "roteiro de apresentacao"],
-    title: "Estrutura clássica de uma boa apresentação",
-    answer: "Modelo que funciona na maioria dos casos: 1) contexto/problema (por que isso importa agora), 2) a ideia ou proposta central, 3) os principais pontos de apoio (dados, exemplos), 4) o que você quer que a plateia faça a seguir. Um slide, uma ideia principal — se um slide tem 3 mensagens, provavelmente vira 3 slides."
-  },
-  {
-    id: "slides-com-poucos-textos",
-    keywords: ["slide com muito texto", "resumir slide", "slide poluido"],
-    title: "Como reduzir texto num slide sem perder a ideia",
-    answer: "Transforme frases em tópicos curtos (5-7 palavras), tire conectivos (\"e\", \"então\", \"porque\") que só existem pra formar frase completa, e mova explicações mais longas pras anotações do apresentador em vez do slide. O slide é apoio visual, não o roteiro da fala inteira."
-  },
-  {
-    id: "pitch-curto",
-    keywords: ["pitch", "elevator pitch", "apresentar em 1 minuto", "resumo rapido de projeto"],
-    title: "Como montar um pitch curto (elevator pitch)",
-    answer: "Estrutura enxuta: qual problema existe, qual sua solução, por que ela é melhor/diferente, e o que você está pedindo (investimento, aprovação, parceria). Treine pra caber em 60-90 segundos falado — se não cabe, geralmente é sinal de que ainda tem informação demais pra esse formato."
-  }
-];
-
-const APRESENTACOES_GREETING = "Olá! Sou a Lumi, aqui no modo Apresentações do AtlasIA. Posso ajudar a estruturar o roteiro, escrever o texto de cada slide e deixar sua apresentação mais direta e persuasiva. Sobre o que é a apresentação?";
-
-const APRESENTACOES_QUICK_REPLIES = [
-  "Me ajuda a estruturar os slides",
-  "Este slide está com texto demais",
-  "Preciso de um pitch curto",
-  "Como fechar a apresentação com impacto?"
-];
-
-const DESIGN_KB = [
-  {
-    id: "principios-basicos-design",
-    keywords: ["principios de design", "hierarquia visual", "design basico"],
-    title: "Princípios básicos de um design que funciona",
-    answer: "Quatro princípios que resolvem a maior parte dos problemas visuais: hierarquia (o mais importante deve ser o mais visível — por tamanho, cor ou posição), alinhamento (elementos alinhados entre si passam organização), espaço em branco (não precisa preencher tudo — respiro ajuda a leitura) e consistência (mesmas cores/fontes/estilos repetidos pelo material todo)."
-  },
-  {
-    id: "paleta-de-cores",
-    keywords: ["escolher cores", "paleta de cores", "combinar cores"],
-    title: "Como escolher uma paleta de cores",
-    answer: "Caminho simples: escolha uma cor principal (geralmente ligada à marca), uma ou duas cores de apoio que contrastem bem, e uma neutra (branco/preto/cinza) pra fundo e texto. Evite mais de 3-4 cores no total — paletas grandes tendem a parecer confusas em vez de ricas."
-  },
-  {
-    id: "briefing-de-design",
-    keywords: ["briefing de design", "pedir uma peça grafica", "definir referencias visuais"],
-    title: "Como montar um briefing de design claro",
-    answer: "Inclua: objetivo da peça (pra que serve), público-alvo, mensagem principal que precisa ficar clara, referências visuais que você gosta (ou não gosta), e onde vai ser usada (isso muda tamanho/formato). Quanto mais concreto o briefing, menos idas e voltas depois."
-  }
-];
-
-const DESIGN_GREETING = "Olá! Sou a Lumi, aqui no modo Design do AtlasIA. Posso ajudar a pensar em conceito visual, paleta de cores, hierarquia e briefing de peças gráficas — e, se quiser gerar uma imagem, é só pedir ou usar o ícone de imagem no campo de mensagem. O que você está criando?";
-
-const DESIGN_QUICK_REPLIES = [
-  "Me ajuda a escolher uma paleta de cores",
-  "Como melhorar a hierarquia visual disso?",
-  "Montar um briefing de design",
-  "Gerar uma imagem com IA"
-];
-
 const IMAGENS_KB = [
   {
     id: "gerar-imagem-no-app",
@@ -2569,7 +2480,7 @@ const IMAGENS_KB = [
 const IMAGENS_GREETING = "Olá! Sou a Lumi, aqui no modo Imagens do AtlasIA. Posso gerar imagens a partir de uma descrição sua, ou analisar uma foto que você anexar. O que você quer criar ou enviar?";
 
 const IMAGENS_QUICK_REPLIES = [
-  "Gerar uma imagem com IA",
+  "Gerar uma imagem de um ícone moderno para um app de saúde",
   "Como descrever melhor o que eu quero?",
   "Anexar uma foto para análise",
   "Ver exemplos de estilos possíveis"
@@ -2626,36 +2537,6 @@ const MODES = {
     kb: TRABALHO_KB,
     systemPromptIntro: "Você é a Lumi, a assistente de IA (feminino) do sistema AtlasIA, atuando agora no modo Trabalho, em português do Brasil. Sempre que falar de si mesma, use o nome Lumi e a primeira pessoa no feminino. Seu foco é apoio ao dia a dia profissional: redigir e revisar e-mails, organizar atas/resumos de reunião, estruturar relatórios e documentar processos internos. Seja objetiva e prática — quando a pessoa colar um texto pra revisar, aponte melhorias concretas (não só reescreva sem explicar o que mudou), e quando faltar contexto (público do e-mail, objetivo do relatório), pergunte antes de escrever do zero."
   },
-  escrita: {
-    label: "Escrita",
-    icon: "fileText",
-    color: "#f472b6",
-    emptyHeading: "O que vamos escrever hoje?",
-    greeting: ESCRITA_GREETING,
-    quickReplies: ESCRITA_QUICK_REPLIES,
-    kb: ESCRITA_KB,
-    systemPromptIntro: "Você é a Lumi, a assistente de IA (feminino) do sistema AtlasIA, atuando agora no modo Escrita, em português do Brasil. Sempre que falar de si mesma, use o nome Lumi e a primeira pessoa no feminino. Seu foco é criação e revisão de textos de qualquer tipo (criativos, institucionais, redes sociais, roteiros). Adapte o tom ao público que a pessoa descrever, aponte de forma específica o que está confuso/repetitivo/longo demais ao revisar um texto existente, e ofereça alternativas quando fizer sentido em vez de uma única reescrita fechada."
-  },
-  apresentacoes: {
-    label: "Apresentações",
-    icon: "dashboard",
-    color: "#fb923c",
-    emptyHeading: "Sobre o que é a sua apresentação?",
-    greeting: APRESENTACOES_GREETING,
-    quickReplies: APRESENTACOES_QUICK_REPLIES,
-    kb: APRESENTACOES_KB,
-    systemPromptIntro: "Você é a Lumi, a assistente de IA (feminino) do sistema AtlasIA, atuando agora no modo Apresentações, em português do Brasil. Sempre que falar de si mesma, use o nome Lumi e a primeira pessoa no feminino. Seu foco é ajudar a estruturar o roteiro de apresentações/slides e escrever o texto de cada slide de forma direta e persuasiva — um slide, uma ideia principal. Quando a pessoa descrever o conteúdo bruto, organize em uma sequência lógica de slides (título curto + bullets enxutos por slide) em vez de um texto corrido."
-  },
-  design: {
-    label: "Design",
-    icon: "sparkles",
-    color: "#a78bfa",
-    emptyHeading: "O que você está criando?",
-    greeting: DESIGN_GREETING,
-    quickReplies: DESIGN_QUICK_REPLIES,
-    kb: DESIGN_KB,
-    systemPromptIntro: "Você é a Lumi, a assistente de IA (feminino) do sistema AtlasIA, atuando agora no modo Design, em português do Brasil. Sempre que falar de si mesma, use o nome Lumi e a primeira pessoa no feminino. Seu foco é apoio conceitual de design: hierarquia visual, paleta de cores, composição e briefings de peças gráficas. Você não desenha diretamente, mas se a pessoa quiser uma imagem gerada por IA, oriente a usar o modo Imagens (ou o ícone de imagem no campo de mensagem) e ajude a descrever bem o pedido."
-  },
   imagens: {
     label: "Imagens",
     icon: "image",
@@ -2681,9 +2562,6 @@ const MODE_BANNERS = {
   financeiro: '⚠️ Modo Financeiro: conteúdo educativo sobre organização financeira e dívidas, gerado por IA. Não é aconselhamento financeiro personalizado nem substitui um profissional licenciado (educador financeiro, Procon, ou os canais oficiais de negociação).',
   automacao: 'ℹ️ IA & Automação: criação de agentes, automações, prompts e integrações com APIs.',
   trabalho: 'ℹ️ Trabalho: e-mails, documentos, reuniões, relatórios e processos do dia a dia.',
-  escrita: 'ℹ️ Escrita: criação e revisão de textos de qualquer tipo — do rascunho ao ajuste final de tom e clareza.',
-  apresentacoes: 'ℹ️ Apresentações: estrutura de roteiro e texto de slides, direto ao ponto.',
-  design: 'ℹ️ Design: conceito visual, paleta de cores e briefings de peças gráficas — pra gerar uma imagem, use o modo Imagens.',
   imagens: 'ℹ️ Imagens: gere imagens com IA a partir de uma descrição, ou anexe uma foto pra eu analisar.'
 };
 
@@ -4706,9 +4584,6 @@ const MODE_GROUPS = {
   financeiro: 'especialistas',
   automacao: 'especialistas',
   trabalho: 'especialistas',
-  escrita: 'criatividade',
-  apresentacoes: 'criatividade',
-  design: 'criatividade',
   imagens: 'criatividade'
 };
 
@@ -5831,15 +5706,46 @@ function speakText(text, btn){
 }
 
 /* =========================================================
-   GERAÇÃO DE IMAGEM — funciona com a chave da OpenAI
+   GERAÇÃO DE IMAGEM — funciona tanto com OpenAI (DALL-E 3) quanto com
+   Gemini (gemini-2.5-flash-image), usando o mesmo provedor/chave já
+   configurado em Configurações → IA generativa (não precisa de nada extra).
    ========================================================= */
+// Frases-gatilho explícitas — funciona em QUALQUER modo (ex: digitar
+// "/imagem um gato" enquanto está no modo Geral). Cobre tanto o imperativo
+// ("gere", "crie", "desenhe", "faça") quanto o infinitivo ("gerar", "criar",
+// "desenhar", "fazer" — como em "quero gerar uma imagem de...", ou o texto
+// do próprio botão de atalho "Gerar uma imagem com IA").
 function tryCaptureImageRequest(text){
-  const m = text.match(/^(?:\/imagem\s+|gere\s+(?:uma\s+)?imagem\s+(?:de\s+|sobre\s+)?|crie\s+(?:uma\s+)?imagem\s+(?:de\s+|sobre\s+)?|desenh[ae]\s+(?:uma\s+)?imagem\s+(?:de\s+|sobre\s+)?)([\s\S]{3,500})$/i);
-  if(!m) return null;
-  return m[1].trim();
+  const m = text.match(/^(?:\/imagem\s+|(?:gere|gerar|crie|criar|desenh[ae]|desenhar|fa[çc]a|fazer|quero|preciso\s+de)\s+(?:uma\s+)?imagem\s+(?:de\s+|sobre\s+|com\s+)?)([\s\S]{3,500})$/i);
+  if(m) return m[1].trim();
+  return null;
 }
 
-async function generateImage(prompt){
+// Perguntas/pedidos sobre o RECURSO de gerar imagem (não uma descrição de
+// imagem em si) — clicando nesses atalhos dentro do modo Imagens, a
+// pergunta deve ser respondida normalmente pela IA, não virar um prompt de
+// imagem sem sentido. Comparado com normalize() pra ignorar acentuação,
+// maiúsculas e pontuação (então cobre "Ver exemplos de estilos possíveis"
+// e "Ver exemplos de estilos possíveis?" igualmente).
+const IMAGENS_META_PHRASES = [
+  'como descrever melhor o que eu quero',
+  'ver exemplos de estilos possiveis',
+  'anexar uma foto para analise',
+  'como gerar uma imagem aqui no atlasia'
+].map(normalize);
+
+/* No modo Imagens, o próprio propósito da aba é gerar (ou analisar) imagem
+   — então, se a pessoa não usou nenhuma das frases-gatilho acima mas também
+   não está fazendo uma pergunta sobre o recurso (as exceções da lista
+   acima, ou qualquer frase terminando em "?"), a mensagem inteira já é
+   tratada como a descrição da imagem, sem precisar de nenhum prefixo
+   especial — exatamente como o texto de apresentação da aba promete. */
+function isImagensMetaQuestion(text){
+  const norm = normalize(text);
+  return text.trim().endsWith('?') || IMAGENS_META_PHRASES.includes(norm);
+}
+
+async function generateImageOpenAI(prompt){
   const res = await fetch('https://api.openai.com/v1/images/generations', {
     method: 'POST',
     headers: {
@@ -5863,6 +5769,37 @@ async function generateImage(prompt){
   const b64 = data?.data?.[0]?.b64_json;
   if(!b64) throw new Error('A OpenAI não retornou uma imagem.');
   return 'data:image/png;base64,' + b64;
+}
+
+// Modelo estável da Google pra geração/edição de imagem via generateContent
+// (mesmo endpoint dos modelos de texto, só pedindo IMAGE em responseModalities).
+const GEMINI_IMAGE_MODEL = 'gemini-2.5-flash-image';
+
+async function generateImageGemini(prompt){
+  const res = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_IMAGE_MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
+    })
+  }, AI_CALL_TIMEOUT_MS);
+  if(!res.ok) throw await buildApiError(res);
+  const data = await res.json();
+  const parts = data?.candidates?.[0]?.content?.parts || [];
+  const imgPart = parts.find(p => p.inlineData && p.inlineData.data);
+  if(!imgPart) throw new Error('O Gemini não retornou uma imagem — tente descrever de um jeito diferente ou com menos detalhes.');
+  const mime = imgPart.inlineData.mimeType || 'image/png';
+  return 'data:' + mime + ';base64,' + imgPart.inlineData.data;
+}
+
+/* Escolhe DALL-E ou Gemini conforme o provedor de IA já configurado em
+   Configurações — assim geração de imagem funciona pra quem usa a chave
+   gratuita do Gemini, não só quem paga OpenAI (era essa a limitação de
+   antes: com Gemini ativo, o app dizia que geração de imagem "ainda não
+   estava disponível", mesmo a Google já suportando isso na API deles). */
+async function generateImageForProvider(prompt){
+  return apiProvider === 'openai' ? await generateImageOpenAI(prompt) : await generateImageGemini(prompt);
 }
 
 function addImageMessage(dataUrl, prompt){
@@ -5931,16 +5868,23 @@ async function sendMessage(){
         return;
       }
 
-      const imgPrompt = tryCaptureImageRequest(text);
+      // Duas formas de pedir uma imagem: uma frase-gatilho explícita (funciona
+      // em qualquer modo), ou — só dentro do modo Imagens, que existe
+      // justamente pra isso — a mensagem inteira, sem precisar de nenhum
+      // prefixo especial, contanto que não seja uma pergunta sobre o próprio
+      // recurso (ver isImagensMetaQuestion).
+      const explicitImgPrompt = tryCaptureImageRequest(text);
+      const impliedImgPrompt = (!explicitImgPrompt && currentMode === 'imagens' && !isImagensMetaQuestion(text)) ? text : null;
+      const imgPrompt = explicitImgPrompt || impliedImgPrompt;
       if(imgPrompt){
-        if(!apiKey || apiProvider !== 'openai'){
-          addBotMessage('Geração de imagem funciona com a chave da OpenAI ativada (em Configurações → IA generativa). O Gemini grátis não está disponível pra isso por aqui ainda.');
+        if(!apiKey){
+          addBotMessage('Pra gerar imagens, ative a IA generativa em Configurações → IA generativa (o Gemini é grátis) — a base local de perguntas frequentes não gera imagens.');
           return;
         }
         document.getElementById('sendBtn').disabled = true;
         showTyping();
         try{
-          const imgUrl = await generateImage(imgPrompt);
+          const imgUrl = await generateImageForProvider(imgPrompt);
           hideTyping();
           addImageMessage(imgUrl, imgPrompt);
         }catch(err){

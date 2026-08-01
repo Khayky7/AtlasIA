@@ -304,22 +304,6 @@
     background:rgba(47,125,255,.14);
     box-shadow:0 0 0 1px var(--accent) inset;
   }
-  .agents-btn{
-    border-style:dashed;
-    justify-content:space-between;
-  }
-  .agents-soon-tag{
-    font-size:9px;
-    font-weight:700;
-    text-transform:uppercase;
-    letter-spacing:.3px;
-    color:var(--text-dim);
-    background:var(--bg);
-    border:1px solid var(--border);
-    border-radius:5px;
-    padding:2px 5px;
-    margin-left:auto;
-  }
   .conv-search{
     display:flex;
     align-items:center;
@@ -1987,7 +1971,6 @@
         <span>Atalhos</span>
       </div>
       <button type="button" class="header-icon-btn" title="Memória" onclick="toggleSettings()"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3a4 4 0 0 0-4 4 3.5 3.5 0 0 0-1 6.8A3.5 3.5 0 0 0 7.5 19H9V3z"/><path d="M15 3a4 4 0 0 1 4 4 3.5 3.5 0 0 1 1 6.8A3.5 3.5 0 0 1 16.5 19H15V3z"/><line x1="12" y1="19" x2="12" y2="22"/></svg></button>
-      <button type="button" class="header-icon-btn" title="Agentes (em breve)" onclick="showAgentsPlaceholder()"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="9" width="14" height="10" rx="3"/><circle cx="9.5" cy="14" r="1.4" class="filled"/><circle cx="14.5" cy="14" r="1.4" class="filled"/><line x1="12" y1="9" x2="12" y2="5"/><circle cx="12" cy="3.5" r="1.5"/><line x1="3" y1="13" x2="5" y2="13"/><line x1="19" y1="13" x2="21" y2="13"/></svg></button>
       <button type="button" class="header-icon-btn" title="Atalhos de teclado (?)" onclick="showShortcutsHelp()"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="6" width="19" height="13" rx="2.2"/><line x1="6" y1="10" x2="6" y2="10.01"/><line x1="9.5" y1="10" x2="9.5" y2="10.01"/><line x1="13" y1="10" x2="13" y2="10.01"/><line x1="16.5" y1="10" x2="16.5" y2="10.01"/><line x1="6" y1="13.3" x2="6" y2="13.31"/><line x1="9.5" y1="13.3" x2="9.5" y2="13.31"/><line x1="13" y1="13.3" x2="13" y2="13.31"/><line x1="16.5" y1="13.3" x2="16.5" y2="13.31"/><line x1="7.5" y1="16.3" x2="15.5" y2="16.3"/></svg></button>
       <div class="header-avatar-wrap" onclick="toggleSettings()" title="Configurações">
         <div class="avatar header-avatar" id="headerAvatarInitials">V</div>
@@ -2355,90 +2338,6 @@ const FINANCEIRO_QUICK_REPLIES = [
   "Quando devo procurar ajuda profissional?"
 ];
 
-const JURIDICO_KB = [
-  {
-    id: "contratos-basico",
-    keywords: ["revisar contrato", "clausulas do contrato", "o que olhar no contrato", "multa contratual", "rescisao de contrato"],
-    title: "Pontos comuns para observar num contrato",
-    answer: "De forma bem geral, vale prestar atenção a: objeto do contrato (o que exatamente está sendo contratado), prazo de vigência, valor e forma de pagamento, condições de rescisão (multa, aviso prévio), e responsabilidades de cada parte em caso de problema. Isso é uma referência educativa — para um contrato específico, importante ou de valor alto, vale a revisão de um advogado antes de assinar."
-  },
-  {
-    id: "lgpd-basico",
-    keywords: ["lgpd", "lei geral de protecao de dados", "dados pessoais", "titular dos dados"],
-    title: "LGPD (Lei Geral de Proteção de Dados) — visão geral",
-    answer: "A LGPD (Lei 13.709/2018) regula como empresas e órgãos podem coletar, usar e armazenar dados pessoais no Brasil. Ela garante ao titular dos dados direitos como acesso, correção, exclusão e informação sobre o uso dos seus dados. Empresas devem ter uma base legal para tratar dados (consentimento, execução de contrato, obrigação legal, entre outras) e adotar medidas de segurança. Para adequação formal de uma empresa à LGPD, o ideal é orientação de um profissional especializado."
-  },
-  {
-    id: "direitos-consumidor",
-    keywords: ["direito do consumidor", "troca de produto", "arrependimento", "garantia", "procon"],
-    title: "Direitos básicos do consumidor",
-    answer: "Alguns direitos previstos no Código de Defesa do Consumidor: prazo de 7 dias para arrependimento em compras feitas fora do estabelecimento comercial (ex: internet); garantia legal de 30 dias (produtos não duráveis) ou 90 dias (duráveis) contra defeitos, além da garantia contratual quando oferecida; direito à informação clara sobre produtos e serviços. Para reclamações, o Procon e a plataforma Consumidor.gov.br são os canais oficiais."
-  },
-  {
-    id: "trabalhista-basico",
-    keywords: ["clt", "pessoa juridica trabalho", "ferias", "rescisao trabalhista", "aviso previo"],
-    title: "CLT x PJ e conceitos trabalhistas básicos",
-    answer: "Quem trabalha em regime CLT tem direitos garantidos como férias remuneradas + 1/3, 13º salário, FGTS, aviso prévio e verbas rescisórias em caso de demissão. Já quem presta serviço como Pessoa Jurídica (PJ) não tem esses direitos automaticamente — as condições dependem do que foi contratado. Cada situação (tipo de demissão, tempo de casa, motivo) muda o cálculo de rescisão; para um caso concreto, vale consultar um advogado trabalhista ou o sindicato da categoria."
-  },
-  {
-    id: "quando-procurar-advogado",
-    keywords: ["preciso de advogado", "quando procurar advogado", "defensoria publica", "assessoria juridica"],
-    title: "Quando vale procurar um advogado",
-    answer: "Vale buscar um advogado (ou a Defensoria Pública, para quem não pode pagar um particular) quando: o valor ou o risco envolvido é alto, há prazo legal correndo (ex: prescrição), o contrato é incomum ou muito específico, ou já existe um conflito/notificação formal. Este assistente oferece apenas informação educativa geral — não substitui a análise de um profissional sobre o seu caso."
-  }
-];
-
-const JURIDICO_GREETING = "Olá! Sou a Lumi, aqui no modo Jurídico do AtlasIA. Posso ajudar com educação jurídica geral: contratos, LGPD, direitos do consumidor e noções trabalhistas básicas. ⚠️ Isso é informação educativa geral, não é parecer jurídico nem substitui um advogado. Sobre o que você quer conversar?";
-
-const JURIDICO_QUICK_REPLIES = [
-  "O que olhar antes de assinar um contrato?",
-  "O que é a LGPD?",
-  "Quais meus direitos como consumidor?",
-  "Quando devo procurar um advogado?"
-];
-
-const DEV_KB = [
-  {
-    id: "boas-praticas-codigo",
-    keywords: ["boas praticas de codigo", "codigo limpo", "clean code", "nomear variaveis"],
-    title: "Boas práticas gerais de código",
-    answer: "Algumas práticas amplamente recomendadas: nomes de variáveis e funções que descrevem o que fazem; funções pequenas, com uma responsabilidade clara; evitar duplicação de código; comentar o 'porquê', não o 'o quê' (o código já mostra o que faz); e escrever testes para os caminhos mais importantes da aplicação."
-  },
-  {
-    id: "git-basico",
-    keywords: ["git basico", "comandos git", "como usar git", "git commit", "git branch"],
-    title: "Comandos essenciais do Git",
-    answer: "Fluxo básico: `git init` (cria repositório), `git add .` (adiciona mudanças), `git commit -m \"mensagem\"` (salva um ponto no histórico), `git push` (envia pro repositório remoto), `git branch nome` + `git checkout nome` (cria e muda de branch), `git merge nome` (junta uma branch na atual). Sempre escreva mensagens de commit que expliquem o porquê da mudança, não só o quê."
-  },
-  {
-    id: "debugar-erro",
-    keywords: ["debugar erro", "como debugar", "encontrar bug", "erro no codigo"],
-    title: "Passos gerais para debugar um erro",
-    answer: "Um roteiro que costuma ajudar: 1) reproduza o erro de forma consistente; 2) leia a mensagem de erro completa (ela geralmente aponta o arquivo e a linha); 3) isole o problema comentando/testando partes do código; 4) use `console.log`/prints ou um debugger para ver o valor real das variáveis no momento do erro; 5) depois de corrigir, escreva um teste pra esse caso não voltar a quebrar."
-  },
-  {
-    id: "seguranca-basica",
-    keywords: ["seguranca no codigo", "vazar senha", "variavel de ambiente", "chave de api segura"],
-    title: "Segurança básica no dia a dia de programação",
-    answer: "Nunca coloque senhas, chaves de API ou tokens direto no código-fonte (use variáveis de ambiente e mantenha arquivos como `.env` fora do controle de versão). Valide sempre dados que vêm de fora (formulários, APIs de terceiros) antes de usar. Mantenha bibliotecas atualizadas, já que muitas vulnerabilidades conhecidas são corrigidas em versões novas."
-  },
-  {
-    id: "boas-praticas-api",
-    keywords: ["boas praticas de api", "criar api", "tratamento de erro api", "versionar api"],
-    title: "Boas práticas ao construir uma API",
-    answer: "Vale pensar em: respostas de erro claras e com o código HTTP correto (400, 401, 404, 500 etc.); paginação em listas grandes; limitar taxa de requisições (rate limit) para evitar abuso; versionar a API (ex: `/v1/...`) para poder evoluir sem quebrar quem já usa; e documentar os endpoints disponíveis."
-  }
-];
-
-const DEV_GREETING = "Olá! Sou a Lumi, aqui no modo Dev do AtlasIA. Posso ajudar com dúvidas de programação, revisão de lógica, debug e boas práticas técnicas. O que você está tentando resolver?";
-
-const DEV_QUICK_REPLIES = [
-  "Meu código está dando erro, me ajuda?",
-  "Boas práticas de código limpo",
-  "Comandos básicos do Git",
-  "Como estruturar uma API?"
-];
-
 const BI_KB = [
   {
     id: "o-que-e-bi",
@@ -2485,54 +2384,6 @@ const BI_QUICK_REPLIES = [
   "Quais KPIs faz sentido acompanhar?",
   "Anexei uma planilha, me ajuda a analisar",
   "Como conto uma boa história com meus dados?"
-];
-
-const SAUDE_KB = [
-  {
-    id: "habitos-basicos",
-    keywords: ["habitos saudaveis", "sono", "hidratacao", "alimentacao basica", "rotina saudavel"],
-    title: "Hábitos básicos de bem-estar",
-    answer: "Pilares gerais bem estabelecidos: dormir de 7 a 9 horas por noite (adultos), se manter hidratado ao longo do dia, incluir vegetais e fibras na alimentação, e praticar alguma atividade física regular, mesmo que leve (como caminhada). Isso é informação educativa geral — necessidades específicas variam de pessoa pra pessoa, principalmente com condições de saúde já existentes."
-  },
-  {
-    id: "quando-ir-medico",
-    keywords: ["quando procurar medico", "preciso ir ao medico", "sintoma persistente", "quando se preocupar"],
-    title: "Quando vale procurar um médico",
-    answer: "De forma geral, vale buscar atendimento médico quando: um sintoma persiste por mais de alguns dias sem melhora, piora progressivamente, interfere nas suas atividades do dia a dia, ou você simplesmente está inseguro sobre o que está sentindo. Na dúvida, procurar avaliação profissional é sempre a opção mais segura — eu não consigo (e não devo) dar diagnóstico."
-  },
-  {
-    id: "emergencia-x-urgencia",
-    keywords: ["emergencia ou urgencia", "quando ir ao pronto socorro", "192", "samu", "ligar para emergencia"],
-    title: "Emergência x urgência — quando ligar pro SAMU (192)",
-    answer: "Sinais de emergência (procure socorro IMEDIATO — ligue 192/SAMU ou vá ao pronto-socorro): dor forte no peito, falta de ar súbita e intensa, desmaio, sangramento que não para, sinais de AVC (fraqueza súbita de um lado do corpo, fala enrolada, rosto caído), convulsão. Fora desses sinais de alarme, uma consulta médica agendada ou um pronto-atendimento (não emergencial) costuma ser o caminho adequado. Na dúvida sobre gravidade, é sempre mais seguro procurar ajuda do que esperar."
-  },
-  {
-    id: "primeiros-socorros-basico",
-    keywords: ["primeiros socorros", "cortou o dedo", "queimadura leve", "o que fazer em caso de"],
-    title: "Noções básicas de primeiros socorros",
-    answer: "Para cortes pequenos: lave bem com água e sabão e faça pressão com um pano limpo até estancar. Para queimaduras leves: resfrie com água corrente (nunca gelo direto na pele) por alguns minutos. Para engasgos, desmaios ou qualquer situação mais séria, ligue 192 (SAMU) e siga a orientação do atendente por telefone enquanto o socorro chega. Isso é informação educativa geral, não substitui um curso de primeiros socorros nem atendimento profissional."
-  },
-  {
-    id: "saude-mental",
-    keywords: ["saude mental", "ansiedade", "esgotamento", "burnout", "quando procurar psicologo"],
-    title: "Saúde mental — quando buscar apoio",
-    answer: "Sinais de que pode valer buscar apoio profissional (psicólogo, psiquiatra): tristeza, ansiedade ou estresse que persistem por semanas, dificuldade de dormir ou de concentração ligada a isso, perda de interesse em coisas que você gostava, ou impacto no trabalho e nos relacionamentos. Buscar ajuda cedo tende a ser mais eficaz do que esperar a situação piorar. Se em algum momento você (ou alguém que você conhece) estiver em risco imediato, ligue 188 (CVV) ou 192 (SAMU)."
-  },
-  {
-    id: "checkup-preventivo",
-    keywords: ["checkup", "exames de rotina", "prevencao", "consulta de rotina"],
-    title: "Check-up e exames preventivos",
-    answer: "De forma geral, recomenda-se consultas e exames de rotina periódicos (a frequência exata depende de idade, histórico familiar e fatores de risco — seu médico é quem define isso pra você). Manter check-ups em dia ajuda a identificar problemas cedo, quando geralmente são mais simples de tratar."
-  }
-];
-
-const SAUDE_GREETING = "Olá! Sou a Lumi, aqui no modo Saúde do AtlasIA. Posso trazer informação educativa geral sobre bem-estar, hábitos saudáveis e quando buscar atendimento. ⚠️ Importante: não sou médica, não faço diagnóstico, e isso não substitui uma consulta. Em caso de emergência, ligue 192 (SAMU). Sobre o que você quer conversar?";
-
-const SAUDE_QUICK_REPLIES = [
-  "Quando devo procurar um médico?",
-  "É emergência ou dá pra agendar consulta?",
-  "Dicas de hábitos saudáveis",
-  "Quando buscar apoio de saúde mental?"
 ];
 
 /* =========================================================
@@ -2733,7 +2584,7 @@ const MODES = {
     greeting: CREDENCIAMENTO_GREETING,
     quickReplies: CREDENCIAMENTO_QUICK_REPLIES,
     kb: CREDENCIAMENTO_KB,
-    systemPromptIntro: "Você é a Lumi, a assistente de IA (feminino) do sistema AtlasIA, especializada em credenciamento de prestadores de saúde (médicos, clínicas, hospitais, laboratórios) junto a convênios/planos de saúde. Sempre que falar de si mesma, use o nome Lumi e a primeira pessoa no feminino. Seu foco principal é esse assunto: dúvidas sobre o processo de credenciamento, documentação exigida, recredenciamento, tabela de procedimentos e faturamento, e também ajudar a redigir, revisar ou ajustar mensagens e e-mails de contato/negociação com clínicas e prestadores. Se o usuário pedir um modelo de mensagem pronto sobre credenciamento (cronograma de pagamento, e-mails, dados de contrato etc.), lembre que eles já estão disponíveis automaticamente no botão Atalhos ou digitando \"/\" na caixa de mensagem, sem precisar reescrevê-los do zero. Você ainda pode ajudar com perguntas de apoio ao trabalho (ex: revisar um texto, tirar uma dúvida rápida de português, explicar um termo), mas evite se desviar para assuntos totalmente fora do escopo de credenciamento/relacionamento com prestadores — nesses casos, indique com cordialidade que esse modo é focado em credenciamento e que os outros modos especializados (BI & Dados, Financeiro, Jurídico, Dev, Saúde) estão disponíveis no menu, se fizer sentido para a pergunta. Responda sempre em português do Brasil, de forma objetiva e cordial."
+    systemPromptIntro: "Você é a Lumi, a assistente de IA (feminino) do sistema AtlasIA, especializada em credenciamento de prestadores de saúde (médicos, clínicas, hospitais, laboratórios) junto a convênios/planos de saúde. Sempre que falar de si mesma, use o nome Lumi e a primeira pessoa no feminino. Seu foco principal é esse assunto: dúvidas sobre o processo de credenciamento, documentação exigida, recredenciamento, tabela de procedimentos e faturamento, e também ajudar a redigir, revisar ou ajustar mensagens e e-mails de contato/negociação com clínicas e prestadores. Se o usuário pedir um modelo de mensagem pronto sobre credenciamento (cronograma de pagamento, e-mails, dados de contrato etc.), lembre que eles já estão disponíveis automaticamente no botão Atalhos ou digitando \"/\" na caixa de mensagem, sem precisar reescrevê-los do zero. Você ainda pode ajudar com perguntas de apoio ao trabalho (ex: revisar um texto, tirar uma dúvida rápida de português, explicar um termo), mas evite se desviar para assuntos totalmente fora do escopo de credenciamento/relacionamento com prestadores — nesses casos, indique com cordialidade que esse modo é focado em credenciamento e que os outros modos especializados (BI & Dados, Financeiro, IA & Automação, Trabalho) estão disponíveis no menu, se fizer sentido para a pergunta. Responda sempre em português do Brasil, de forma objetiva e cordial."
   },
   bi: {
     label: "BI & Dados",
@@ -2754,36 +2605,6 @@ const MODES = {
     quickReplies: FINANCEIRO_QUICK_REPLIES,
     kb: FINANCEIRO_KB,
     systemPromptIntro: "Você é a Lumi, a assistente de IA (feminino) do sistema AtlasIA, atuando agora no modo Consultor Financeiro / Reestruturação de Dívidas, em português do Brasil. Sempre que falar de si mesma, use o nome Lumi e a primeira pessoa no feminino. Você fornece educação financeira geral: orçamento pessoal, organização e priorização de dívidas (métodos bola de neve e avalanche), negociação com credores, Serasa/SPC, juros do rotativo/cheque especial, a Lei do Superendividamento (Lei 14.181/2021), reserva de emergência e tipos de crédito. REGRAS IMPORTANTES: você não é um consultor financeiro, advogado ou contador licenciado; nunca dê recomendações personalizadas de investimento nem prometa resultados específicos (aprovação de crédito, desconto exato numa negociação, melhora de score). Para decisões financeiras significativas e específicas do caso da pessoa, dê informação educativa geral e recomende buscar um profissional licenciado, o Procon, a Defensoria Pública ou os canais oficiais de negociação (Serasa Limpa Nome, Consumidor.gov.br). Alerte sobre golpes comuns quando fizer sentido (pedido de pagamento antecipado 'por fora', promessas de apagar dívida sem negociação real). Seja acolhedor e direto, sem julgar a situação financeira da pessoa."
-  },
-  juridico: {
-    label: "Jurídico",
-    icon: "scale",
-    color: "#60a5fa",
-    emptyHeading: "Qual dúvida jurídica posso esclarecer?",
-    greeting: JURIDICO_GREETING,
-    quickReplies: JURIDICO_QUICK_REPLIES,
-    kb: JURIDICO_KB,
-    systemPromptIntro: "Você é a Lumi, a assistente de IA (feminino) do sistema AtlasIA, atuando agora no modo Jurídico, em português do Brasil. Sempre que falar de si mesma, use o nome Lumi e a primeira pessoa no feminino. Você fornece educação jurídica geral sobre contratos, LGPD, direitos do consumidor e noções trabalhistas básicas. REGRAS IMPORTANTES: você não é advogada nem pode dar parecer jurídico sobre um caso específico; nunca garanta o resultado de uma ação ou negociação; para decisões jurídicas específicas e importantes, dê informação educativa geral e recomende um advogado, a Defensoria Pública ou o Procon, conforme o caso. Seja clara e direta, evitando juridiquês desnecessário."
-  },
-  dev: {
-    label: "Dev",
-    icon: "code",
-    color: "#f87171",
-    emptyHeading: "No que vamos codar hoje?",
-    greeting: DEV_GREETING,
-    quickReplies: DEV_QUICK_REPLIES,
-    kb: DEV_KB,
-    systemPromptIntro: "Você é a Lumi, a assistente de IA (feminino) do sistema AtlasIA, atuando agora no modo Dev, em português do Brasil. Sempre que falar de si mesma, use o nome Lumi e a primeira pessoa no feminino. Você ajuda com programação, lógica, debugging e boas práticas técnicas em qualquer linguagem. Explique o raciocínio, não só a solução, e use blocos de código em markdown quando mostrar código. Você não executa código de verdade (não tem acesso a um ambiente de execução) — deixe isso claro se for relevante, e ajude a pessoa a testar por conta própria."
-  },
-  saude: {
-    label: "Saúde",
-    icon: "heartPulse",
-    color: "#f472b6",
-    emptyHeading: "Como posso ajudar com sua saúde hoje?",
-    greeting: SAUDE_GREETING,
-    quickReplies: SAUDE_QUICK_REPLIES,
-    kb: SAUDE_KB,
-    systemPromptIntro: "Você é a Lumi, a assistente de IA (feminino) do sistema AtlasIA, atuando agora no modo Saúde, em português do Brasil. Sempre que falar de si mesma, use o nome Lumi e a primeira pessoa no feminino. Você fornece apenas informação educativa geral sobre saúde e bem-estar. REGRAS IMPORTANTES E INEGOCIÁVEIS: você não é médica, não faz diagnóstico, não prescreve tratamento nem medicação, e nunca deve tentar identificar de que doença específica alguém pode estar sofrendo a partir de sintomas descritos. Para qualquer sintoma, sempre recomende consulta médica. Se a descrição sugerir uma emergência (dor no peito, falta de ar súbita, sinais de AVC, sangramento intenso, entre outros), oriente a pessoa a ligar imediatamente para o 192 (SAMU) ou procurar o pronto-socorro mais próximo, com prioridade sobre qualquer outra resposta. Seja acolhedora, calma e nunca alarmista além do necessário."
   },
   automacao: {
     label: "IA & Automação",
@@ -2847,8 +2668,6 @@ const MODES = {
   }
 };
 
-const AGENTS_MODE_COLOR = "#818cf8";
-
 let currentMode = 'credenciamento';
 let currentView = 'mode'; // 'home' (tela Início) ou 'mode' (conversa de um especialista)
 
@@ -2860,9 +2679,6 @@ const MODE_BANNERS = {
   credenciamento: 'ℹ️ Modo Geral: responda perguntas sobre qualquer assunto, gere textos, resolva problemas, programe, estude e organize tarefas.',
   bi: 'ℹ️ Modo BI & Dados: especializado em Excel, Power BI, SQL, indicadores, dashboards e análise de dados para empresas. Anexe uma planilha ou CSV pra gerar um dashboard automático.',
   financeiro: '⚠️ Modo Financeiro: conteúdo educativo sobre organização financeira e dívidas, gerado por IA. Não é aconselhamento financeiro personalizado nem substitui um profissional licenciado (educador financeiro, Procon, ou os canais oficiais de negociação).',
-  juridico: '⚠️ Modo Jurídico: conteúdo educativo geral, gerado por IA. Não é parecer jurídico nem substitui um advogado.',
-  dev: 'ℹ️ Modo Dev: programação, lógica, debugging e boas práticas técnicas em qualquer linguagem.',
-  saude: '⚠️ Modo Saúde: conteúdo educativo geral, gerado por IA. Não é diagnóstico nem substitui uma consulta médica. Emergência: ligue 192 (SAMU).',
   automacao: 'ℹ️ IA & Automação: criação de agentes, automações, prompts e integrações com APIs.',
   trabalho: 'ℹ️ Trabalho: e-mails, documentos, reuniões, relatórios e processos do dia a dia.',
   escrita: 'ℹ️ Escrita: criação e revisão de textos de qualquer tipo — do rascunho ao ajuste final de tom e clareza.',
@@ -3515,14 +3331,20 @@ function showHomeView(){
    centralizado aqui. Exige login (a política do bucket só deixa quem está
    autenticado enviar — ver instruções de configuração do Supabase).
    ========================================================= */
-const MAX_UPLOAD_SIZE_MB = 100; // limite amistoso de tamanho de arquivo (o do plano gratuito do Supabase costuma ser parecido)
+// O plano gratuito do Supabase trava upload em 50MB por arquivo, sem exceção
+// (não dá pra contornar isso só no código do app — só aumentando pra um plano
+// pago, que libera até 500GB). Por isso o limite daqui bate com o do plano
+// gratuito: assim quem tentar mandar algo maior recebe um aviso claro (com a
+// sugestão de usar um link) em vez de um erro genérico de rede no meio do
+// envio.
+const MAX_UPLOAD_SIZE_MB = 50;
 
 async function uploadFileToStorage(bucket, file, pathPrefix){
   const client = getSupabaseClient();
   if(!client) throw new Error('Sem conexão com o serviço de armazenamento agora.');
   if(!cloudUser) throw new Error('Faça login antes de enviar um arquivo.');
   if(file.size > MAX_UPLOAD_SIZE_MB * 1024 * 1024){
-    throw new Error('Arquivo muito grande (máx. ' + MAX_UPLOAD_SIZE_MB + 'MB). Tente compactar o vídeo ou usar um link (YouTube/Drive) em vez de anexar o arquivo.');
+    throw new Error('Arquivo muito grande (máx. ' + MAX_UPLOAD_SIZE_MB + 'MB no plano atual do Supabase). Pra vídeos maiores, o mais prático é subir no YouTube (modo "não listado") ou Google Drive e colar o link aqui — o Vlow já reconhece e toca automaticamente.');
   }
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
   const path = (pathPrefix ? pathPrefix + '/' : '') + Date.now() + '_' + safeName;
@@ -3847,54 +3669,6 @@ function renderEmptyState(){
   chat.appendChild(wrap);
 }
 
-/* Tela genérica de "isso ainda não existe, mas vai existir" — usada pelo
-   Agentes e pelos itens de Workspace (Equipes/Projetos/Compartilhados) que
-   dependeriam de contas de vários usuários e sincronização entre pessoas,
-   algo que o AtlasIA (hoje 100% no navegador, sem servidor) ainda não tem. */
-function showComingSoonPlaceholder(emoji, title, description){
-  closeOverlayPanels();
-  const chat = document.getElementById('chat');
-  chat.innerHTML = '';
-  const wrap = document.createElement('div');
-  wrap.className = 'agents-placeholder';
-  wrap.id = 'agentsPlaceholder';
-
-  const icon = document.createElement('div');
-  icon.className = 'agents-placeholder-icon';
-  icon.textContent = emoji;
-  wrap.appendChild(icon);
-
-  const titleEl = document.createElement('h2');
-  titleEl.textContent = title;
-  wrap.appendChild(titleEl);
-
-  const desc = document.createElement('p');
-  desc.textContent = description;
-  wrap.appendChild(desc);
-
-  const backBtn = document.createElement('button');
-  backBtn.type = 'button';
-  backBtn.className = 'back-btn';
-  backBtn.textContent = '← Voltar';
-  backBtn.onclick = () => {
-    if(currentView === 'home'){ renderHomeView(); return; }
-    const current = conversations.find(c => c.id === currentConvId);
-    if(current) replayConversation(current);
-    else renderEmptyState();
-  };
-  wrap.appendChild(backBtn);
-
-  chat.appendChild(wrap);
-}
-
-function showAgentsPlaceholder(){
-  showComingSoonPlaceholder(
-    '🤖',
-    'Agentes — em breve',
-    'Estamos trabalhando em agentes de IA capazes de executar tarefas por conta própria. Hoje a AtlasIA roda inteira no seu navegador, sem servidor por trás, então ainda não conseguimos executar ações automáticas fora do chat. Assim que essa função estiver pronta, ela vai aparecer aqui.'
-  );
-}
-
 /* =========================================================
    WORKSPACE (Equipes / Projetos / Compartilhados) — dados reais,
    compartilhados entre toda a equipe (qualquer pessoa logada na conta da
@@ -3968,9 +3742,9 @@ function showWorkspaceView(key){
   closeSidebarIfMobile();
 }
 
-/* Tela de "precisa estar logado" — parecida com showComingSoonPlaceholder,
-   mas com um botão de Entrar em vez de só avisar que a função não existe
-   (aqui a função existe, só depende de login). */
+/* Tela de "precisa estar logado" — mostrada no lugar do quadro de
+   Equipes/Projetos/Compartilhados quando não há login, com um botão de
+   Entrar (a função existe de verdade, só depende de login pra usar). */
 function showLoginGate(emoji, title, description){
   closeOverlayPanels();
   const chat = document.getElementById('chat');
@@ -4610,7 +4384,16 @@ function setMaxConversationsLimit(){
   saveState();
 }
 
-function convMode(conv){ return (conv && conv.mode) || 'credenciamento'; }
+/* Devolve o modo de uma conversa, mas só se esse modo ainda existir em
+   MODES — conversas antigas podem ter sido criadas num modo que depois foi
+   removido (ex: um especialista que saiu do app), e sem essa checagem o
+   app quebraria ao tentar reabrir essa conversa (várias telas leem
+   MODES[currentMode] direto). Nesses casos, cai pro modo Geral em vez de
+   travar — a conversa em si (mensagens) continua intacta. */
+function convMode(conv){
+  const mode = conv && conv.mode;
+  return (mode && MODES[mode]) ? mode : 'credenciamento';
+}
 
 function recordMessage(entry){
   const conv = conversations.find(c => c.id === currentConvId);
@@ -4921,9 +4704,6 @@ const MODE_GROUPS = {
   credenciamento: 'especialistas',
   bi: 'especialistas',
   financeiro: 'especialistas',
-  juridico: 'especialistas',
-  dev: 'especialistas',
-  saude: 'especialistas',
   automacao: 'especialistas',
   trabalho: 'especialistas',
   escrita: 'criatividade',
@@ -4941,22 +4721,6 @@ function buildModeButton(key){
   label.textContent = MODES[key].label;
   btn.appendChild(label);
   btn.onclick = () => switchMode(key);
-  return btn;
-}
-
-function buildComingSoonButton(label, icon, color, onClick){
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className = 'mode-btn agents-btn';
-  btn.appendChild(buildModeIconBadge(icon, color));
-  const labelEl = document.createElement('span');
-  labelEl.textContent = label;
-  btn.appendChild(labelEl);
-  const tag = document.createElement('span');
-  tag.className = 'agents-soon-tag';
-  tag.textContent = 'em breve';
-  btn.appendChild(tag);
-  btn.onclick = onClick;
   return btn;
 }
 
@@ -4980,7 +4744,6 @@ function renderModeSwitch(){
   if(el){
     el.innerHTML = '';
     Object.keys(MODES).filter(key => MODE_GROUPS[key] === 'especialistas').forEach(key => el.appendChild(buildModeButton(key)));
-    el.appendChild(buildComingSoonButton('Agentes', 'bot', AGENTS_MODE_COLOR, () => showAgentsPlaceholder()));
   }
   if(creativeEl){
     creativeEl.innerHTML = '';

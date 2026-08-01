@@ -1069,6 +1069,43 @@
     color:var(--text);
   }
   .home-recent-chip:hover{ border-color:var(--accent); }
+  .home-summary-panel{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    width:100%;
+    max-width:520px;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:14px 16px;
+    text-align:left;
+  }
+  .home-summary-title{
+    font-size:12px;
+    font-weight:700;
+    color:var(--text-dim);
+    text-transform:uppercase;
+    letter-spacing:.03em;
+    margin-bottom:4px;
+  }
+  .home-summary-row{
+    display:block;
+    width:100%;
+    text-align:left;
+    background:transparent;
+    border:none;
+    border-top:1px solid var(--border);
+    padding:8px 0;
+    font-family:inherit;
+    font-size:13.5px;
+    color:var(--text);
+    cursor:pointer;
+  }
+  .home-summary-row:first-of-type{ border-top:none; }
+  .home-summary-row:hover{ color:var(--accent); }
+  .home-summary-alert{ color:#f87171; }
+  .home-summary-alert:hover{ color:#f87171; opacity:.85; }
   .home-recent-label{
     font-size:12px;
     color:var(--text-dim);
@@ -1333,7 +1370,32 @@
     padding:10px 12px;
     margin:2px 0 4px;
   }
+  .workspace-new-banner{
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:8px;
+    font-size:12.5px;
+    line-height:1.5;
+    color:var(--accent-2);
+    background:rgba(129,140,248,.12);
+    border:1px solid rgba(129,140,248,.35);
+    border-radius:10px;
+    padding:8px 12px;
+    margin:2px 0 4px;
+  }
   .workspace-list{ display:flex; flex-direction:column; gap:10px; margin-top:4px; }
+  .global-search-group-label{
+    font-size:12px;
+    font-weight:700;
+    color:var(--text-dim);
+    text-transform:uppercase;
+    letter-spacing:.03em;
+    margin-top:10px;
+  }
+  .global-search-group-label:first-child{ margin-top:2px; }
+  .global-search-item{ cursor:pointer; }
+  .global-search-item:hover{ border-color:var(--accent); }
   .workspace-item{
     display:flex;
     align-items:flex-start;
@@ -1382,6 +1444,7 @@
   }
   .task-due-badge.task-due-overdue{ background:rgba(248,113,113,.18); color:#f87171; }
   .task-item.task-overdue{ border-color:rgba(248,113,113,.4); background:rgba(248,113,113,.06); }
+  .project-due-overdue{ color:#f87171 !important; }
   .task-notify-banner{
     display:flex;
     align-items:center;
@@ -2047,6 +2110,7 @@
     <button type="button" class="nav-btn" id="navVlowBtn" onclick="showVlowView()"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5.5" width="14" height="13" rx="2.2"/><path d="M16.5 10.8l4.4-2.9a.8.8 0 0 1 1.1.7v7.8a.8.8 0 0 1-1.1.7l-4.4-2.9z"/><path d="M8 9.3v5.4l4.6-2.7z" class="filled"/></svg> Vlow</button>
     <button type="button" class="nav-btn" id="navTarefasBtn" onclick="showTarefasView()"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v5l3.2 1.8"/></svg> Tarefas</button>
     <button type="button" class="nav-btn" id="navFavoritosBtn" onclick="showFavoritosView()"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.6 6.1.7-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6-4.5-4.2 6.1-.7z"/></svg> Favoritos</button>
+    <button type="button" class="nav-btn" id="navBuscaBtn" onclick="showGlobalSearchView()"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6.5"/><line x1="20.5" y1="20.5" x2="15" y2="15"/></svg> Buscar tudo</button>
     <div class="sidebar-section-label">Especialistas</div>
     <div class="mode-switch" id="modeSwitch"></div>
     <div class="sidebar-section-label">Criatividade</div>
@@ -2233,7 +2297,7 @@
     <div class="input-row">
       <input type="file" id="fileInput" accept=".pdf,.xlsx,.xls,.csv,.png,.jpg,.jpeg,.webp,.heic,.heif,image/*" style="display:none" onchange="handleFileSelect(event)">
       <button type="button" id="attachBtn" class="icon-btn" title="Anexar PDF, Excel, CSV ou foto" onclick="document.getElementById('fileInput').click()"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 11.5l-7.4 7.4a4.5 4.5 0 0 1-6.4-6.4l8.1-8.1a3 3 0 0 1 4.2 4.2l-8 8a1.5 1.5 0 0 1-2.1-2.1l7-7"/></svg></button>
-      <button type="button" id="webBtn" class="icon-btn" title="Busca na web (em breve)" onclick="showWebSearchToast()"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c2.5 2.5 4 5.5 4 9s-1.5 6.5-4 9c-2.5-2.5-4-5.5-4-9s1.5-6.5 4-9z"/><circle cx="12" cy="12" r="9"/><line x1="3" y1="12" x2="21" y2="12"/></svg></button>
+      <button type="button" id="webBtn" class="icon-btn" title="Busca na internet (automática)" onclick="showWebSearchToast()"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c2.5 2.5 4 5.5 4 9s-1.5 6.5-4 9c-2.5-2.5-4-5.5-4-9s1.5-6.5 4-9z"/><circle cx="12" cy="12" r="9"/><line x1="3" y1="12" x2="21" y2="12"/></svg></button>
       <button type="button" id="imageBtn" class="icon-btn" title="Gerar imagem com IA" onclick="insertImageShortcut()"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5.5-5.5a1.5 1.5 0 0 0-2.1 0L4 19"/></svg></button>
       <button type="button" id="suggestBtn" class="icon-btn" title="Sugestões de prompt" onclick="toggleSuggestPopover()"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2 6 6 2-6 2-2 6-2-6-6-2 6-2z" class="filled"/><path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9z" class="filled"/></svg></button>
       <textarea id="userInput" name="atlasia-chat-message" rows="1" placeholder="Digite sua pergunta..." autocomplete="off" data-lpignore="true" data-1p-ignore data-form-type="other"></textarea>
@@ -3175,6 +3239,33 @@ function buildCardActionButton(text, btnClass){
   return btn;
 }
 
+/* Botão "Indexar pra IA" de um item de Compartilhados — dispara
+   indexSharedItemForRag (ver definição, perto de refreshRagContext) e
+   mostra o progresso direto no próprio texto do botão. Só faz sentido
+   logado (RAG depende da chave da empresa/OpenAI pra gerar embeddings) —
+   por isso fica escondido quando não há login. */
+function buildRagIndexButton(item){
+  const btn = document.createElement('button');
+  btn.className = 'action-btn';
+  btn.textContent = '🔎 Indexar pra IA';
+  btn.title = 'Deixa este item pesquisável pela IA em qualquer conversa (busca por significado, não precisa citar o título exato)';
+  if(!cloudUser){ btn.style.display = 'none'; return btn; }
+  btn.onclick = async () => {
+    btn.disabled = true;
+    const original = btn.textContent;
+    try{
+      const count = await indexSharedItemForRag(item, (msg) => { btn.textContent = msg; });
+      btn.textContent = '✅ Indexado (' + count + ' trecho' + (count > 1 ? 's' : '') + ')';
+      setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 2500);
+    }catch(err){
+      showToast('⚠️ Não consegui indexar: ' + describeSupabaseSetupError(err, 'supabase_setup_rag.sql'));
+      btn.textContent = original;
+      btn.disabled = false;
+    }
+  };
+  return btn;
+}
+
 /* =========================================================
    FAVORITOS — estrela em qualquer resposta da Lumi no chat, que a coloca
    automaticamente numa aba dedicada (ver showFavoritosView, mais abaixo).
@@ -3307,6 +3398,196 @@ function renderFavoritosList(){
     card.appendChild(delBtn);
 
     listWrap.appendChild(card);
+  });
+}
+
+/* =========================================================
+   PESQUISA GLOBAL (v2.1) — busca ao mesmo tempo em Conversas, Tarefas,
+   Workspace (Equipes/Projetos/Compartilhados) e Favoritos, com resultados
+   agrupados por tipo. Conversas e Favoritos funcionam sem login (vêm do
+   histórico local); Tarefas e Workspace precisam de conta (mesmo requisito
+   de sempre pra essas áreas) — usa o dataCache compartilhado com a Home
+   Inteligente e a IA Proativa.
+   ========================================================= */
+function showGlobalSearchView(){
+  closeOverlayPanels();
+  currentView = 'busca';
+  currentConvId = null;
+  renderModeSwitch();
+  updateNavActiveStates();
+  document.getElementById('modeBanner').classList.remove('show');
+  renderConversationList();
+  renderGlobalSearchView();
+  closeSidebarIfMobile();
+}
+
+async function renderGlobalSearchView(){
+  const chat = document.getElementById('chat');
+  chat.innerHTML = '';
+
+  const wrap = document.createElement('div');
+  wrap.className = 'vlow-view workspace-view';
+
+  const heading = document.createElement('h2');
+  heading.className = 'vlow-heading';
+  heading.textContent = '🔍 Pesquisa Global';
+  wrap.appendChild(heading);
+
+  const subtitle = document.createElement('p');
+  subtitle.className = 'vlow-subtitle';
+  subtitle.textContent = cloudUser
+    ? 'Busca ao mesmo tempo em Conversas, Tarefas, Workspace e Favoritos.'
+    : 'Busca em Conversas e Favoritos. Faça login para também buscar em Tarefas e Workspace.';
+  wrap.appendChild(subtitle);
+
+  const inputRow = document.createElement('div');
+  inputRow.className = 'conv-search';
+  inputRow.style.display = 'flex';
+  const icon = document.createElement('span');
+  icon.className = 'conv-search-icon';
+  icon.textContent = '🔍';
+  inputRow.appendChild(icon);
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.id = 'globalSearchInput';
+  input.placeholder = 'Buscar em tudo...';
+  input.oninput = handleGlobalSearchInput;
+  inputRow.appendChild(input);
+  wrap.appendChild(inputRow);
+
+  const resultsWrap = document.createElement('div');
+  resultsWrap.className = 'workspace-list';
+  resultsWrap.id = 'globalSearchResults';
+  wrap.appendChild(resultsWrap);
+
+  chat.appendChild(wrap);
+
+  const loading = document.createElement('p');
+  loading.className = 'vlow-empty';
+  loading.textContent = 'Digite algo pra buscar em Conversas, Tarefas, Workspace e Favoritos.';
+  resultsWrap.appendChild(loading);
+
+  await refreshDataCache(true);
+  if(currentView !== 'busca' || !document.getElementById('globalSearchInput')) return;
+  input.focus();
+  renderGlobalSearchResults();
+}
+
+let globalSearchDebounceTimer = null;
+function handleGlobalSearchInput(){
+  clearTimeout(globalSearchDebounceTimer);
+  globalSearchDebounceTimer = setTimeout(renderGlobalSearchResults, 150);
+}
+
+function renderGlobalSearchResults(){
+  const resultsWrap = document.getElementById('globalSearchResults');
+  if(!resultsWrap) return;
+  const inputEl = document.getElementById('globalSearchInput');
+  const rawQuery = inputEl ? inputEl.value : '';
+  const query = normalize(rawQuery);
+  resultsWrap.innerHTML = '';
+  if(!query){
+    const p = document.createElement('p');
+    p.className = 'vlow-empty';
+    p.textContent = 'Digite algo pra buscar em Conversas, Tarefas, Workspace e Favoritos.';
+    resultsWrap.appendChild(p);
+    return;
+  }
+
+  const groups = [];
+
+  const convMatches = [];
+  conversations.forEach(conv => {
+    conv.messages.forEach((entry, idx) => {
+      if(normalize(entry.text || '').includes(query)){
+        convMatches.push({ conv, idx, text: entry.text || '' });
+      }
+    });
+  });
+  if(convMatches.length){
+    groups.push({ label: '💬 Conversas', items: convMatches.slice(0, 12).map(m => ({
+      title: m.conv.title || 'Conversa sem título',
+      desc: m.text.length > 140 ? m.text.slice(0, 140) + '…' : m.text,
+      onClick: () => switchConversation(m.conv.id)
+    })) });
+  }
+
+  const taskMatches = dataCache.tasks.filter(t => normalize(t.title || '').includes(query));
+  if(taskMatches.length){
+    groups.push({ label: '⏰ Tarefas', items: taskMatches.map(t => ({
+      title: t.title || '',
+      desc: formatTaskDue(t.due_at),
+      onClick: () => showTarefasView()
+    })) });
+  }
+
+  const equipesMatches = dataCache.equipes.filter(i => normalize(i.name || '').includes(query) || normalize(i.role || '').includes(query));
+  if(equipesMatches.length){
+    groups.push({ label: '👥 Equipes', items: equipesMatches.map(i => ({
+      title: i.name || '',
+      desc: i.role || '',
+      onClick: () => showWorkspaceView('equipes')
+    })) });
+  }
+
+  const projetosMatches = dataCache.projetos.filter(i => normalize(i.title || '').includes(query) || normalize(i.description || '').includes(query));
+  if(projetosMatches.length){
+    groups.push({ label: '📁 Projetos', items: projetosMatches.map(i => ({
+      title: i.title || '',
+      desc: WORKSPACE_STATUS_LABELS[i.status] || '',
+      onClick: () => showWorkspaceView('projetos')
+    })) });
+  }
+
+  const compMatches = dataCache.compartilhados.filter(i => normalize(i.title || '').includes(query) || normalize(i.description || '').includes(query));
+  if(compMatches.length){
+    groups.push({ label: '🔗 Compartilhados', items: compMatches.map(i => ({
+      title: i.title || '',
+      desc: i.description || '',
+      onClick: () => showWorkspaceView('compartilhados')
+    })) });
+  }
+
+  const favMatches = getFavoriteMessages().filter(f => normalize(f.text || '').includes(query));
+  if(favMatches.length){
+    groups.push({ label: '⭐ Favoritos', items: favMatches.slice(0, 12).map(f => ({
+      title: f.convTitle || 'Conversa',
+      desc: f.text.length > 140 ? f.text.slice(0, 140) + '…' : f.text,
+      onClick: () => switchConversation(f.convId)
+    })) });
+  }
+
+  if(!groups.length){
+    const p = document.createElement('p');
+    p.className = 'vlow-empty';
+    p.textContent = 'Nada encontrado pra "' + rawQuery + '".';
+    resultsWrap.appendChild(p);
+    return;
+  }
+
+  groups.forEach(group => {
+    const groupTitle = document.createElement('div');
+    groupTitle.className = 'global-search-group-label';
+    groupTitle.textContent = group.label + ' (' + group.items.length + ')';
+    resultsWrap.appendChild(groupTitle);
+    group.items.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'workspace-item global-search-item';
+      const info = document.createElement('div');
+      info.className = 'workspace-item-info';
+      const title = document.createElement('strong');
+      title.textContent = item.title || '';
+      info.appendChild(title);
+      if(item.desc){
+        const d = document.createElement('span');
+        d.className = 'workspace-item-sub';
+        d.textContent = item.desc;
+        info.appendChild(d);
+      }
+      card.appendChild(info);
+      card.onclick = item.onClick;
+      resultsWrap.appendChild(card);
+    });
   });
 }
 
@@ -3683,6 +3964,67 @@ function renderHomeView(){
   wrap.appendChild(cardGrid);
 
   chat.appendChild(wrap);
+  renderHomeProactivePanel();
+}
+
+/* Painel "Resumo do dia" da Home Inteligente: tarefas atrasadas/prestes a
+   vencer, novidades no Workspace desde a última visita, e favoritos
+   recentes — só pra quem está logado (tudo isso depende de dado da nuvem).
+   Roda depois (fire-and-forget) de renderHomeView() já ter desenhado o
+   resto da tela, pra não atrasar a Home em si esperando rede; se não achar
+   mais nada pendente (ou a pessoa já saiu da Home enquanto carregava), não
+   aparece painel nenhum — sem caixa vazia sobrando na tela. */
+async function renderHomeProactivePanel(){
+  if(!cloudUser) return;
+  const wrap = document.getElementById('emptyState');
+  if(!wrap) return;
+  await refreshDataCache();
+  if(currentView !== 'home' || !document.getElementById('emptyState')) return;
+
+  const overdue = getOverdueTasks();
+  const upcoming = getUpcomingTasks(24);
+  const newCounts = getWorkspaceNewCounts();
+  const recentFavs = getFavoriteMessages().slice(-2).reverse();
+  const hasAnything = overdue.length || upcoming.length || Object.values(newCounts).some(n => n > 0) || recentFavs.length;
+  if(!hasAnything) return;
+
+  const panel = document.createElement('div');
+  panel.className = 'home-summary-panel';
+  panel.id = 'homeSummaryPanel';
+
+  const title = document.createElement('div');
+  title.className = 'home-summary-title';
+  title.textContent = '📋 Resumo do dia';
+  panel.appendChild(title);
+
+  const addRow = (text, onClick, alert) => {
+    const row = document.createElement('button');
+    row.type = 'button';
+    row.className = 'home-summary-row' + (alert ? ' home-summary-alert' : '');
+    row.textContent = text;
+    row.onclick = onClick;
+    panel.appendChild(row);
+  };
+
+  if(overdue.length){
+    addRow('⏰ ' + overdue.length + ' lembrete' + (overdue.length > 1 ? 's' : '') + ' atrasado' + (overdue.length > 1 ? 's' : ''), () => showTarefasView(), true);
+  }
+  if(upcoming.length){
+    addRow('📅 ' + upcoming.length + ' lembrete' + (upcoming.length > 1 ? 's' : '') + ' pras próximas 24h', () => showTarefasView());
+  }
+  Object.keys(newCounts).forEach(key => {
+    if(newCounts[key] > 0){
+      const cfg = WORKSPACE_TABLES[key];
+      addRow((cfg.emoji || '📁') + ' ' + newCounts[key] + ' novidade' + (newCounts[key] > 1 ? 's' : '') + ' em ' + cfg.heading, () => showWorkspaceView(key));
+    }
+  });
+  if(recentFavs.length){
+    addRow('⭐ ' + recentFavs.length + ' favorito' + (recentFavs.length > 1 ? 's' : '') + ' recente' + (recentFavs.length > 1 ? 's' : ''), () => showFavoritosView());
+  }
+
+  const heading = wrap.querySelector('.empty-state-heading');
+  if(heading) wrap.insertBefore(panel, heading);
+  else wrap.appendChild(panel);
 }
 
 /* Navega para a tela Início: fecha qualquer painel aberto, limpa qual
@@ -3748,6 +4090,153 @@ async function uploadFileToStorage(bucket, file, pathPrefix){
    ========================================================= */
 let vlowLink = '';
 let vlowCloudSyncTimer = null;
+
+/* =========================================================
+   HOME INTELIGENTE / IA PROATIVA / PESQUISA GLOBAL — estado e cache
+   compartilhados por essas três funcionalidades (v2.1): todas dependem dos
+   mesmos dados (tarefas + itens do Workspace), então usam um único cache
+   (dataCache) em vez de cada uma buscar por conta própria.
+   ========================================================= */
+// Timestamp (ms) da última vez que a pessoa abriu cada aba do Workspace —
+// usado só pra calcular "quantos itens novos desde a última visita" (Home
+// e a sugestão proativa ao abrir a aba). Não é crítico como as tabelas de
+// dado em si, então guarda no mesmo "pacote" de estado de sempre (local +
+// nuvem), sem precisar de tabela própria no Supabase.
+let lastSeenWorkspace = {};
+// 'AAAA-MM-DD' do último dia em que o resumo diário proativo já apareceu
+// no chat — evita repetir o mesmo resumo em toda mensagem enviada no
+// mesmo dia (só uma vez, na primeira interação daquele dia).
+let lastDailySummaryDate = '';
+// Evita repetir o aviso de "lembretes atrasados" a cada mensagem dentro da
+// MESMA sessão do app (reseta ao recarregar a página) — diferente da
+// notificação do navegador (que é por tarefa) e do resumo diário (que é
+// por dia), esse é "uma vez por sessão", pra avisar sem ser repetitivo.
+let overdueNudgeShownThisSession = false;
+
+let dataCache = { tasks: [], equipes: [], projetos: [], compartilhados: [], loadedAt: 0 };
+
+/* Busca de uma vez só as tarefas e os 3 tipos de item do Workspace —
+   dado compartilhado por Home Inteligente, IA Proativa e Pesquisa Global,
+   pra essas três funcionalidades não ficarem cada uma fazendo sua própria
+   leva de chamadas ao Supabase. Sem login, não tem o que buscar (essas
+   áreas todas exigem conta). `force` ignora o cache recente (usado pela
+   Pesquisa Global, que quer sempre o dado mais atual possível ao abrir). */
+async function refreshDataCache(force){
+  if(!cloudUser){
+    dataCache = { tasks: [], equipes: [], projetos: [], compartilhados: [], loadedAt: Date.now() };
+    return;
+  }
+  if(!force && Date.now() - dataCache.loadedAt < 10000) return; // já é recente o bastante
+  const client = getSupabaseClient();
+  if(!client) return;
+  try{
+    const [tasksRes, equipesRes, projetosRes, compRes] = await Promise.all([
+      client.from('tasks').select('*'),
+      client.from('team_members').select('*'),
+      client.from('projects').select('*'),
+      client.from('shared_items').select('*')
+    ]);
+    dataCache = {
+      tasks: (tasksRes && tasksRes.data) || [],
+      equipes: (equipesRes && equipesRes.data) || [],
+      projetos: (projetosRes && projetosRes.data) || [],
+      compartilhados: (compRes && compRes.data) || [],
+      loadedAt: Date.now()
+    };
+    // Mantém o cache global de tarefas (usado pelo poller/tela de Tarefas)
+    // sincronizado também, já que acabamos de buscar tudo de novo.
+    tasks = dataCache.tasks;
+  }catch(e){ /* alguma tabela pode não existir ainda (script SQL não rodado) — segue com o que já tinha em cache */ }
+}
+
+function getOverdueTasks(){
+  const now = Date.now();
+  return dataCache.tasks.filter(t => t.due_at && new Date(t.due_at).getTime() <= now);
+}
+function getUpcomingTasks(hoursAhead){
+  const now = Date.now();
+  const limit = now + (hoursAhead || 24) * 3600000;
+  return dataCache.tasks.filter(t => {
+    if(!t.due_at) return false;
+    const due = new Date(t.due_at).getTime();
+    return due > now && due <= limit;
+  });
+}
+/* Quantos itens de cada aba do Workspace foram criados depois da última
+   vez que a pessoa abriu aquela aba (lastSeenWorkspace) — a base tanto do
+   aviso na Home quanto da sugestão proativa ao entrar numa aba do
+   Workspace. */
+function getWorkspaceNewCounts(){
+  const counts = {};
+  Object.keys(WORKSPACE_TABLES).forEach(key => {
+    const items = dataCache[key] || [];
+    const lastSeen = (lastSeenWorkspace && lastSeenWorkspace[key]) || 0;
+    counts[key] = items.filter(i => i.created_at && new Date(i.created_at).getTime() > lastSeen).length;
+  });
+  return counts;
+}
+
+/* 'AAAA-MM-DD' de hoje, no fuso local — usado só pra saber se o resumo
+   diário já apareceu hoje (lastDailySummaryDate). */
+function todayKey(){
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+/* IA Proativa (parte 1/3): antes de processar a mensagem que a pessoa
+   acabou de mandar, se houver algum lembrete já vencido e isso ainda não
+   foi comentado nesta sessão (aba aberta), a Lumi avisa proativamente —
+   sem precisar que a pessoa pergunte. Só uma vez por sessão (não repete a
+   cada mensagem), diferente da notificação do navegador (que é por
+   tarefa) e do resumo diário (que é por dia). */
+async function maybeNudgeOverdueTasks(){
+  if(!cloudUser || overdueNudgeShownThisSession) return;
+  overdueNudgeShownThisSession = true;
+  await refreshDataCache();
+  const overdue = getOverdueTasks();
+  if(!overdue.length) return;
+  const text = overdue.length === 1
+    ? '⏰ Antes de continuar: o lembrete "' + overdue[0].title + '" já venceu. Dá uma olhada na aba Tarefas quando puder.'
+    : '⏰ Antes de continuar: você tem ' + overdue.length + ' lembretes atrasados (' + overdue.slice(0, 3).map(t => t.title).join(', ') + (overdue.length > 3 ? '...' : '') + '). Dá uma olhada na aba Tarefas quando puder.';
+  addBotMessage(text, false);
+}
+
+/* IA Proativa (parte 3/3): resumo automático do dia (tarefas + novidades
+   no Workspace + favoritos recentes), mostrado uma única vez por dia, na
+   primeira mensagem enviada naquele dia — mesmos dados do painel da Home
+   Inteligente (buildDailySummaryText reaproveita getOverdueTasks/
+   getUpcomingTasks/getWorkspaceNewCounts), só que como mensagem no chat
+   em vez de um painel visual. */
+async function maybeShowDailySummary(){
+  if(!cloudUser) return;
+  const today = todayKey();
+  if(lastDailySummaryDate === today) return;
+  await refreshDataCache();
+  const summary = buildDailySummaryText();
+  lastDailySummaryDate = today;
+  saveState();
+  if(summary) addBotMessage(summary, false);
+}
+
+function buildDailySummaryText(){
+  const overdue = getOverdueTasks();
+  const upcoming = getUpcomingTasks(24);
+  const newCounts = getWorkspaceNewCounts();
+  const parts = [];
+  if(overdue.length){
+    parts.push('⏰ ' + overdue.length + ' lembrete' + (overdue.length > 1 ? 's' : '') + ' atrasado' + (overdue.length > 1 ? 's' : '') + ': ' + overdue.slice(0, 3).map(t => t.title).join(', ') + (overdue.length > 3 ? '...' : ''));
+  }
+  if(upcoming.length){
+    parts.push('📅 ' + upcoming.length + ' pra hoje/próximas 24h: ' + upcoming.slice(0, 3).map(t => t.title).join(', ') + (upcoming.length > 3 ? '...' : ''));
+  }
+  Object.keys(newCounts).forEach(key => {
+    if(newCounts[key] > 0){
+      parts.push((WORKSPACE_TABLES[key].emoji || '📁') + ' ' + newCounts[key] + ' novidade' + (newCounts[key] > 1 ? 's' : '') + ' em ' + WORKSPACE_TABLES[key].heading);
+    }
+  });
+  if(!parts.length) return null;
+  return '☀️ Bom te ver de novo! Resumo rápido do que está pendente:\n\n' + parts.map(p => '• ' + p).join('\n');
+}
 
 /* Busca o link/vídeo compartilhado do Vlow — chamada no boot do app,
    independente de login (leitura é pública), pra qualquer visitante
@@ -4402,6 +4891,7 @@ const WORKSPACE_TABLES = {
     fields: [
       { key: 'title', label: 'Título', type: 'text', required: true },
       { key: 'status', label: 'Status', type: 'select', options: [['nao_iniciado', 'Não iniciado'], ['em_andamento', 'Em andamento'], ['concluido', 'Concluído']] },
+      { key: 'due_date', label: 'Prazo', type: 'date' },
       { key: 'responsible', label: 'Responsável', type: 'text' },
       { key: 'description', label: 'Descrição', type: 'textarea' }
     ]
@@ -4471,7 +4961,7 @@ function clearWorkspaceInlineError(key){
   if(el) el.remove();
 }
 
-function showWorkspaceView(key){
+async function showWorkspaceView(key){
   const cfg = WORKSPACE_TABLES[key];
   if(!cfg) return;
   closeOverlayPanels();
@@ -4487,6 +4977,65 @@ function showWorkspaceView(key){
   }
   renderWorkspaceView(key);
   closeSidebarIfMobile();
+  await notifyWorkspaceNewItems(key);
+}
+
+/* IA Proativa (parte 2/3): ao abrir uma aba do Workspace, avisa quantos
+   itens são novos desde a última visita (lastSeenWorkspace) e oferece um
+   botão pra pedir um resumo desses itens à Lumi — depois de mostrar,
+   atualiza lastSeenWorkspace pra essa visita não contar de novo da
+   próxima vez. */
+async function notifyWorkspaceNewItems(key){
+  await refreshDataCache(true);
+  const items = dataCache[key] || [];
+  const lastSeen = (lastSeenWorkspace && lastSeenWorkspace[key]) || 0;
+  const newItems = items.filter(i => i.created_at && new Date(i.created_at).getTime() > lastSeen);
+  if(newItems.length && currentView === key){
+    showWorkspaceNewItemsBanner(key, newItems);
+  }
+  lastSeenWorkspace = lastSeenWorkspace || {};
+  lastSeenWorkspace[key] = Date.now();
+  saveState();
+}
+
+function showWorkspaceNewItemsBanner(key, newItems){
+  const wrap = document.getElementById('workspaceView_' + key);
+  if(!wrap) return;
+  const cfg = WORKSPACE_TABLES[key];
+  const existing = document.getElementById('wsNewBanner_' + key);
+  if(existing) existing.remove();
+  const el = document.createElement('div');
+  el.id = 'wsNewBanner_' + key;
+  el.className = 'workspace-new-banner';
+  const text = document.createElement('span');
+  const count = newItems.length;
+  text.textContent = (cfg.emoji || '📁') + ' ' + count + (count > 1 ? ' itens novos' : ' item novo') + ' desde sua última visita.';
+  el.appendChild(text);
+  if(hasAiAccess()){
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'action-btn';
+    btn.textContent = 'Pedir um resumo à Lumi';
+    btn.onclick = () => requestWorkspaceSummary(key, newItems);
+    el.appendChild(btn);
+  }
+  const heading = wrap.querySelector('.vlow-heading');
+  if(heading) heading.insertAdjacentElement('afterend', el);
+  else wrap.insertBefore(el, wrap.firstChild);
+}
+
+/* Monta a pergunta pra Lumi resumir os itens novos de uma aba do Workspace
+   — manda o conteúdo de verdade dos itens (via itemShareText, mesmo texto
+   usado no WhatsApp/PDF/Card) dentro da própria mensagem, já que a IA não
+   tem acesso direto ao banco de dados do Workspace. */
+function requestWorkspaceSummary(key, items){
+  const cfg = WORKSPACE_TABLES[key];
+  if(!hasAiAccess()){ showToast('⚠️ Ative a IA generativa ou faça login pra pedir um resumo.'); return; }
+  const itemsText = items.map(i => itemShareText(key, i)).join('\n---\n');
+  startNewConversation();
+  const input = document.getElementById('userInput');
+  if(input) input.value = 'Resuma rapidamente, em poucas linhas, os itens novos abaixo de ' + cfg.heading + ':\n\n' + itemsText;
+  sendMessage();
 }
 
 /* Tela de "precisa estar logado" — mostrada no lugar do quadro de
@@ -4588,6 +5137,11 @@ function buildWorkspaceForm(key){
       el.className = 'workspace-input';
       el.rows = 2;
       el.placeholder = f.label;
+    } else if(f.type === 'date'){
+      el = document.createElement('input');
+      el.type = 'date';
+      el.className = 'workspace-input';
+      el.title = f.label;
     } else {
       el = document.createElement('input');
       el.type = 'text';
@@ -4733,6 +5287,17 @@ async function loadWorkspaceItems(key){
 /* Monta o texto de um item de Workspace pra copiar/mandar por WhatsApp/
    exportar (PDF ou card) — cada aba tem campos diferentes, então o formato
    muda conforme a chave (equipes/projetos/compartilhados). */
+/* Formata uma data "AAAA-MM-DD" (formato do <input type="date">/coluna
+   "date" do Postgres) como "DD/MM/AAAA" — sem passar por new Date(), que
+   interpretaria a string como UTC meia-noite e podia mostrar o dia errado
+   dependendo do fuso horário de quem está vendo. */
+function formatProjectDueDate(dateStr){
+  if(!dateStr) return '';
+  const parts = String(dateStr).split('-');
+  if(parts.length !== 3) return dateStr;
+  return parts[2] + '/' + parts[1] + '/' + parts[0];
+}
+
 function itemShareText(key, item){
   if(key === 'equipes'){
     let t = '👥 ' + (item.name || '');
@@ -4743,6 +5308,7 @@ function itemShareText(key, item){
   if(key === 'projetos'){
     let t = '📁 ' + (item.title || '');
     t += '\nStatus: ' + (WORKSPACE_STATUS_LABELS[item.status] || 'Não iniciado');
+    if(item.due_date) t += '\nPrazo: ' + formatProjectDueDate(item.due_date);
     if(item.responsible) t += '\nResponsável: ' + item.responsible;
     if(item.description) t += '\n\n' + item.description;
     return t;
@@ -4789,6 +5355,13 @@ function renderWorkspaceItems(key, items){
       badge.className = 'workspace-status-badge status-' + (item.status || 'nao_iniciado');
       badge.textContent = WORKSPACE_STATUS_LABELS[item.status] || 'Não iniciado';
       info.appendChild(badge);
+      if(item.due_date){
+        const due = document.createElement('span');
+        const overdueProject = item.status !== 'concluido' && new Date(item.due_date + 'T23:59:59').getTime() < Date.now();
+        due.className = 'workspace-item-sub' + (overdueProject ? ' project-due-overdue' : '');
+        due.textContent = (overdueProject ? '⏰ prazo vencido: ' : '📅 prazo: ') + formatProjectDueDate(item.due_date);
+        info.appendChild(due);
+      }
       if(item.responsible){ const r = document.createElement('span'); r.className = 'workspace-item-sub'; r.textContent = 'Responsável: ' + item.responsible; info.appendChild(r); }
       if(item.description){ const d = document.createElement('p'); d.className = 'workspace-item-desc'; d.textContent = item.description; info.appendChild(d); }
     } else if(key === 'compartilhados'){
@@ -4815,6 +5388,7 @@ function renderWorkspaceItems(key, items){
     actions.appendChild(buildWhatsAppActionButton(shareText, 'action-btn'));
     actions.appendChild(buildPdfActionButton(shareText, 'action-btn'));
     actions.appendChild(buildCardActionButton(shareText, 'action-btn'));
+    if(key === 'compartilhados') actions.appendChild(buildRagIndexButton(item));
     info.appendChild(actions);
 
     card.appendChild(info);
@@ -5078,6 +5652,11 @@ function refreshLoginDependentView(){
   // mas logar/deslogar pode trocar esse histórico inteiro (reconcileCloudState),
   // então atualiza a lista também, caso a pessoa esteja vendo essa aba.
   if(currentView === 'favoritos'){ renderFavoritosView(); return; }
+  // Pesquisa Global também não exige login pra existir (conversas e
+  // Favoritos buscam sem conta), mas logar/deslogar muda o que ela
+  // consegue buscar (Tarefas/Workspace passam a entrar), então refaz a
+  // busca com o resultado atualizado.
+  if(currentView === 'busca'){ renderGlobalSearchView(); return; }
   if(WORKSPACE_TABLES[currentView]){ showWorkspaceView(currentView); }
 }
 
@@ -5108,7 +5687,8 @@ function buildStateSnapshot(){
     currentMode, memoryNotes,
     themeMode, accentColor, notifySound,
     responseStyle, chatFontSize, maxConversationsLimit,
-    vlowLink
+    vlowLink,
+    lastSeenWorkspace, lastDailySummaryDate
   };
 }
 
@@ -5584,6 +6164,8 @@ function updateNavActiveStates(){
   if(tarefasBtn) tarefasBtn.classList.toggle('active', currentView === 'tarefas');
   const favoritosBtn = document.getElementById('navFavoritosBtn');
   if(favoritosBtn) favoritosBtn.classList.toggle('active', currentView === 'favoritos');
+  const buscaBtn = document.getElementById('navBuscaBtn');
+  if(buscaBtn) buscaBtn.classList.toggle('active', currentView === 'busca');
 }
 
 function applyModeUI(mode){
@@ -5950,7 +6532,16 @@ function loadScriptOnce(url){
   return loadedScriptPromises[url];
 }
 
-let currentAttachment = null;
+let currentAttachments = []; // { name, text }[] — suporta mais de um arquivo anexado na mesma conversa
+
+/* Trecho de contexto (RAG) recuperado da biblioteca de documentos indexados
+   em Compartilhados, relevante pra a PERGUNTA ATUAL — recalculado antes de
+   cada chamada à IA (ver refreshRagContext, chamada em sendMessage) e lido
+   de forma síncrona aqui dentro de buildSystemPrompt, no mesmo espírito do
+   currentAttachments (estado global setado antes do envio). Vazio quando
+   não há nada relevante, ninguém indexou nada ainda, ou a pessoa não está
+   logada. */
+let ragContext = '';
 
 /* =========================================================
    COLAR IMAGEM (Ctrl+V) — permite colar um print/foto direto no campo
@@ -6087,6 +6678,18 @@ async function handleFileSelect(event){
   const chip = document.getElementById('attachmentChip');
   const label = document.getElementById('attachmentChipLabel');
   const attachBtn = document.getElementById('attachBtn');
+
+  // Limite de arquivos simultâneos anexados na mesma conversa — sem isso o
+  // contexto mandado pra IA a cada mensagem cresceria sem parar. Pra
+  // bibliotecas maiores de documentos (permanentes, não só desta conversa),
+  // o caminho é indexar em Compartilhados (RAG com busca por relevância) em
+  // vez de anexar aqui.
+  const MAX_ATTACHMENTS = 5;
+  if(currentAttachments.length >= MAX_ATTACHMENTS){
+    addBotMessage('Você já anexou o máximo de ' + MAX_ATTACHMENTS + ' arquivos nesta conversa. Remova algum (✕ no anexo) antes de adicionar outro, ou comece uma nova conversa.');
+    return;
+  }
+
   chip.classList.add('show');
   label.textContent = '📎 Lendo ' + file.name + '...';
   attachBtn.disabled = true;
@@ -6101,8 +6704,10 @@ async function handleFileSelect(event){
       throw new Error('Não consegui extrair texto desse arquivo (pode ser uma imagem escaneada sem texto, ou um arquivo vazio).');
     }
 
-    currentAttachment = { name: file.name, text: truncateText(result.text, 14000) };
-    label.textContent = '📎 ' + file.name;
+    currentAttachments.push({ name: file.name, text: truncateText(result.text, 14000) });
+    label.textContent = currentAttachments.length === 1
+      ? '📎 ' + file.name
+      : '📎 ' + currentAttachments.length + ' arquivos anexados';
 
     if(hasAiAccess()){
       addBotMessage('Anexei o arquivo **' + file.name + '**. Pode perguntar sobre o conteúdo dele.');
@@ -6118,8 +6723,7 @@ async function handleFileSelect(event){
       }
     }
   }catch(err){
-    chip.classList.remove('show');
-    currentAttachment = null;
+    if(!currentAttachments.length) chip.classList.remove('show');
     addBotMessage('Não consegui ler esse arquivo: ' + err.message);
   }finally{
     attachBtn.disabled = false;
@@ -6127,7 +6731,7 @@ async function handleFileSelect(event){
 }
 
 function removeAttachment(){
-  currentAttachment = null;
+  currentAttachments = [];
   document.getElementById('attachmentChip').classList.remove('show');
 }
 
@@ -6158,7 +6762,7 @@ function showToast(message){
 }
 
 function showWebSearchToast(){
-  showToast('Busca na web ainda não está disponível nesta versão do AtlasIA.');
+  showToast('A busca na internet já é automática: pergunte algo atual (ex: notícias de hoje) que a IA busca sozinha antes de responder.');
 }
 
 function insertImageShortcut(){
@@ -6777,6 +7381,8 @@ async function sendMessage(){
   const text = input.value.trim();
   const image = pendingImage;
   if(!text && !image) return;
+  await maybeNudgeOverdueTasks();
+  await maybeShowDailySummary();
   hapticTap();
   addUserMessage(text, true, image ? image.dataUrl : null);
   input.value = '';
@@ -6834,6 +7440,7 @@ async function sendMessage(){
     try{
       if(hasAiAccess()){
         const questionText = text || 'Descreva o que você vê nesta imagem e comente o que for relevante.';
+        await refreshRagContext(questionText);
         const rawReply = apiProvider === 'gemini' ? await askGemini(questionText, image) : await askOpenAI(questionText, image);
         hideTyping();
         const { clean: cleanMem, found } = extractMemoryTags(rawReply);
@@ -6932,13 +7539,19 @@ function buildSystemPrompt(){
     prompt += "\n\nData e hora atual: " + now.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' }) + ", " + now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + " (ISO: " + now.toISOString() + "). Use esta referência para calcular datas/horas relativas mencionadas pelo usuário (ex: \"amanhã\", \"daqui a 2 horas\", \"sexta-feira\") — não repita esse texto literalmente para a pessoa, é só uma referência interna.";
     prompt += "\n\n" + TASK_REMINDER_GUIDE;
   }
-  if(currentAttachment){
-    prompt += "\n\nConteúdo extraído do arquivo que o usuário anexou (\"" + currentAttachment.name + "\") — use como contexto para responder perguntas sobre ele quando fizer sentido. Esse arquivo pode conter dados sensíveis (pessoais, financeiros ou de saúde) — trate com cuidado: use exatamente o que está no texto abaixo (nunca invente ou estime números/valores que não estejam explícitos nele) e não repita dados sensíveis desnecessariamente na resposta além do que a pergunta pedir:\n\n" +
-      currentAttachment.text;
+  if(currentAttachments.length){
+    // Suporta mais de um arquivo anexado na mesma conversa (RAG simples,
+    // sem infraestrutura nova): cada um entra separado e identificado pelo
+    // nome, pra a IA conseguir distinguir de qual arquivo cada informação
+    // veio quando houver mais de um.
+    prompt += "\n\nConteúdo extraído do(s) arquivo(s) que o usuário anexou nesta conversa — use como contexto para responder perguntas sobre eles quando fizer sentido. Esses arquivos podem conter dados sensíveis (pessoais, financeiros ou de saúde) — trate com cuidado: use exatamente o que está no texto abaixo (nunca invente ou estime números/valores que não estejam explícitos nele) e não repita dados sensíveis desnecessariamente na resposta além do que a pergunta pedir:\n\n" +
+      currentAttachments.map(a => "--- Arquivo: " + a.name + " ---\n" + a.text).join('\n\n');
   }
-  if(currentAttachment || pendingImage){
+  if(currentAttachments.length || pendingImage){
     prompt += "\n\n" + SENIOR_ANALYSIS_GUIDE;
   }
+  prompt += buildWorkspaceDataContext();
+  if(ragContext) prompt += ragContext;
   // Cada chamada à IA é isolada (sem histórico de conversa enviado ao modelo),
   // então sem essa checagem o modelo "acha" que toda mensagem é a primeira e
   // se apresenta de novo toda hora. Avisa explicitamente quando não é.
@@ -6948,6 +7561,207 @@ function buildSystemPrompt(){
     ? "\n\nEsta é a primeira mensagem desta conversa — pode se apresentar brevemente como Lumi se fizer sentido."
     : "\n\nEsta conversa já está em andamento (não é a primeira mensagem) — não se apresente nem cumprimente de novo (nada de \"Olá, sou a Lumi\" ou similar), vá direto ao ponto respondendo a pergunta atual.";
   return prompt;
+}
+
+/* Monta um resumo em texto dos dados do próprio Workspace da empresa
+   (tarefas, projetos, equipe, compartilhados) pra a IA conseguir responder
+   perguntas sobre eles (ex: "quais tarefas estão atrasadas?", "quem é o
+   responsável pelo projeto X?") sem precisar de acesso a banco de dados
+   externo nem de SQL bruto — só lê o que já está carregado no dataCache
+   (mesma fonte da Home Inteligente/Pesquisa Global), então é sempre
+   somente-leitura e limitado aos dados desta conta. Só disponível pra quem
+   está logado (mesma regra do resto do Workspace). */
+function buildWorkspaceDataContext(){
+  if(!cloudUser) return '';
+  const parts = [];
+  const overdue = getOverdueTasks();
+  const upcoming = getUpcomingTasks(24 * 7);
+  if(overdue.length || upcoming.length){
+    parts.push('Tarefas/lembretes cadastrados:');
+    overdue.slice(0, 20).forEach(t => parts.push('- [ATRASADA] ' + t.title + ' (venceu em ' + new Date(t.due_at).toLocaleString('pt-BR') + ')'));
+    upcoming.slice(0, 20).forEach(t => parts.push('- ' + t.title + ' (vence em ' + new Date(t.due_at).toLocaleString('pt-BR') + ')'));
+  }
+  if(dataCache.projetos && dataCache.projetos.length){
+    parts.push('\nProjetos cadastrados no Workspace:');
+    dataCache.projetos.slice(0, 30).forEach(p => {
+      parts.push('- ' + p.title + ' — status: ' + (WORKSPACE_STATUS_LABELS[p.status] || 'não definido') +
+        (p.due_date ? ', prazo: ' + formatProjectDueDate(p.due_date) : '') +
+        (p.responsible ? ', responsável: ' + p.responsible : ''));
+    });
+  }
+  if(dataCache.equipes && dataCache.equipes.length){
+    parts.push('\nIntegrantes da equipe cadastrados:');
+    dataCache.equipes.slice(0, 30).forEach(m => parts.push('- ' + m.name + (m.role ? ' (' + m.role + ')' : '')));
+  }
+  if(dataCache.compartilhados && dataCache.compartilhados.length){
+    parts.push('\nItens em Compartilhados:');
+    dataCache.compartilhados.slice(0, 30).forEach(i => parts.push('- ' + i.title + (i.description ? ': ' + i.description : '')));
+  }
+  if(!parts.length) return '';
+  return "\n\nDados internos do Workspace do AtlasIA desta empresa (use pra responder perguntas sobre tarefas, projetos, equipe ou itens compartilhados — são dados reais e atuais desta conta; não invente nem complete o que não estiver listado aqui, e não confunda com dados de outra empresa/sistema):\n" + parts.join('\n');
+}
+
+/* =========================================================
+   RAG — busca por relevância em documentos indexados (biblioteca
+   permanente em Compartilhados, separada dos anexos avulsos de uma
+   conversa). Guarda pedaços de texto ("chunks") de cada item de
+   Compartilhados junto com o "embedding" (vetor numérico que representa o
+   significado do texto) na tabela document_chunks do Supabase — ver
+   supabase_setup_rag.sql. Na hora da pergunta, embeda a pergunta da pessoa
+   com o mesmo modelo, compara (similaridade de cosseno) com os embeddings
+   já guardados e injeta no prompt só os pedaços mais parecidos — não é
+   busca por palavra-chave, é por significado (por isso funciona mesmo que
+   a pergunta use palavras diferentes das do documento).
+
+   Escolha deliberada de simplicidade: os embeddings ficam guardados como
+   array de números comuns (float8[]), sem a extensão pgvector nem índice
+   de busca aproximada — a comparação roda no navegador, em JavaScript, com
+   os chunks trazidos do banco. Funciona bem até alguns milhares de
+   trechos (o suficiente pra uma biblioteca de documentos de uma empresa);
+   se um dia a base de documentos crescer muito além disso, o próximo passo
+   seria migrar pra pgvector com índice no próprio Postgres.
+   ========================================================= */
+
+const EMBEDDING_MODEL = 'text-embedding-3-small';
+
+/* Embeddings sempre pela OpenAI (mesmo que a pessoa esteja usando o Gemini
+   como provedor de chat) — hoje é o único provedor com chave configurada
+   no servidor (OPENAI_API_KEY, ver ai-proxy), então é o único caminho que
+   funciona tanto pra quem está logado (chave da empresa) quanto pra quem
+   tem chave própria da OpenAI colada. Devolve null (nunca lança erro) em
+   qualquer falha — RAG é um extra que não pode derrubar a resposta normal
+   da IA se algo der errado. */
+async function embedText(text){
+  if(!text || !text.trim()) return null;
+  const canUseCompanyKey = !!cloudUser;
+  const canUsePersonalOpenAiKey = !!apiKey && apiProvider === 'openai';
+  if(!canUseCompanyKey && !canUsePersonalOpenAiKey) return null;
+  try{
+    const headers = { 'Content-Type': 'application/json' };
+    if(canUsePersonalOpenAiKey) headers['Authorization'] = 'Bearer ' + apiKey;
+    const res = await providerFetch('https://api.openai.com/v1/embeddings', {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify({ model: EMBEDDING_MODEL, input: truncateText(text, 8000) })
+    }, AI_CALL_TIMEOUT_MS);
+    if(!res.ok) return null;
+    const data = await res.json();
+    return (data.data && data.data[0] && data.data[0].embedding) || null;
+  }catch(e){ return null; }
+}
+
+function cosineSimilarity(a, b){
+  if(!a || !b || a.length !== b.length) return 0;
+  let dot = 0, na = 0, nb = 0;
+  for(let i = 0; i < a.length; i++){ dot += a[i] * b[i]; na += a[i] * a[i]; nb += b[i] * b[i]; }
+  if(na === 0 || nb === 0) return 0;
+  return dot / (Math.sqrt(na) * Math.sqrt(nb));
+}
+
+// Abaixo desse limiar de similaridade, o trecho é considerado "não
+// relacionado o suficiente" e fica de fora — evita injetar contexto
+// irrelevante só porque ele foi o "menos ruim" dentre os disponíveis.
+const RAG_RELEVANCE_THRESHOLD = 0.72;
+const RAG_MAX_CHUNKS = 5;
+
+/* Recalcula ragContext pra pergunta atual — chamada em sendMessage antes de
+   askGemini/askOpenAI (ver ali), síncrona a partir daí porque
+   buildSystemPrompt só lê a variável global. Sem custo/latência extra
+   quando não há nada indexado ainda (sai cedo antes de gastar uma chamada
+   de embedding). */
+async function refreshRagContext(queryText){
+  ragContext = '';
+  if(!cloudUser || !queryText || !queryText.trim()) return;
+  const client = getSupabaseClient();
+  if(!client) return;
+  try{
+    const { data: chunks, error } = await client.from('document_chunks').select('content, embedding, shared_item_id').limit(800);
+    if(error || !chunks || !chunks.length) return;
+    const queryEmbedding = await embedText(queryText);
+    if(!queryEmbedding) return;
+    const scored = chunks
+      .map(c => ({ content: c.content, score: cosineSimilarity(queryEmbedding, c.embedding) }))
+      .filter(c => c.score >= RAG_RELEVANCE_THRESHOLD)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, RAG_MAX_CHUNKS);
+    if(!scored.length) return;
+    ragContext = "\n\nTrechos relevantes encontrados em documentos indexados na aba Compartilhados (busca por significado, não por palavra exata) — use pra responder se ajudarem na pergunta, e deixe claro na resposta que a informação veio de um documento compartilhado quando usar algum destes trechos:\n\n" +
+      scored.map((s, i) => '[Trecho ' + (i + 1) + ']\n' + s.content).join('\n\n');
+  }catch(e){ /* tabela ainda não criada, sem conexão, etc. — segue a mensagem sem RAG */ }
+}
+
+/* Quebra um texto longo em pedaços de ~1000 caracteres (com uma pequena
+   sobreposição entre eles, pra não cortar uma frase importante bem na
+   emenda de dois pedaços) — cada pedaço vira uma linha na tabela
+   document_chunks, com seu próprio embedding. */
+function chunkText(text, size, overlap){
+  const chunkSize = size || 1000;
+  const chunkOverlap = overlap || 150;
+  const clean = (text || '').replace(/\s+/g, ' ').trim();
+  if(!clean) return [];
+  const chunks = [];
+  let start = 0;
+  while(start < clean.length){
+    const end = Math.min(start + chunkSize, clean.length);
+    chunks.push(clean.slice(start, end));
+    if(end >= clean.length) break;
+    start = end - chunkOverlap;
+  }
+  return chunks;
+}
+
+/* Indexa (ou reindexa) um item de Compartilhados pra busca por relevância:
+   sempre inclui título/descrição/link, e — se o link apontar pra um
+   arquivo PDF/planilha enviado pelo próprio AtlasIA (Supabase Storage) —
+   também baixa o arquivo e extrai o texto dele (reaproveitando
+   extractPdfText/extractSpreadsheetText, os mesmos leitores usados pra
+   anexos de conversa). Reindexar apaga os pedaços antigos desse item antes
+   de gravar os novos, pra não duplicar nem deixar lixo de uma versão
+   anterior do arquivo. */
+async function indexSharedItemForRag(item, onProgress){
+  const client = getSupabaseClient();
+  if(!client) throw new Error('Sem conexão com o Supabase agora.');
+  if(!cloudUser) throw new Error('Faça login para indexar itens para busca.');
+
+  let fullText = '🔗 ' + (item.title || '');
+  if(item.description) fullText += '\n' + item.description;
+  if(item.url) fullText += '\nLink: ' + item.url;
+
+  if(item.url && /\.(pdf|xlsx|xls|csv)(\?|$)/i.test(item.url)){
+    if(onProgress) onProgress('Baixando arquivo...');
+    try{
+      const fileRes = await fetch(item.url);
+      if(fileRes.ok){
+        const blob = await fileRes.blob();
+        const ext = item.url.toLowerCase().split('?')[0].split('.').pop();
+        let extracted = null;
+        if(ext === 'pdf') extracted = await extractPdfText(blob);
+        else extracted = await extractSpreadsheetText(blob);
+        if(extracted && extracted.text && extracted.text.trim()){
+          fullText += '\n\n--- Conteúdo do arquivo ---\n' + extracted.text;
+        }
+      }
+    }catch(e){ /* não conseguiu baixar/ler o arquivo — segue só com título/descrição/link */ }
+  }
+
+  const chunks = chunkText(fullText, 1000, 150);
+  if(!chunks.length) throw new Error('Não há texto suficiente pra indexar neste item.');
+
+  if(onProgress) onProgress('Removendo versão anterior...');
+  await client.from('document_chunks').delete().eq('shared_item_id', item.id);
+
+  const rows = [];
+  for(let i = 0; i < chunks.length; i++){
+    if(onProgress) onProgress('Gerando embedding ' + (i + 1) + '/' + chunks.length + '...');
+    const embedding = await embedText(chunks[i]);
+    if(!embedding) throw new Error('Não consegui gerar o embedding (verifique se está logado e se a chave da empresa/OpenAI está ativa).');
+    rows.push({ shared_item_id: item.id, chunk_index: i, content: chunks[i], embedding: embedding });
+  }
+
+  if(onProgress) onProgress('Salvando...');
+  const { error: insertError } = await client.from('document_chunks').insert(rows);
+  if(insertError) throw insertError;
+  return rows.length;
 }
 
 // Tempo máximo de espera por uma chamada de IA antes de cancelar e avisar o
@@ -7126,15 +7940,78 @@ async function callOpenAIModel(model, systemPrompt, userText, image){
   return "Não consegui gerar uma resposta agora (motivo: " + reason + "). Tente reformular a pergunta, ou tente de novo.";
 }
 
+/* Igual a callOpenAIModel, mas pela Responses API (/v1/responses) com a
+   ferramenta de busca na web ligada — a Chat Completions (usada acima) só
+   aceita busca com um modelo bem específico (gpt-5-search-api), então pra
+   funcionar com qualquer modelo da lista de preferência usamos este outro
+   endpoint. A OpenAI decide sozinha, do lado do servidor, se a pergunta
+   precisa buscar algo em tempo real — sem isso mudar o formato do pedido
+   nem exigir nenhum código de tool-calling manual da nossa parte. Não
+   suporta imagem (uso de imagem cai direto em callOpenAIModel). */
+async function callOpenAIModelSearch(model, systemPrompt, userText){
+  const headers = { 'Content-Type': 'application/json' };
+  if(apiKey) headers['Authorization'] = 'Bearer ' + apiKey;
+  const res = await providerFetch('https://api.openai.com/v1/responses', {
+    method: 'POST',
+    headers: headers,
+    body: JSON.stringify({
+      model: model,
+      input: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userText }
+      ],
+      tools: [{ type: 'web_search' }],
+      temperature: 0.4
+    })
+  }, AI_CALL_TIMEOUT_MS);
+
+  if(!res.ok) throw await buildApiError(res);
+  const data = await res.json();
+  // Formato da Responses API é diferente da Chat Completions: a resposta
+  // vem em data.output (lista de itens — pode incluir o item da própria
+  // busca antes do item "message" com o texto final).
+  let text = '';
+  try{
+    if(typeof data.output_text === 'string') text = data.output_text.trim();
+    if(!text){
+      const msgItem = (data.output || []).find(o => o.type === 'message');
+      if(msgItem && Array.isArray(msgItem.content)){
+        text = msgItem.content.filter(c => c.type === 'output_text').map(c => c.text || '').join('').trim();
+      }
+    }
+  }catch(e){ /* segue pro fallback de diagnóstico abaixo */ }
+  if(text) return text;
+  let reason = (data.error && (data.error.message || data.error.code))
+    || (data.status === 'incomplete' && data.incomplete_details && data.incomplete_details.reason);
+  if(!reason){
+    try{ reason = 'resposta em formato inesperado: ' + JSON.stringify(data).slice(0, 300); }
+    catch(e){ reason = 'resposta em formato inesperado (não deu nem pra descrever)'; }
+  }
+  return "Não consegui gerar uma resposta agora (motivo: " + reason + "). Tente reformular a pergunta, ou tente de novo.";
+}
+
 /* API pública usada por sendMessage() quando o provedor ativo é a OpenAI:
    monta o system prompt da persona, tenta os modelos em ordem de preferência
    (tryModelsInOrder) e, se todos falharem, transforma o erro técnico numa
    mensagem explicativa em português pro usuário (cota/billing, chave
-   inválida, timeout, sem conexão, etc.). */
+   inválida, timeout, sem conexão, etc.). Perguntas sem imagem passam pela
+   Responses API com busca na web ligada (callOpenAIModelSearch); com
+   imagem, usa a Chat Completions normal (callOpenAIModel, com visão). */
 async function askOpenAI(userText, image){
   const systemPrompt = buildSystemPrompt();
   try{
-    return await tryModelsInOrder('openai', (model) => callOpenAIModel(model, systemPrompt, userText, image));
+    return await tryModelsInOrder('openai', async (model) => {
+      if(image) return await callOpenAIModel(model, systemPrompt, userText, image);
+      try{
+        return await callOpenAIModelSearch(model, systemPrompt, userText);
+      }catch(searchErr){
+        // Se o modelo não aceitar a ferramenta de busca nessa API (ex:
+        // mudança futura ainda não coberta aqui), cai pra chamada normal
+        // sem busca em vez de falhar a resposta inteira.
+        if(searchErr.status === 400) return await callOpenAIModel(model, systemPrompt, userText, image);
+        throw searchErr;
+      }
+    });
   }catch(lastErr){
     if(lastErr?.isTimeout){
       throw new Error('A resposta da OpenAI demorou mais de ' + Math.round(AI_CALL_TIMEOUT_MS / 1000) + 's e foi cancelada automaticamente. Tente de novo — pode ter sido só uma instabilidade momentânea de rede ou da própria OpenAI.');
@@ -7245,7 +8122,7 @@ function setResponseStyle(style){
    específico. Mesmo contrato de callOpenAIModel: lança Error com
    .status/.detail em caso de falha, pra tryModelsInOrder decidir o próximo
    passo. */
-async function callGeminiModel(model, systemPrompt, userText, image){
+async function callGeminiModel(model, systemPrompt, userText, image, useSearch){
   const parts = [{ text: userText }];
   if(image){
     parts.push({ inline_data: { mime_type: image.mimeType, data: image.dataUrl.split(',')[1] || '' } });
@@ -7256,20 +8133,32 @@ async function callGeminiModel(model, systemPrompt, userText, image){
   // ai-proxy (que reaproveita o campo "headers" do pedido).
   const headers = { 'Content-Type': 'application/json' };
   if(apiKey) headers['x-goog-api-key'] = apiKey;
+  const body = {
+    system_instruction: { parts: [{ text: systemPrompt }] },
+    contents: [{ role: 'user', parts }],
+    generationConfig: { temperature: 0.4 }
+  };
+  // Grounding com busca no Google: o próprio Gemini decide, por conta
+  // própria, se a pergunta precisa de informação em tempo real (ex: "quais
+  // são os jogos de hoje") e faz a busca do lado do servidor — não muda o
+  // formato da resposta nem exige nenhum código extra de nossa parte pra
+  // interpretar o resultado. Cobrado só quando uma busca de fato acontece
+  // (não pelo simples fato de a ferramenta estar disponível na chamada).
+  if(useSearch) body.tools = [{ google_search: {} }];
   const res = await providerFetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
     method: 'POST',
     headers: headers,
-    body: JSON.stringify({
-      system_instruction: { parts: [{ text: systemPrompt }] },
-      contents: [{ role: 'user', parts }],
-      generationConfig: { temperature: 0.4 }
-    })
+    body: JSON.stringify(body)
   }, AI_CALL_TIMEOUT_MS);
 
   if(!res.ok) throw await buildApiError(res);
   const data = await res.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  if(text && text.trim()) return text.trim();
+  // Com busca ativada, a resposta às vezes vem em mais de uma "part" (ex:
+  // um trecho de raciocínio interno da busca seguido do texto final) — soma
+  // o texto de todas em vez de olhar só a primeira, pra não perder pedaço.
+  const textParts = data.candidates?.[0]?.content?.parts || [];
+  const text = textParts.map(p => p.text || '').join('').trim();
+  if(text) return text;
   // Mesma ideia de callOpenAIModel: em vez do aviso genérico, mostra o
   // motivo real (finishReason, bloqueio de segurança do promptFeedback,
   // etc.) direto na mensagem, pra diagnosticar sem precisar dos Logs.
@@ -7289,7 +8178,17 @@ async function callGeminiModel(model, systemPrompt, userText, image){
 async function askGemini(userText, image){
   const systemPrompt = buildSystemPrompt();
   try{
-    return await tryModelsInOrder('gemini', (model) => callGeminiModel(model, systemPrompt, userText, image));
+    return await tryModelsInOrder('gemini', async (model) => {
+      try{
+        return await callGeminiModel(model, systemPrompt, userText, image, true);
+      }catch(searchErr){
+        // Se a ferramenta de busca não for aceita nesta combinação de
+        // modelo/conta (ex: mudança na API do Gemini), tenta de novo sem
+        // ela em vez de derrubar a resposta inteira por causa disso.
+        if(searchErr.status === 400) return await callGeminiModel(model, systemPrompt, userText, image, false);
+        throw searchErr;
+      }
+    });
   }catch(lastErr){
     if(lastErr?.isTimeout){
       throw new Error('A resposta do Gemini demorou mais de ' + Math.round(AI_CALL_TIMEOUT_MS / 1000) + 's e foi cancelada automaticamente. Tente de novo — pode ter sido só uma instabilidade momentânea de rede ou da própria Google.');
@@ -7492,6 +8391,8 @@ function applyLoadedState(saved){
   responseStyle = RESPONSE_STYLE_GUIDES[saved.responseStyle] ? saved.responseStyle : 'equilibrada';
   chatFontSize = (saved.chatFontSize === 'small' || saved.chatFontSize === 'large') ? saved.chatFontSize : 'medium';
   vlowLink = typeof saved.vlowLink === 'string' ? saved.vlowLink : '';
+  lastSeenWorkspace = (saved.lastSeenWorkspace && typeof saved.lastSeenWorkspace === 'object') ? saved.lastSeenWorkspace : {};
+  lastDailySummaryDate = typeof saved.lastDailySummaryDate === 'string' ? saved.lastDailySummaryDate : '';
 
   selectProvider(apiProvider);
   document.getElementById('profileNameInput').value = saved.profileName || 'Você';

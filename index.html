@@ -7026,9 +7026,15 @@ async function callAiProxy(url, options, timeoutMs){
   if(!token){
     throw new Error('Faça login para usar a IA da empresa sem precisar de uma chave própria.');
   }
+  // Além da Authorization (o login da pessoa, verificado pelo Supabase),
+  // o "portão" de API do Supabase (kong) também exige o header "apikey"
+  // com a publishable key do projeto em TODA chamada às Edge Functions —
+  // sem ele, o próprio Supabase recusa o pedido com 401 antes mesmo dele
+  // chegar no código da função (e por isso nunca chegava na OpenAI de
+  // verdade: o 401 nem era da OpenAI, era do portão do Supabase).
   return await fetchWithTimeout(SUPABASE_URL + '/functions/v1/ai-proxy', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, 'apikey': SUPABASE_PUBLISHABLE_KEY },
     body: JSON.stringify({
       url: url,
       method: (options && options.method) || 'POST',

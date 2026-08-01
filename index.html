@@ -192,6 +192,12 @@
     display:flex;
     flex-direction:column;
     min-height:0;
+    /* Com Especialistas + Criatividade + Workspace juntos, o conteúdo fixo
+       do topo pode passar da altura da tela (principalmente no celular) —
+       a barra toda rola nesse caso, em vez de esconder o rodapé
+       (perfil/Configurações) pra fora da área visível. */
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
     box-shadow:1px 0 24px rgba(0,0,0,.3);
     position:relative;
     z-index:1;
@@ -405,6 +411,13 @@
     display:flex;
     flex-direction:column;
     gap:10px;
+    /* Fica "grudado" no fim da barra lateral mesmo quando ela rola (por
+       causa da lista de modos/histórico mais longa agora) — assim o botão
+       de Configurações continua sempre alcançável sem precisar rolar até o
+       fim de tudo. */
+    position:sticky;
+    bottom:0;
+    background:var(--panel-2);
   }
   .profile-block{
     display:flex;
@@ -1168,6 +1181,178 @@
     cursor:pointer;
   }
   .agents-placeholder .back-btn:hover{ border-color:var(--accent); color:var(--accent); }
+
+  /* ===================== VLOW ===================== */
+  .vlow-view{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    padding:28px 24px;
+    max-width:720px;
+    margin:0 auto;
+    width:100%;
+    overflow-y:auto;
+  }
+  .vlow-heading{ font-size:24px; margin:0; color:var(--text); }
+  .vlow-subtitle{ font-size:13.5px; color:var(--text-dim); margin:0; line-height:1.5; }
+  .vlow-link-row{ display:flex; gap:8px; }
+  .vlow-link-row input{
+    flex:1;
+    min-width:0;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:11px 14px;
+    border-radius:12px;
+    font-size:14px;
+    font-family:inherit;
+  }
+  .vlow-link-row input:focus{ outline:none; border-color:var(--accent); }
+  .vlow-share-btn{
+    background:var(--accent);
+    border:none;
+    color:white;
+    padding:0 18px;
+    border-radius:12px;
+    font-weight:600;
+    font-size:13.5px;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .vlow-preview{ display:flex; flex-direction:column; gap:12px; margin-top:6px; }
+  .vlow-empty{ font-size:13px; color:var(--text-dim); line-height:1.5; }
+  .vlow-video{
+    width:100%;
+    aspect-ratio:16/9;
+    border:1px solid var(--border);
+    border-radius:14px;
+    background:#000;
+  }
+  .vlow-link-card{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:12px 14px;
+    color:var(--accent-2);
+    text-decoration:none;
+    font-size:13px;
+    word-break:break-all;
+  }
+  .vlow-link-card:hover{ border-color:var(--accent); }
+  .vlow-link-card .svg-ico{ flex-shrink:0; color:var(--accent-2); }
+
+  .vlow-upload-row{ display:flex; align-items:center; gap:10px; }
+  .vlow-upload-btn{
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:9px 16px;
+    border-radius:12px;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+    white-space:nowrap;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+  }
+  .vlow-upload-btn:hover{ border-color:var(--accent); }
+  .vlow-upload-btn input[type=file]{ display:none; }
+  .vlow-upload-status{ font-size:12.5px; color:var(--text-dim); }
+  .vlow-readonly-note{
+    font-size:12px;
+    color:var(--text-dim);
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:8px 12px;
+  }
+
+  /* Workspace (Equipes/Projetos/Compartilhados) — reaproveita o layout do
+     Vlow (.vlow-view/.vlow-heading/etc.) e soma os componentes próprios:
+     formulário de adicionar + lista de itens com botão de remover. */
+  .workspace-form{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    align-items:flex-start;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:14px;
+  }
+  .workspace-input{
+    flex:1 1 160px;
+    min-width:0;
+    background:var(--panel);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:10px 12px;
+    border-radius:10px;
+    font-size:13.5px;
+    font-family:inherit;
+  }
+  .workspace-input:focus{ outline:none; border-color:var(--accent); }
+  textarea.workspace-input{ resize:vertical; min-height:38px; flex-basis:100%; }
+  .workspace-file-btn{
+    position:relative;
+    background:var(--panel);
+    border:1px solid var(--border);
+    color:var(--text-dim);
+    padding:0 14px;
+    height:38px;
+    display:inline-flex;
+    align-items:center;
+    border-radius:10px;
+    font-size:12.5px;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .workspace-file-btn:hover{ border-color:var(--accent); }
+  .workspace-file-status{ font-size:12px; color:var(--text-dim); align-self:center; }
+  .workspace-add-btn{ height:38px; margin-left:auto; }
+  .workspace-list{ display:flex; flex-direction:column; gap:10px; margin-top:4px; }
+  .workspace-item{
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:12px 14px;
+  }
+  .workspace-item-info{ display:flex; flex-direction:column; gap:3px; flex:1; min-width:0; }
+  .workspace-item-info strong{ font-size:14px; color:var(--text); }
+  .workspace-item-sub{ font-size:12.5px; color:var(--text-dim); }
+  .workspace-item-desc{ font-size:12.5px; color:var(--text-dim); margin:2px 0 0; line-height:1.4; }
+  .workspace-item-link{ margin-top:4px; padding:8px 10px; font-size:12px; }
+  .workspace-status-badge{
+    align-self:flex-start;
+    font-size:11px;
+    font-weight:600;
+    padding:2px 9px;
+    border-radius:20px;
+    background:rgba(148,163,184,.18);
+    color:#94a3b8;
+  }
+  .workspace-status-badge.status-em_andamento{ background:rgba(251,146,60,.18); color:#fb923c; }
+  .workspace-status-badge.status-concluido{ background:rgba(52,211,153,.18); color:#34d399; }
+  .workspace-delete-btn{
+    background:none;
+    border:none;
+    color:var(--text-dim);
+    font-size:15px;
+    line-height:1;
+    cursor:pointer;
+    padding:2px 4px;
+    flex-shrink:0;
+  }
+  .workspace-delete-btn:hover{ color:#f87171; }
+
   .footer-disclaimer{
     font-size:10.5px;
     color:var(--text-dim);
@@ -1815,8 +2000,13 @@
   <aside class="sidebar" id="sidebarEl">
     <button type="button" class="new-chat-btn" onclick="startNewConversation()">+ Nova conversa</button>
     <button type="button" class="nav-btn active" id="navHomeBtn" onclick="showHomeView()"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.5 12 4l8 7.5V20a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg> Início</button>
+    <button type="button" class="nav-btn" id="navVlowBtn" onclick="showVlowView()"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5.5" width="14" height="13" rx="2.2"/><path d="M16.5 10.8l4.4-2.9a.8.8 0 0 1 1.1.7v7.8a.8.8 0 0 1-1.1.7l-4.4-2.9z"/><path d="M8 9.3v5.4l4.6-2.7z" class="filled"/></svg> Vlow</button>
     <div class="sidebar-section-label">Especialistas</div>
     <div class="mode-switch" id="modeSwitch"></div>
+    <div class="sidebar-section-label">Criatividade</div>
+    <div class="mode-switch" id="modeSwitchCreative"></div>
+    <div class="sidebar-section-label">Workspace</div>
+    <div class="mode-switch" id="modeSwitchWorkspace"></div>
     <div class="hist-header">
       <span class="sidebar-section-label" style="margin:0">Histórico</span>
       <button type="button" class="hist-search-btn" id="histSearchBtn" onclick="toggleConvSearch()" title="Buscar conversas"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6.5"/><line x1="20.5" y1="20.5" x2="15" y2="15"/></svg></button>
@@ -2345,6 +2535,195 @@ const SAUDE_QUICK_REPLIES = [
   "Quando buscar apoio de saúde mental?"
 ];
 
+/* =========================================================
+   IA & AUTOMAÇÃO — criação de agentes, automações, prompts e integrações
+   ========================================================= */
+const AUTOMACAO_KB = [
+  {
+    id: "o-que-e-automacao",
+    keywords: ["o que e automacao", "para que serve automacao", "vale a pena automatizar"],
+    title: "O que vale a pena automatizar primeiro",
+    answer: "Bons candidatos a automação: tarefas repetitivas, com regras claras, que você faz com frequência (diária/semanal) e que não exigem julgamento humano caso a caso — ex: mover dados entre planilhas, enviar um e-mail padrão quando algo acontece, gerar um relatório toda semana. Antes de automatizar, vale mapear o passo a passo manual primeiro: se você não consegue descrever os passos com clareza, a automação também não vai conseguir."
+  },
+  {
+    id: "escrever-bom-prompt",
+    keywords: ["escrever prompt", "como fazer um prompt bom", "engenharia de prompt", "prompt para ia"],
+    title: "Como escrever um prompt melhor",
+    answer: "Um prompt eficaz geralmente tem: contexto (quem é o público, qual o objetivo), a tarefa específica (o que exatamente você quer), o formato de saída desejado (lista, tabela, tamanho) e, quando possível, um exemplo do resultado esperado. Prompts vagos ('me ajuda com marketing') tendem a dar respostas genéricas — quanto mais específico, melhor o resultado."
+  },
+  {
+    id: "agentes-de-ia",
+    keywords: ["agente de ia", "o que e um agente", "ia autonoma", "assistente automatizado"],
+    title: "O que é um \"agente\" de IA, na prática",
+    answer: "Um agente de IA é um sistema que usa um modelo de linguagem pra decidir e executar passos por conta própria (buscar informação, chamar uma API, preencher um formulário) até completar uma tarefa, em vez de só responder uma pergunta de cada vez. Costuma envolver: um objetivo claro, ferramentas que o agente pode usar, e alguma forma de checar o resultado — quanto mais crítica a tarefa, mais importante ter supervisão humana no processo."
+  }
+];
+
+const AUTOMACAO_GREETING = "Olá! Sou a Lumi, aqui no modo IA & Automação do AtlasIA. Posso ajudar a desenhar automações, escrever e refinar prompts, planejar agentes de IA e pensar em integrações entre ferramentas/APIs. Qual processo você quer automatizar ou melhorar?";
+
+const AUTOMACAO_QUICK_REPLIES = [
+  "O que vale a pena automatizar primeiro?",
+  "Me ajuda a melhorar este prompt",
+  "Como planejar um agente de IA?",
+  "Ideias de automação para o meu processo"
+];
+
+/* =========================================================
+   TRABALHO — e-mails, documentos, reuniões, relatórios, processos
+   ========================================================= */
+const TRABALHO_KB = [
+  {
+    id: "email-profissional",
+    keywords: ["escrever email", "email profissional", "como redigir email", "email formal"],
+    title: "Estrutura de um e-mail profissional eficaz",
+    answer: "Um bom e-mail de trabalho costuma ter: assunto claro e específico (não \"Dúvida\" ou \"Assunto\"), uma primeira frase direto ao ponto (o que você precisa/está avisando), no máximo 2-3 parágrafos curtos, e um fechamento com a ação esperada clara (o que a pessoa deve fazer e até quando). Releia pensando em quem vai receber: essa pessoa entende o contexto sem precisar perguntar de volta?"
+  },
+  {
+    id: "ata-de-reuniao",
+    keywords: ["ata de reuniao", "resumo de reuniao", "minuta de reuniao", "registrar reuniao"],
+    title: "Como estruturar uma ata/resumo de reunião",
+    answer: "Modelo simples: data e participantes, pauta (o que foi discutido, em tópicos), decisões tomadas, e principalmente próximos passos (o quê, quem é responsável, até quando). O maior erro comum é registrar só a discussão e esquecer de deixar claro quem ficou responsável por cada ação depois da reunião."
+  },
+  {
+    id: "relatorio-claro",
+    keywords: ["escrever relatorio", "relatorio de trabalho", "relatorio executivo", "resumo executivo"],
+    title: "Como escrever um relatório que as pessoas realmente leem",
+    answer: "Comece pelo resumo executivo (as conclusões e recomendações principais, em poucas linhas) — nem todo mundo vai ler o relatório inteiro. Depois, estruture em seções curtas com subtítulos, use números concretos em vez de \"muito\"/\"pouco\", e termine cada seção relevante com o que isso significa na prática, não só o dado bruto."
+  }
+];
+
+const TRABALHO_GREETING = "Olá! Sou a Lumi, aqui no modo Trabalho do AtlasIA. Posso ajudar a redigir e revisar e-mails, organizar atas de reunião, montar relatórios e documentar processos do dia a dia. No que você está trabalhando agora?";
+
+const TRABALHO_QUICK_REPLIES = [
+  "Me ajuda a escrever um e-mail",
+  "Como organizar a ata desta reunião?",
+  "Preciso estruturar um relatório",
+  "Documentar um processo do time"
+];
+
+/* =========================================================
+   CRIATIVIDADE — Escrita, Apresentações, Design, Imagens
+   ========================================================= */
+const ESCRITA_KB = [
+  {
+    id: "melhorar-texto",
+    keywords: ["melhorar texto", "revisar texto", "deixar texto mais claro", "reescrever"],
+    title: "Como deixar um texto mais claro",
+    answer: "Passos que mais ajudam: cortar palavras que não mudam o sentido (\"muito\", \"bastante\", \"de certa forma\"), preferir frases curtas a frases longas com várias vírgulas, usar verbos na voz ativa em vez de passiva, e ler em voz alta — se você tropeça ao ler, quem lê também vai tropeçar."
+  },
+  {
+    id: "tom-de-voz",
+    keywords: ["tom de voz", "adaptar tom", "escrever formal", "escrever informal"],
+    title: "Adaptando o tom de um texto ao público",
+    answer: "Pra um público formal/corporativo: frases mais objetivas, evite gírias, prefira \"você\" a apelidos. Pra redes sociais/público geral: frases mais curtas, mais próximas da fala, pode usar emoji com moderação. Me diga o público e o objetivo (informar, vender, engajar) que eu adapto o tom junto com você."
+  },
+  {
+    id: "bloqueio-criativo",
+    keywords: ["bloqueio criativo", "nao sei por onde comecar", "ideias para escrever"],
+    title: "Destravando um bloqueio de escrita",
+    answer: "Truque simples: não tente escrever a versão final de primeira. Escreva um rascunho \"ruim\" só pra colocar as ideias no papel, na ordem que vierem — revisar depois é muito mais fácil do que começar do zero. Também ajuda escrever primeiro em tópicos soltos e só depois transformar em texto corrido."
+  }
+];
+
+const ESCRITA_GREETING = "Olá! Sou a Lumi, aqui no modo Escrita do AtlasIA. Posso ajudar a criar, revisar ou reescrever qualquer tipo de texto — do rascunho ao ajuste fino de tom e clareza. O que vamos escrever hoje?";
+
+const ESCRITA_QUICK_REPLIES = [
+  "Revisar e melhorar este texto",
+  "Me ajuda a começar um texto do zero",
+  "Adaptar o tom para outro público",
+  "Estou com bloqueio criativo"
+];
+
+const APRESENTACOES_KB = [
+  {
+    id: "estrutura-apresentacao",
+    keywords: ["estrutura de apresentacao", "como montar slides", "roteiro de apresentacao"],
+    title: "Estrutura clássica de uma boa apresentação",
+    answer: "Modelo que funciona na maioria dos casos: 1) contexto/problema (por que isso importa agora), 2) a ideia ou proposta central, 3) os principais pontos de apoio (dados, exemplos), 4) o que você quer que a plateia faça a seguir. Um slide, uma ideia principal — se um slide tem 3 mensagens, provavelmente vira 3 slides."
+  },
+  {
+    id: "slides-com-poucos-textos",
+    keywords: ["slide com muito texto", "resumir slide", "slide poluido"],
+    title: "Como reduzir texto num slide sem perder a ideia",
+    answer: "Transforme frases em tópicos curtos (5-7 palavras), tire conectivos (\"e\", \"então\", \"porque\") que só existem pra formar frase completa, e mova explicações mais longas pras anotações do apresentador em vez do slide. O slide é apoio visual, não o roteiro da fala inteira."
+  },
+  {
+    id: "pitch-curto",
+    keywords: ["pitch", "elevator pitch", "apresentar em 1 minuto", "resumo rapido de projeto"],
+    title: "Como montar um pitch curto (elevator pitch)",
+    answer: "Estrutura enxuta: qual problema existe, qual sua solução, por que ela é melhor/diferente, e o que você está pedindo (investimento, aprovação, parceria). Treine pra caber em 60-90 segundos falado — se não cabe, geralmente é sinal de que ainda tem informação demais pra esse formato."
+  }
+];
+
+const APRESENTACOES_GREETING = "Olá! Sou a Lumi, aqui no modo Apresentações do AtlasIA. Posso ajudar a estruturar o roteiro, escrever o texto de cada slide e deixar sua apresentação mais direta e persuasiva. Sobre o que é a apresentação?";
+
+const APRESENTACOES_QUICK_REPLIES = [
+  "Me ajuda a estruturar os slides",
+  "Este slide está com texto demais",
+  "Preciso de um pitch curto",
+  "Como fechar a apresentação com impacto?"
+];
+
+const DESIGN_KB = [
+  {
+    id: "principios-basicos-design",
+    keywords: ["principios de design", "hierarquia visual", "design basico"],
+    title: "Princípios básicos de um design que funciona",
+    answer: "Quatro princípios que resolvem a maior parte dos problemas visuais: hierarquia (o mais importante deve ser o mais visível — por tamanho, cor ou posição), alinhamento (elementos alinhados entre si passam organização), espaço em branco (não precisa preencher tudo — respiro ajuda a leitura) e consistência (mesmas cores/fontes/estilos repetidos pelo material todo)."
+  },
+  {
+    id: "paleta-de-cores",
+    keywords: ["escolher cores", "paleta de cores", "combinar cores"],
+    title: "Como escolher uma paleta de cores",
+    answer: "Caminho simples: escolha uma cor principal (geralmente ligada à marca), uma ou duas cores de apoio que contrastem bem, e uma neutra (branco/preto/cinza) pra fundo e texto. Evite mais de 3-4 cores no total — paletas grandes tendem a parecer confusas em vez de ricas."
+  },
+  {
+    id: "briefing-de-design",
+    keywords: ["briefing de design", "pedir uma peça grafica", "definir referencias visuais"],
+    title: "Como montar um briefing de design claro",
+    answer: "Inclua: objetivo da peça (pra que serve), público-alvo, mensagem principal que precisa ficar clara, referências visuais que você gosta (ou não gosta), e onde vai ser usada (isso muda tamanho/formato). Quanto mais concreto o briefing, menos idas e voltas depois."
+  }
+];
+
+const DESIGN_GREETING = "Olá! Sou a Lumi, aqui no modo Design do AtlasIA. Posso ajudar a pensar em conceito visual, paleta de cores, hierarquia e briefing de peças gráficas — e, se quiser gerar uma imagem, é só pedir ou usar o ícone de imagem no campo de mensagem. O que você está criando?";
+
+const DESIGN_QUICK_REPLIES = [
+  "Me ajuda a escolher uma paleta de cores",
+  "Como melhorar a hierarquia visual disso?",
+  "Montar um briefing de design",
+  "Gerar uma imagem com IA"
+];
+
+const IMAGENS_KB = [
+  {
+    id: "gerar-imagem-no-app",
+    keywords: ["gerar imagem", "criar imagem com ia", "como faço uma imagem"],
+    title: "Como gerar uma imagem aqui no AtlasIA",
+    answer: "É só clicar no ícone de imagem (🖼️) ao lado do campo de mensagem, ou descrever a imagem que você quer diretamente na conversa — a Lumi entende o pedido e gera a partir da sua descrição. Quanto mais detalhes você der (estilo, cores, elementos, enquadramento), mais próximo do que você imagina o resultado tende a ficar."
+  },
+  {
+    id: "descrever-imagem-bem",
+    keywords: ["como descrever imagem", "prompt de imagem", "melhorar prompt de imagem"],
+    title: "Como escrever um bom pedido de imagem",
+    answer: "Inclua: o assunto principal, o estilo (foto realista, ilustração, flat design, 3D, aquarela...), o clima/iluminação, e o enquadramento (close, plano aberto, vista de cima). Ex: em vez de \"um gato\", tente \"um gato laranja dormindo num sofá azul, luz de tarde entrando pela janela, estilo foto realista\"."
+  },
+  {
+    id: "editar-foto-existente",
+    keywords: ["editar foto", "anexar foto para analise", "descrever imagem enviada"],
+    title: "Anexando uma foto existente",
+    answer: "Você pode anexar uma foto sua (ícone de clipe ou colar direto com Ctrl+V) pra eu descrever, analisar ou usar como referência de contexto na conversa — útil pra pedir uma variação parecida ou tirar dúvidas sobre o conteúdo da imagem."
+  }
+];
+
+const IMAGENS_GREETING = "Olá! Sou a Lumi, aqui no modo Imagens do AtlasIA. Posso gerar imagens a partir de uma descrição sua, ou analisar uma foto que você anexar. O que você quer criar ou enviar?";
+
+const IMAGENS_QUICK_REPLIES = [
+  "Gerar uma imagem com IA",
+  "Como descrever melhor o que eu quero?",
+  "Anexar uma foto para análise",
+  "Ver exemplos de estilos possíveis"
+];
+
 const MODES = {
   credenciamento: {
     label: "Geral",
@@ -2405,6 +2784,66 @@ const MODES = {
     quickReplies: SAUDE_QUICK_REPLIES,
     kb: SAUDE_KB,
     systemPromptIntro: "Você é a Lumi, a assistente de IA (feminino) do sistema AtlasIA, atuando agora no modo Saúde, em português do Brasil. Sempre que falar de si mesma, use o nome Lumi e a primeira pessoa no feminino. Você fornece apenas informação educativa geral sobre saúde e bem-estar. REGRAS IMPORTANTES E INEGOCIÁVEIS: você não é médica, não faz diagnóstico, não prescreve tratamento nem medicação, e nunca deve tentar identificar de que doença específica alguém pode estar sofrendo a partir de sintomas descritos. Para qualquer sintoma, sempre recomende consulta médica. Se a descrição sugerir uma emergência (dor no peito, falta de ar súbita, sinais de AVC, sangramento intenso, entre outros), oriente a pessoa a ligar imediatamente para o 192 (SAMU) ou procurar o pronto-socorro mais próximo, com prioridade sobre qualquer outra resposta. Seja acolhedora, calma e nunca alarmista além do necessário."
+  },
+  automacao: {
+    label: "IA & Automação",
+    icon: "sparkles",
+    color: "#818cf8",
+    emptyHeading: "O que vamos automatizar hoje?",
+    greeting: AUTOMACAO_GREETING,
+    quickReplies: AUTOMACAO_QUICK_REPLIES,
+    kb: AUTOMACAO_KB,
+    systemPromptIntro: "Você é a Lumi, a assistente de IA (feminino) do sistema AtlasIA, atuando agora no modo IA & Automação, em português do Brasil. Sempre que falar de si mesma, use o nome Lumi e a primeira pessoa no feminino. Seu foco é ajudar a pessoa a criar e melhorar automações, agentes de IA, prompts e integrações entre ferramentas/APIs. Ajude a mapear o processo manual antes de sugerir a automação, seja concreta nos exemplos (nomes de ferramentas comuns, estrutura de prompt, passo a passo) e, ao revisar um prompt que o usuário mandar, aponte especificamente o que está vago ou faltando, não só elogie."
+  },
+  trabalho: {
+    label: "Trabalho",
+    icon: "fileText",
+    color: "#34d399",
+    emptyHeading: "No que você está trabalhando agora?",
+    greeting: TRABALHO_GREETING,
+    quickReplies: TRABALHO_QUICK_REPLIES,
+    kb: TRABALHO_KB,
+    systemPromptIntro: "Você é a Lumi, a assistente de IA (feminino) do sistema AtlasIA, atuando agora no modo Trabalho, em português do Brasil. Sempre que falar de si mesma, use o nome Lumi e a primeira pessoa no feminino. Seu foco é apoio ao dia a dia profissional: redigir e revisar e-mails, organizar atas/resumos de reunião, estruturar relatórios e documentar processos internos. Seja objetiva e prática — quando a pessoa colar um texto pra revisar, aponte melhorias concretas (não só reescreva sem explicar o que mudou), e quando faltar contexto (público do e-mail, objetivo do relatório), pergunte antes de escrever do zero."
+  },
+  escrita: {
+    label: "Escrita",
+    icon: "fileText",
+    color: "#f472b6",
+    emptyHeading: "O que vamos escrever hoje?",
+    greeting: ESCRITA_GREETING,
+    quickReplies: ESCRITA_QUICK_REPLIES,
+    kb: ESCRITA_KB,
+    systemPromptIntro: "Você é a Lumi, a assistente de IA (feminino) do sistema AtlasIA, atuando agora no modo Escrita, em português do Brasil. Sempre que falar de si mesma, use o nome Lumi e a primeira pessoa no feminino. Seu foco é criação e revisão de textos de qualquer tipo (criativos, institucionais, redes sociais, roteiros). Adapte o tom ao público que a pessoa descrever, aponte de forma específica o que está confuso/repetitivo/longo demais ao revisar um texto existente, e ofereça alternativas quando fizer sentido em vez de uma única reescrita fechada."
+  },
+  apresentacoes: {
+    label: "Apresentações",
+    icon: "dashboard",
+    color: "#fb923c",
+    emptyHeading: "Sobre o que é a sua apresentação?",
+    greeting: APRESENTACOES_GREETING,
+    quickReplies: APRESENTACOES_QUICK_REPLIES,
+    kb: APRESENTACOES_KB,
+    systemPromptIntro: "Você é a Lumi, a assistente de IA (feminino) do sistema AtlasIA, atuando agora no modo Apresentações, em português do Brasil. Sempre que falar de si mesma, use o nome Lumi e a primeira pessoa no feminino. Seu foco é ajudar a estruturar o roteiro de apresentações/slides e escrever o texto de cada slide de forma direta e persuasiva — um slide, uma ideia principal. Quando a pessoa descrever o conteúdo bruto, organize em uma sequência lógica de slides (título curto + bullets enxutos por slide) em vez de um texto corrido."
+  },
+  design: {
+    label: "Design",
+    icon: "sparkles",
+    color: "#a78bfa",
+    emptyHeading: "O que você está criando?",
+    greeting: DESIGN_GREETING,
+    quickReplies: DESIGN_QUICK_REPLIES,
+    kb: DESIGN_KB,
+    systemPromptIntro: "Você é a Lumi, a assistente de IA (feminino) do sistema AtlasIA, atuando agora no modo Design, em português do Brasil. Sempre que falar de si mesma, use o nome Lumi e a primeira pessoa no feminino. Seu foco é apoio conceitual de design: hierarquia visual, paleta de cores, composição e briefings de peças gráficas. Você não desenha diretamente, mas se a pessoa quiser uma imagem gerada por IA, oriente a usar o modo Imagens (ou o ícone de imagem no campo de mensagem) e ajude a descrever bem o pedido."
+  },
+  imagens: {
+    label: "Imagens",
+    icon: "image",
+    color: "#22d3ee",
+    emptyHeading: "O que você quer criar ou enviar?",
+    greeting: IMAGENS_GREETING,
+    quickReplies: IMAGENS_QUICK_REPLIES,
+    kb: IMAGENS_KB,
+    systemPromptIntro: "Você é a Lumi, a assistente de IA (feminino) do sistema AtlasIA, atuando agora no modo Imagens, em português do Brasil. Sempre que falar de si mesma, use o nome Lumi e a primeira pessoa no feminino. Seu foco é geração de imagens por IA a partir da descrição da pessoa, e análise de fotos anexadas. Ao gerar, ajude a refinar o pedido (estilo, clima, enquadramento, cores) se a descrição inicial for vaga, seguindo o mesmo fluxo de geração de imagem que já existe no app (ícone de imagem no campo de mensagem, ou pedir diretamente na conversa)."
   }
 };
 
@@ -2413,10 +2852,23 @@ const AGENTS_MODE_COLOR = "#818cf8";
 let currentMode = 'credenciamento';
 let currentView = 'mode'; // 'home' (tela Início) ou 'mode' (conversa de um especialista)
 
+/* Aviso curto no topo de cada aba, explicando pra que ela serve — pensado
+   pra alguém que nunca usou o app não ter dúvida se entrou no lugar certo.
+   As 3 primeiras (⚠️) já existiam e são avisos de responsabilidade (a IA não
+   substitui um profissional); as demais (ℹ️) são só explicativas mesmo. */
 const MODE_BANNERS = {
+  credenciamento: 'ℹ️ Modo Geral: responda perguntas sobre qualquer assunto, gere textos, resolva problemas, programe, estude e organize tarefas.',
+  bi: 'ℹ️ Modo BI & Dados: especializado em Excel, Power BI, SQL, indicadores, dashboards e análise de dados para empresas. Anexe uma planilha ou CSV pra gerar um dashboard automático.',
   financeiro: '⚠️ Modo Financeiro: conteúdo educativo sobre organização financeira e dívidas, gerado por IA. Não é aconselhamento financeiro personalizado nem substitui um profissional licenciado (educador financeiro, Procon, ou os canais oficiais de negociação).',
   juridico: '⚠️ Modo Jurídico: conteúdo educativo geral, gerado por IA. Não é parecer jurídico nem substitui um advogado.',
-  saude: '⚠️ Modo Saúde: conteúdo educativo geral, gerado por IA. Não é diagnóstico nem substitui uma consulta médica. Emergência: ligue 192 (SAMU).'
+  dev: 'ℹ️ Modo Dev: programação, lógica, debugging e boas práticas técnicas em qualquer linguagem.',
+  saude: '⚠️ Modo Saúde: conteúdo educativo geral, gerado por IA. Não é diagnóstico nem substitui uma consulta médica. Emergência: ligue 192 (SAMU).',
+  automacao: 'ℹ️ IA & Automação: criação de agentes, automações, prompts e integrações com APIs.',
+  trabalho: 'ℹ️ Trabalho: e-mails, documentos, reuniões, relatórios e processos do dia a dia.',
+  escrita: 'ℹ️ Escrita: criação e revisão de textos de qualquer tipo — do rascunho ao ajuste final de tom e clareza.',
+  apresentacoes: 'ℹ️ Apresentações: estrutura de roteiro e texto de slides, direto ao ponto.',
+  design: 'ℹ️ Design: conceito visual, paleta de cores e briefings de peças gráficas — pra gerar uma imagem, use o modo Imagens.',
+  imagens: 'ℹ️ Imagens: gere imagens com IA a partir de uma descrição, ou anexe uma foto pra eu analisar.'
 };
 
 /* =========================================================
@@ -3056,6 +3508,313 @@ function showHomeView(){
   closeSidebarIfMobile();
 }
 
+/* =========================================================
+   ARMAZENAMENTO NA NUVEM (Supabase Storage) — upload de arquivo (ex: o
+   vídeo mp4 do Vlow, ou um arquivo anexado em Compartilhados) e devolve a
+   URL pública dele. Reaproveitado por mais de uma tela, por isso fica
+   centralizado aqui. Exige login (a política do bucket só deixa quem está
+   autenticado enviar — ver instruções de configuração do Supabase).
+   ========================================================= */
+const MAX_UPLOAD_SIZE_MB = 100; // limite amistoso de tamanho de arquivo (o do plano gratuito do Supabase costuma ser parecido)
+
+async function uploadFileToStorage(bucket, file, pathPrefix){
+  const client = getSupabaseClient();
+  if(!client) throw new Error('Sem conexão com o serviço de armazenamento agora.');
+  if(!cloudUser) throw new Error('Faça login antes de enviar um arquivo.');
+  if(file.size > MAX_UPLOAD_SIZE_MB * 1024 * 1024){
+    throw new Error('Arquivo muito grande (máx. ' + MAX_UPLOAD_SIZE_MB + 'MB). Tente compactar o vídeo ou usar um link (YouTube/Drive) em vez de anexar o arquivo.');
+  }
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const path = (pathPrefix ? pathPrefix + '/' : '') + Date.now() + '_' + safeName;
+  const { error } = await client.storage.from(bucket).upload(path, file, {
+    cacheControl: '3600',
+    upsert: false
+  });
+  if(error) throw error;
+  const { data } = client.storage.from(bucket).getPublicUrl(path);
+  if(!data || !data.publicUrl) throw new Error('O envio deu certo, mas não consegui gerar o link público.');
+  return data.publicUrl;
+}
+
+/* =========================================================
+   VLOW — aba de referência com o link (ou vídeo mp4 anexado) da
+   plataforma/treinamento Vlow. Diferente do resto do estado (que é salvo
+   por conta, cada aparelho vendo só o que aquele usuário salvou), o link do
+   Vlow é um dado ÚNICO E COMPARTILHADO pra qualquer pessoa que abrir o app —
+   inclusive prestadores externos sem login — guardado numa tabela pública
+   (app_config) no Supabase. Só quem está logado pode editá-lo; quem não
+   está logado só assiste. Continua também salvo em localStorage como cache
+   de exibição rápida/offline (ver applyLoadedState), mas o valor da nuvem
+   é a fonte da verdade (ver loadSharedVlowConfig, chamada no boot).
+   ========================================================= */
+let vlowLink = '';
+let vlowCloudSyncTimer = null;
+
+/* Busca o link/vídeo compartilhado do Vlow — chamada no boot do app,
+   independente de login (leitura é pública), pra qualquer visitante
+   (inclusive prestador sem conta) já ver o vídeo certo assim que abre a
+   aba. Se não houver Supabase configurado ainda ou a tabela não existir,
+   falha em silêncio e o app segue só com o que estiver salvo localmente. */
+async function loadSharedVlowConfig(){
+  const client = getSupabaseClient();
+  if(!client) return;
+  try{
+    const { data, error } = await client
+      .from('app_config')
+      .select('value')
+      .eq('key', 'vlow')
+      .single();
+    if(error || !data || !data.value) return;
+    const link = typeof data.value.link === 'string' ? data.value.link : '';
+    if(link && link !== vlowLink){
+      vlowLink = link;
+      saveState();
+      if(currentView === 'vlow') renderVlowView();
+    }
+  }catch(e){ /* sem internet, tabela ainda não criada etc. — segue só local */ }
+}
+
+/* Grava o link/vídeo do Vlow como o valor compartilhado pra todo mundo.
+   Só funciona logado (a política do banco também exige isso — isto aqui é
+   só pra dar um aviso amigável antes de tentar). */
+async function saveSharedVlowConfig(link){
+  const client = getSupabaseClient();
+  if(!client || !cloudUser) return;
+  try{
+    await client.from('app_config').upsert({
+      key: 'vlow',
+      value: { link: link || '' },
+      updated_at: new Date().toISOString()
+    });
+  }catch(e){
+    showToast('⚠️ Salvei aqui, mas não consegui sincronizar o vídeo pra todo mundo agora (verifique sua conexão).');
+  }
+}
+
+/* Debounce pra não disparar uma gravação na nuvem a cada tecla digitada
+   no campo de link — só sincroniza depois de uma pausa (mesma ideia do
+   scheduleCloudSync do resto do app). */
+function scheduleVlowCloudSync(){
+  if(!cloudUser) return;
+  clearTimeout(vlowCloudSyncTimer);
+  vlowCloudSyncTimer = setTimeout(() => { saveSharedVlowConfig(vlowLink); }, 900);
+}
+
+/* Reconhece links comuns de vídeo (YouTube, Vimeo, Loom, Google Drive) e
+   devolve a URL de embed correspondente pra tocar direto na aba — ou null se
+   não reconhecer o formato (nesse caso só mostramos o link, sem embutir). */
+function getEmbeddableVideoUrl(url){
+  if(!url) return null;
+  try{
+    const u = new URL(url);
+    const host = u.hostname.replace(/^www\./, '');
+    if(host === 'youtube.com' || host === 'm.youtube.com'){
+      const id = u.searchParams.get('v');
+      if(id) return 'https://www.youtube.com/embed/' + id;
+      const shortMatch = u.pathname.match(/^\/(shorts|embed)\/([^/]+)/);
+      if(shortMatch) return 'https://www.youtube.com/embed/' + shortMatch[2];
+    }
+    if(host === 'youtu.be'){
+      const id = u.pathname.replace('/', '');
+      if(id) return 'https://www.youtube.com/embed/' + id;
+    }
+    if(host === 'vimeo.com'){
+      const id = u.pathname.split('/').filter(Boolean)[0];
+      if(id) return 'https://player.vimeo.com/video/' + id;
+    }
+    if(host === 'loom.com'){
+      const id = u.pathname.split('/').filter(Boolean).pop();
+      if(id) return 'https://www.loom.com/embed/' + id;
+    }
+    if(host === 'drive.google.com'){
+      const match = u.pathname.match(/\/d\/([^/]+)/);
+      if(match) return 'https://drive.google.com/file/d/' + match[1] + '/preview';
+    }
+    if(/\.(mp4|webm|ogg)$/i.test(u.pathname)) return url; // vídeo direto: usa <video>, não <iframe>
+  }catch(e){ /* URL inválida: trata como link comum, sem embed */ }
+  return null;
+}
+
+function showVlowView(){
+  closeOverlayPanels();
+  currentView = 'vlow';
+  currentConvId = null;
+  renderModeSwitch();
+  updateNavActiveStates();
+  document.getElementById('modeBanner').classList.remove('show');
+  renderConversationList();
+  renderVlowView();
+  closeSidebarIfMobile();
+}
+
+function renderVlowView(){
+  const chat = document.getElementById('chat');
+  chat.innerHTML = '';
+
+  const wrap = document.createElement('div');
+  wrap.className = 'vlow-view';
+
+  const heading = document.createElement('h2');
+  heading.className = 'vlow-heading';
+  heading.textContent = 'Vlow';
+  wrap.appendChild(heading);
+
+  const subtitle = document.createElement('p');
+  subtitle.className = 'vlow-subtitle';
+  subtitle.textContent = cloudUser
+    ? 'Link ou vídeo mp4 de referência da plataforma/treinamento Vlow — fica salvo aqui pra qualquer pessoa que abrir o app acessar, inclusive prestadores sem login.'
+    : 'Vídeo/link de referência da plataforma Vlow, compartilhado pela equipe.';
+  wrap.appendChild(subtitle);
+
+  if(cloudUser){
+    const linkRow = document.createElement('div');
+    linkRow.className = 'vlow-link-row';
+    const linkInput = document.createElement('input');
+    linkInput.type = 'text';
+    linkInput.id = 'vlowLinkInput';
+    linkInput.placeholder = 'Cole aqui o link do Vlow (ou de um vídeo)...';
+    linkInput.value = vlowLink;
+    linkInput.oninput = () => { vlowLink = linkInput.value; saveState(); renderVlowPreview(); scheduleVlowCloudSync(); };
+    linkRow.appendChild(linkInput);
+
+    const shareBtn = document.createElement('button');
+    shareBtn.type = 'button';
+    shareBtn.id = 'vlowCopyBtn';
+    shareBtn.className = 'vlow-share-btn';
+    shareBtn.textContent = 'Copiar link';
+    shareBtn.onclick = () => copyVlowLink();
+    linkRow.appendChild(shareBtn);
+    wrap.appendChild(linkRow);
+
+    const uploadRow = document.createElement('div');
+    uploadRow.className = 'vlow-upload-row';
+    const uploadBtn = document.createElement('label');
+    uploadBtn.className = 'vlow-upload-btn';
+    uploadBtn.innerHTML = iconSvg('video') + '<span>Anexar vídeo (mp4)</span>';
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.id = 'vlowFileInput';
+    fileInput.accept = 'video/mp4,video/webm,video/ogg,video/*';
+    fileInput.onchange = () => handleVlowFileSelect();
+    uploadBtn.appendChild(fileInput);
+    uploadRow.appendChild(uploadBtn);
+    const uploadStatus = document.createElement('span');
+    uploadStatus.id = 'vlowUploadStatus';
+    uploadStatus.className = 'vlow-upload-status';
+    uploadRow.appendChild(uploadStatus);
+    wrap.appendChild(uploadRow);
+  } else {
+    const note = document.createElement('p');
+    note.className = 'vlow-readonly-note';
+    note.textContent = 'Só quem tem login pode editar o vídeo/link desta aba.';
+    wrap.appendChild(note);
+
+    const shareBtnRow = document.createElement('div');
+    shareBtnRow.className = 'vlow-link-row';
+    const shareBtn = document.createElement('button');
+    shareBtn.type = 'button';
+    shareBtn.id = 'vlowCopyBtn';
+    shareBtn.className = 'vlow-share-btn';
+    shareBtn.textContent = 'Copiar link';
+    shareBtn.onclick = () => copyVlowLink();
+    shareBtnRow.appendChild(shareBtn);
+    wrap.appendChild(shareBtnRow);
+  }
+
+  const preview = document.createElement('div');
+  preview.id = 'vlowPreview';
+  preview.className = 'vlow-preview';
+  wrap.appendChild(preview);
+
+  chat.appendChild(wrap);
+  renderVlowPreview();
+}
+
+/* Envia o arquivo mp4 escolhido pro Storage do Supabase e, assim que
+   termina, usa a URL pública gerada como o link do Vlow (mesmo caminho de
+   sempre — reconhecida automaticamente pelo getEmbeddableVideoUrl acima,
+   já que termina em .mp4/.webm/.ogg — e sincronizada pra todo mundo). */
+async function handleVlowFileSelect(){
+  const fileInput = document.getElementById('vlowFileInput');
+  const statusEl = document.getElementById('vlowUploadStatus');
+  const file = fileInput && fileInput.files && fileInput.files[0];
+  if(!file) return;
+  if(statusEl) statusEl.textContent = 'Enviando ' + file.name + '… não feche esta aba.';
+  try{
+    const url = await uploadFileToStorage('vlow-videos', file, 'vlow');
+    vlowLink = url;
+    const linkInput = document.getElementById('vlowLinkInput');
+    if(linkInput) linkInput.value = url;
+    saveState();
+    renderVlowPreview();
+    await saveSharedVlowConfig(url);
+    if(statusEl) statusEl.textContent = '✓ Vídeo enviado e disponível pra todo mundo.';
+    showToast('✓ Vídeo enviado com sucesso.');
+  }catch(e){
+    if(statusEl) statusEl.textContent = '';
+    showToast('⚠️ Não consegui enviar o vídeo: ' + (e && e.message ? e.message : 'tente de novo.'));
+  }finally{
+    if(fileInput) fileInput.value = '';
+  }
+}
+
+function renderVlowPreview(){
+  const preview = document.getElementById('vlowPreview');
+  if(!preview) return;
+  preview.innerHTML = '';
+  const link = (vlowLink || '').trim();
+  if(!link){
+    const empty = document.createElement('p');
+    empty.className = 'vlow-empty';
+    empty.textContent = cloudUser
+      ? 'Nenhum link/vídeo salvo ainda. Cole um link acima ou anexe um arquivo mp4 — se for um vídeo (YouTube, Vimeo, Loom, Drive ou mp4), ele toca aqui embutido automaticamente.'
+      : 'Nenhum vídeo disponível no momento.';
+    preview.appendChild(empty);
+    return;
+  }
+
+  const embedUrl = getEmbeddableVideoUrl(link);
+  if(embedUrl){
+    if(/\.(mp4|webm|ogg)$/i.test(embedUrl)){
+      const video = document.createElement('video');
+      video.src = embedUrl;
+      video.controls = true;
+      video.className = 'vlow-video';
+      preview.appendChild(video);
+    } else {
+      const iframe = document.createElement('iframe');
+      iframe.src = embedUrl;
+      iframe.className = 'vlow-video';
+      iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture');
+      iframe.setAttribute('allowfullscreen', '');
+      preview.appendChild(iframe);
+    }
+  }
+
+  const linkCard = document.createElement('a');
+  linkCard.href = link;
+  linkCard.target = '_blank';
+  linkCard.rel = 'noopener noreferrer';
+  linkCard.className = 'vlow-link-card';
+  linkCard.innerHTML = iconSvg('link') + '<span></span>';
+  linkCard.querySelector('span').textContent = link;
+  preview.appendChild(linkCard);
+}
+
+function copyVlowLink(){
+  const link = (vlowLink || '').trim();
+  if(!link){ addBotMessage('Cole um link antes de copiar.'); return; }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(link).catch(() => {});
+  }
+  const btn = document.getElementById('vlowCopyBtn');
+  if(btn){
+    const original = btn.textContent;
+    btn.textContent = 'Copiado!';
+    setTimeout(() => { btn.textContent = original; }, 1500);
+  }
+}
+
 /* Tela inicial de conversa vazia (dentro de um modo/especialista), no
    estilo "O que temos para fazer hoje?" de outros apps de IA — some assim
    que a primeira mensagem é enviada. */
@@ -3088,7 +3847,12 @@ function renderEmptyState(){
   chat.appendChild(wrap);
 }
 
-function showAgentsPlaceholder(){
+/* Tela genérica de "isso ainda não existe, mas vai existir" — usada pelo
+   Agentes e pelos itens de Workspace (Equipes/Projetos/Compartilhados) que
+   dependeriam de contas de vários usuários e sincronização entre pessoas,
+   algo que o AtlasIA (hoje 100% no navegador, sem servidor) ainda não tem. */
+function showComingSoonPlaceholder(emoji, title, description){
+  closeOverlayPanels();
   const chat = document.getElementById('chat');
   chat.innerHTML = '';
   const wrap = document.createElement('div');
@@ -3097,15 +3861,15 @@ function showAgentsPlaceholder(){
 
   const icon = document.createElement('div');
   icon.className = 'agents-placeholder-icon';
-  icon.textContent = '🤖';
+  icon.textContent = emoji;
   wrap.appendChild(icon);
 
-  const title = document.createElement('h2');
-  title.textContent = 'Agentes — em breve';
-  wrap.appendChild(title);
+  const titleEl = document.createElement('h2');
+  titleEl.textContent = title;
+  wrap.appendChild(titleEl);
 
   const desc = document.createElement('p');
-  desc.textContent = 'Estamos trabalhando em agentes de IA capazes de executar tarefas por conta própria. Hoje a AtlasIA roda inteira no seu navegador, sem servidor por trás, então ainda não conseguimos executar ações automáticas fora do chat. Assim que essa função estiver pronta, ela vai aparecer aqui.';
+  desc.textContent = description;
   wrap.appendChild(desc);
 
   const backBtn = document.createElement('button');
@@ -3121,6 +3885,383 @@ function showAgentsPlaceholder(){
   wrap.appendChild(backBtn);
 
   chat.appendChild(wrap);
+}
+
+function showAgentsPlaceholder(){
+  showComingSoonPlaceholder(
+    '🤖',
+    'Agentes — em breve',
+    'Estamos trabalhando em agentes de IA capazes de executar tarefas por conta própria. Hoje a AtlasIA roda inteira no seu navegador, sem servidor por trás, então ainda não conseguimos executar ações automáticas fora do chat. Assim que essa função estiver pronta, ela vai aparecer aqui.'
+  );
+}
+
+/* =========================================================
+   WORKSPACE (Equipes / Projetos / Compartilhados) — dados reais,
+   compartilhados entre toda a equipe (qualquer pessoa logada na conta da
+   empresa vê e edita os mesmos registros), guardados em tabelas do
+   Supabase. Informação interna, então diferente do Vlow: só aparece pra
+   quem está logado (ver showWorkspaceView → showLoginGate quando não há
+   login). As 3 abas usam a mesma estrutura de tela (form + lista), só
+   trocando os campos/tabela — configurado abaixo em WORKSPACE_TABLES.
+   ========================================================= */
+const WORKSPACE_TABLES = {
+  equipes: {
+    table: 'team_members',
+    icon: 'bot', color: '#818cf8', emoji: '👥',
+    heading: 'Equipes',
+    subtitle: 'Quem faz parte do time — visível e editável só por quem está logado na conta da empresa.',
+    emptyText: 'Nenhum integrante cadastrado ainda. Adicione o primeiro abaixo.',
+    addLabel: 'Adicionar integrante',
+    fields: [
+      { key: 'name', label: 'Nome', type: 'text', required: true },
+      { key: 'role', label: 'Cargo', type: 'text' },
+      { key: 'contact', label: 'Contato (e-mail ou telefone)', type: 'text' }
+    ]
+  },
+  projetos: {
+    table: 'projects',
+    icon: 'dashboard', color: '#22d3ee', emoji: '📁',
+    heading: 'Projetos',
+    subtitle: 'Quadro de projetos da equipe, com status e responsável.',
+    emptyText: 'Nenhum projeto cadastrado ainda. Adicione o primeiro abaixo.',
+    addLabel: 'Adicionar projeto',
+    fields: [
+      { key: 'title', label: 'Título', type: 'text', required: true },
+      { key: 'status', label: 'Status', type: 'select', options: [['nao_iniciado', 'Não iniciado'], ['em_andamento', 'Em andamento'], ['concluido', 'Concluído']] },
+      { key: 'responsible', label: 'Responsável', type: 'text' },
+      { key: 'description', label: 'Descrição', type: 'textarea' }
+    ]
+  },
+  compartilhados: {
+    table: 'shared_items',
+    icon: 'globe', color: '#34d399', emoji: '🔗',
+    heading: 'Compartilhados',
+    subtitle: 'Links e arquivos importantes da equipe, num só lugar.',
+    emptyText: 'Nada compartilhado ainda. Adicione o primeiro abaixo.',
+    addLabel: 'Adicionar item',
+    fields: [
+      { key: 'title', label: 'Título', type: 'text', required: true },
+      { key: 'url', label: 'Link (ou anexe um arquivo abaixo)', type: 'text' },
+      { key: 'description', label: 'Descrição', type: 'textarea' }
+    ],
+    allowFileUpload: true
+  }
+};
+
+const WORKSPACE_STATUS_LABELS = { nao_iniciado: 'Não iniciado', em_andamento: 'Em andamento', concluido: 'Concluído' };
+
+function showWorkspaceView(key){
+  const cfg = WORKSPACE_TABLES[key];
+  if(!cfg) return;
+  closeOverlayPanels();
+  currentView = key;
+  currentConvId = null;
+  renderModeSwitch();
+  updateNavActiveStates();
+  document.getElementById('modeBanner').classList.remove('show');
+  renderConversationList();
+  if(!cloudUser){
+    showLoginGate(cfg.emoji, cfg.heading, 'Essa área guarda informação interna da equipe, por isso só aparece pra quem está logado na conta da empresa. Entre pra ver e editar ' + cfg.heading.toLowerCase() + '.');
+    return;
+  }
+  renderWorkspaceView(key);
+  closeSidebarIfMobile();
+}
+
+/* Tela de "precisa estar logado" — parecida com showComingSoonPlaceholder,
+   mas com um botão de Entrar em vez de só avisar que a função não existe
+   (aqui a função existe, só depende de login). */
+function showLoginGate(emoji, title, description){
+  closeOverlayPanels();
+  const chat = document.getElementById('chat');
+  chat.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'agents-placeholder';
+  wrap.id = 'agentsPlaceholder';
+
+  const icon = document.createElement('div');
+  icon.className = 'agents-placeholder-icon';
+  icon.textContent = emoji;
+  wrap.appendChild(icon);
+
+  const titleEl = document.createElement('h2');
+  titleEl.textContent = title;
+  wrap.appendChild(titleEl);
+
+  const desc = document.createElement('p');
+  desc.textContent = description;
+  wrap.appendChild(desc);
+
+  const loginBtn = document.createElement('button');
+  loginBtn.type = 'button';
+  loginBtn.className = 'vlow-share-btn';
+  loginBtn.id = 'loginGateBtn';
+  loginBtn.style.marginTop = '4px';
+  loginBtn.textContent = 'Entrar / criar conta';
+  loginBtn.onclick = () => showAuthOverlay();
+  wrap.appendChild(loginBtn);
+
+  const backBtn = document.createElement('button');
+  backBtn.type = 'button';
+  backBtn.className = 'back-btn';
+  backBtn.textContent = '← Voltar pro Início';
+  backBtn.onclick = () => showHomeView();
+  wrap.appendChild(backBtn);
+
+  chat.appendChild(wrap);
+}
+
+async function renderWorkspaceView(key){
+  const cfg = WORKSPACE_TABLES[key];
+  const chat = document.getElementById('chat');
+  chat.innerHTML = '';
+
+  const wrap = document.createElement('div');
+  wrap.className = 'vlow-view workspace-view';
+  wrap.id = 'workspaceView_' + key;
+
+  const heading = document.createElement('h2');
+  heading.className = 'vlow-heading';
+  heading.textContent = cfg.heading;
+  wrap.appendChild(heading);
+
+  const subtitle = document.createElement('p');
+  subtitle.className = 'vlow-subtitle';
+  subtitle.textContent = cfg.subtitle;
+  wrap.appendChild(subtitle);
+
+  wrap.appendChild(buildWorkspaceForm(key));
+
+  const listWrap = document.createElement('div');
+  listWrap.className = 'workspace-list';
+  listWrap.id = 'workspaceList_' + key;
+  const loading = document.createElement('p');
+  loading.className = 'vlow-empty';
+  loading.textContent = 'Carregando…';
+  listWrap.appendChild(loading);
+  wrap.appendChild(listWrap);
+
+  chat.appendChild(wrap);
+
+  await loadWorkspaceItems(key);
+}
+
+function buildWorkspaceForm(key){
+  const cfg = WORKSPACE_TABLES[key];
+  const form = document.createElement('div');
+  form.className = 'workspace-form';
+
+  cfg.fields.forEach(f => {
+    let el;
+    if(f.type === 'select'){
+      el = document.createElement('select');
+      el.className = 'workspace-input';
+      f.options.forEach(([val, label]) => {
+        const opt = document.createElement('option');
+        opt.value = val;
+        opt.textContent = label;
+        el.appendChild(opt);
+      });
+    } else if(f.type === 'textarea'){
+      el = document.createElement('textarea');
+      el.className = 'workspace-input';
+      el.rows = 2;
+      el.placeholder = f.label;
+    } else {
+      el = document.createElement('input');
+      el.type = 'text';
+      el.className = 'workspace-input';
+      el.placeholder = f.label + (f.required ? ' *' : '');
+    }
+    el.id = 'wsField_' + key + '_' + f.key;
+    form.appendChild(el);
+  });
+
+  if(cfg.allowFileUpload){
+    const fileBtn = document.createElement('label');
+    fileBtn.className = 'workspace-file-btn';
+    fileBtn.textContent = 'Anexar arquivo';
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.id = 'wsFile_' + key;
+    fileInput.onchange = () => handleWorkspaceFileSelect(key);
+    fileBtn.appendChild(fileInput);
+    form.appendChild(fileBtn);
+    const fileStatus = document.createElement('span');
+    fileStatus.id = 'wsFileStatus_' + key;
+    fileStatus.className = 'workspace-file-status';
+    form.appendChild(fileStatus);
+  }
+
+  const addBtn = document.createElement('button');
+  addBtn.type = 'button';
+  addBtn.className = 'vlow-share-btn workspace-add-btn';
+  addBtn.onclick = () => addWorkspaceItem(key);
+  addBtn.textContent = cfg.addLabel;
+  form.appendChild(addBtn);
+
+  return form;
+}
+
+/* No Compartilhados, anexar um arquivo faz upload pro Storage (bucket
+   separado do vídeo do Vlow — este aqui não é público, só quem estiver
+   logado consegue ver os itens de Compartilhados de qualquer forma) e
+   preenche o campo de link com a URL gerada automaticamente. */
+async function handleWorkspaceFileSelect(key){
+  const fileInput = document.getElementById('wsFile_' + key);
+  const statusEl = document.getElementById('wsFileStatus_' + key);
+  const file = fileInput && fileInput.files && fileInput.files[0];
+  if(!file) return;
+  if(statusEl) statusEl.textContent = 'Enviando ' + file.name + '…';
+  try{
+    const url = await uploadFileToStorage('shared-files', file, key);
+    const urlField = document.getElementById('wsField_' + key + '_url');
+    if(urlField) urlField.value = url;
+    if(statusEl) statusEl.textContent = '✓ ' + file.name;
+  }catch(e){
+    if(statusEl) statusEl.textContent = '';
+    showToast('⚠️ Não consegui enviar o arquivo: ' + (e && e.message ? e.message : 'tente de novo.'));
+  }finally{
+    if(fileInput) fileInput.value = '';
+  }
+}
+
+async function addWorkspaceItem(key){
+  const cfg = WORKSPACE_TABLES[key];
+  if(!cloudUser){ showToast('⚠️ Faça login para adicionar.'); return; }
+  const client = getSupabaseClient();
+  if(!client){ showToast('⚠️ Sem conexão com o serviço da nuvem agora.'); return; }
+
+  const row = {};
+  let missingRequired = false;
+  cfg.fields.forEach(f => {
+    const el = document.getElementById('wsField_' + key + '_' + f.key);
+    const value = el ? el.value.trim() : '';
+    if(f.required && !value) missingRequired = true;
+    row[f.key] = value || null;
+  });
+  if(missingRequired){ showToast('⚠️ Preencha os campos obrigatórios (*).'); return; }
+
+  try{
+    const { error } = await client.from(cfg.table).insert(row);
+    if(error) throw error;
+    cfg.fields.forEach(f => {
+      const el = document.getElementById('wsField_' + key + '_' + f.key);
+      if(el) el.value = f.type === 'select' ? el.options[0].value : '';
+    });
+    const fileStatus = document.getElementById('wsFileStatus_' + key);
+    if(fileStatus) fileStatus.textContent = '';
+    await loadWorkspaceItems(key);
+    showToast('✓ Adicionado.');
+  }catch(e){
+    showToast('⚠️ Não consegui salvar: ' + (e && e.message ? e.message : 'tente de novo.'));
+  }
+}
+
+async function deleteWorkspaceItem(key, id){
+  if(!confirm('Remover este item? Isso afeta todo mundo da equipe.')) return;
+  const cfg = WORKSPACE_TABLES[key];
+  const client = getSupabaseClient();
+  if(!client || !cloudUser) return;
+  try{
+    const { error } = await client.from(cfg.table).delete().eq('id', id);
+    if(error) throw error;
+    await loadWorkspaceItems(key);
+  }catch(e){
+    showToast('⚠️ Não consegui remover: ' + (e && e.message ? e.message : 'tente de novo.'));
+  }
+}
+
+async function loadWorkspaceItems(key){
+  const cfg = WORKSPACE_TABLES[key];
+  const listWrap = document.getElementById('workspaceList_' + key);
+  if(!listWrap) return;
+  const client = getSupabaseClient();
+  if(!client){
+    listWrap.innerHTML = '';
+    const p = document.createElement('p');
+    p.className = 'vlow-empty';
+    p.textContent = 'Sem conexão com o serviço da nuvem agora.';
+    listWrap.appendChild(p);
+    return;
+  }
+  try{
+    const { data, error } = await client.from(cfg.table).select('*').order('created_at', { ascending: false });
+    if(error) throw error;
+    renderWorkspaceItems(key, data || []);
+  }catch(e){
+    listWrap.innerHTML = '';
+    const p = document.createElement('p');
+    p.className = 'vlow-empty';
+    p.textContent = 'Não consegui carregar agora. Tente de novo em instantes.';
+    listWrap.appendChild(p);
+  }
+}
+
+function renderWorkspaceItems(key, items){
+  const cfg = WORKSPACE_TABLES[key];
+  const listWrap = document.getElementById('workspaceList_' + key);
+  if(!listWrap) return;
+  listWrap.innerHTML = '';
+  if(!items.length){
+    const p = document.createElement('p');
+    p.className = 'vlow-empty';
+    p.textContent = cfg.emptyText;
+    listWrap.appendChild(p);
+    return;
+  }
+  items.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'workspace-item';
+
+    const info = document.createElement('div');
+    info.className = 'workspace-item-info';
+
+    if(key === 'equipes'){
+      const name = document.createElement('strong');
+      name.textContent = item.name || '';
+      info.appendChild(name);
+      if(item.role){ const r = document.createElement('span'); r.className = 'workspace-item-sub'; r.textContent = item.role; info.appendChild(r); }
+      if(item.contact){ const c = document.createElement('span'); c.className = 'workspace-item-sub'; c.textContent = item.contact; info.appendChild(c); }
+    } else if(key === 'projetos'){
+      const title = document.createElement('strong');
+      title.textContent = item.title || '';
+      info.appendChild(title);
+      const badge = document.createElement('span');
+      badge.className = 'workspace-status-badge status-' + (item.status || 'nao_iniciado');
+      badge.textContent = WORKSPACE_STATUS_LABELS[item.status] || 'Não iniciado';
+      info.appendChild(badge);
+      if(item.responsible){ const r = document.createElement('span'); r.className = 'workspace-item-sub'; r.textContent = 'Responsável: ' + item.responsible; info.appendChild(r); }
+      if(item.description){ const d = document.createElement('p'); d.className = 'workspace-item-desc'; d.textContent = item.description; info.appendChild(d); }
+    } else if(key === 'compartilhados'){
+      const title = document.createElement('strong');
+      title.textContent = item.title || '';
+      info.appendChild(title);
+      if(item.description){ const d = document.createElement('p'); d.className = 'workspace-item-desc'; d.textContent = item.description; info.appendChild(d); }
+      if(item.url){
+        const link = document.createElement('a');
+        link.href = item.url;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.className = 'vlow-link-card workspace-item-link';
+        link.innerHTML = iconSvg('link') + '<span></span>';
+        link.querySelector('span').textContent = item.url;
+        info.appendChild(link);
+      }
+    }
+
+    card.appendChild(info);
+
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'workspace-delete-btn';
+    delBtn.setAttribute('aria-label', 'Remover');
+    delBtn.textContent = '✕';
+    delBtn.onclick = () => deleteWorkspaceItem(key, item.id);
+    card.appendChild(delBtn);
+
+    listWrap.appendChild(card);
+  });
 }
 
 /* =========================================================
@@ -3347,6 +4488,16 @@ function updateAccountUI(){
     loggedOutBox.style.display = 'flex';
   }
   updateSyncIndicator('synced');
+  refreshLoginDependentView();
+}
+
+/* Vlow e Workspace (Equipes/Projetos/Compartilhados) mudam de cara
+   dependendo de ter login ou não (editável vs. só leitura; ou nem aparece
+   sem login). Chamada sempre que o estado de login muda, pra tela
+   acompanhar na hora sem precisar recarregar a página. */
+function refreshLoginDependentView(){
+  if(currentView === 'vlow'){ renderVlowView(); return; }
+  if(WORKSPACE_TABLES[currentView]){ showWorkspaceView(currentView); }
 }
 
 function getStorage(){
@@ -3375,7 +4526,8 @@ function buildStateSnapshot(){
     conversations, currentConvId, convCounter,
     currentMode, memoryNotes,
     themeMode, accentColor, notifySound,
-    responseStyle, chatFontSize, maxConversationsLimit
+    responseStyle, chatFontSize, maxConversationsLimit,
+    vlowLink
   };
 }
 
@@ -3739,7 +4891,9 @@ const ICONS = {
   moon: '<path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/>',
   sun: '<circle cx="12" cy="12" r="4.5"/><line x1="12" y1="2" x2="12" y2="4.5"/><line x1="12" y1="19.5" x2="12" y2="22"/><line x1="2" y1="12" x2="4.5" y2="12"/><line x1="19.5" y1="12" x2="22" y2="12"/><line x1="4.9" y1="4.9" x2="6.6" y2="6.6"/><line x1="17.4" y1="17.4" x2="19.1" y2="19.1"/><line x1="4.9" y1="19.1" x2="6.6" y2="17.4"/><line x1="17.4" y1="6.6" x2="19.1" y2="4.9"/>',
   paperclip: '<path d="M19 11.5l-7.4 7.4a4.5 4.5 0 0 1-6.4-6.4l8.1-8.1a3 3 0 0 1 4.2 4.2l-8 8a1.5 1.5 0 0 1-2.1-2.1l7-7"/>',
-  keyboard: '<rect x="2.5" y="6" width="19" height="13" rx="2.2"/><line x1="6" y1="10" x2="6" y2="10.01"/><line x1="9.5" y1="10" x2="9.5" y2="10.01"/><line x1="13" y1="10" x2="13" y2="10.01"/><line x1="16.5" y1="10" x2="16.5" y2="10.01"/><line x1="6" y1="13.3" x2="6" y2="13.31"/><line x1="9.5" y1="13.3" x2="9.5" y2="13.31"/><line x1="13" y1="13.3" x2="13" y2="13.31"/><line x1="16.5" y1="13.3" x2="16.5" y2="13.31"/><line x1="7.5" y1="16.3" x2="15.5" y2="16.3"/>'
+  keyboard: '<rect x="2.5" y="6" width="19" height="13" rx="2.2"/><line x1="6" y1="10" x2="6" y2="10.01"/><line x1="9.5" y1="10" x2="9.5" y2="10.01"/><line x1="13" y1="10" x2="13" y2="10.01"/><line x1="16.5" y1="10" x2="16.5" y2="10.01"/><line x1="6" y1="13.3" x2="6" y2="13.31"/><line x1="9.5" y1="13.3" x2="9.5" y2="13.31"/><line x1="13" y1="13.3" x2="13" y2="13.31"/><line x1="16.5" y1="13.3" x2="16.5" y2="13.31"/><line x1="7.5" y1="16.3" x2="15.5" y2="16.3"/>',
+  video: '<rect x="2.5" y="5.5" width="14" height="13" rx="2.2"/><path d="M16.5 10.8l4.4-2.9a.8.8 0 0 1 1.1.7v7.8a.8.8 0 0 1-1.1.7l-4.4-2.9z"/><path d="M8 9.3v5.4l4.6-2.7z" class="filled"/>',
+  link: '<path d="M9 15a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1.5 1.4"/><path d="M15 9a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1.4-1.4"/>'
 };
 
 function iconSvg(name, extraClass){
@@ -3760,40 +4914,98 @@ function buildModeIconBadge(icon, color){
   return badge;
 }
 
+/* Cada modo de IA pertence a uma "seção" da barra lateral — hoje só usado
+   pra decidir em qual dos dois grupos (Especialistas / Criatividade) o botão
+   aparece, mas centralizado aqui pra não espalhar essa lógica. */
+const MODE_GROUPS = {
+  credenciamento: 'especialistas',
+  bi: 'especialistas',
+  financeiro: 'especialistas',
+  juridico: 'especialistas',
+  dev: 'especialistas',
+  saude: 'especialistas',
+  automacao: 'especialistas',
+  trabalho: 'especialistas',
+  escrita: 'criatividade',
+  apresentacoes: 'criatividade',
+  design: 'criatividade',
+  imagens: 'criatividade'
+};
+
+function buildModeButton(key){
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'mode-btn' + (key === currentMode && currentView === 'mode' ? ' active' : '');
+  btn.appendChild(buildModeIconBadge(MODES[key].icon, MODES[key].color));
+  const label = document.createElement('span');
+  label.textContent = MODES[key].label;
+  btn.appendChild(label);
+  btn.onclick = () => switchMode(key);
+  return btn;
+}
+
+function buildComingSoonButton(label, icon, color, onClick){
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'mode-btn agents-btn';
+  btn.appendChild(buildModeIconBadge(icon, color));
+  const labelEl = document.createElement('span');
+  labelEl.textContent = label;
+  btn.appendChild(labelEl);
+  const tag = document.createElement('span');
+  tag.className = 'agents-soon-tag';
+  tag.textContent = 'em breve';
+  btn.appendChild(tag);
+  btn.onclick = onClick;
+  return btn;
+}
+
+function buildWorkspaceButton(key){
+  const cfg = WORKSPACE_TABLES[key];
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'mode-btn' + (currentView === key ? ' active' : '');
+  btn.appendChild(buildModeIconBadge(cfg.icon, cfg.color));
+  const label = document.createElement('span');
+  label.textContent = cfg.heading;
+  btn.appendChild(label);
+  btn.onclick = () => showWorkspaceView(key);
+  return btn;
+}
+
 function renderModeSwitch(){
   const el = document.getElementById('modeSwitch');
-  if(!el) return;
-  el.innerHTML = '';
-  Object.keys(MODES).forEach(key => {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'mode-btn' + (key === currentMode && currentView === 'mode' ? ' active' : '');
-    btn.appendChild(buildModeIconBadge(MODES[key].icon, MODES[key].color));
-    const label = document.createElement('span');
-    label.textContent = MODES[key].label;
-    btn.appendChild(label);
-    btn.onclick = () => switchMode(key);
-    el.appendChild(btn);
-  });
-
-  const agentsBtn = document.createElement('button');
-  agentsBtn.type = 'button';
-  agentsBtn.className = 'mode-btn agents-btn';
-  agentsBtn.appendChild(buildModeIconBadge('bot', AGENTS_MODE_COLOR));
-  const agentsLabel = document.createElement('span');
-  agentsLabel.textContent = 'Agentes';
-  agentsBtn.appendChild(agentsLabel);
-  const agentsTag = document.createElement('span');
-  agentsTag.className = 'agents-soon-tag';
-  agentsTag.textContent = 'em breve';
-  agentsBtn.appendChild(agentsTag);
-  agentsBtn.onclick = () => showAgentsPlaceholder();
-  el.appendChild(agentsBtn);
+  const creativeEl = document.getElementById('modeSwitchCreative');
+  const workspaceEl = document.getElementById('modeSwitchWorkspace');
+  if(el){
+    el.innerHTML = '';
+    Object.keys(MODES).filter(key => MODE_GROUPS[key] === 'especialistas').forEach(key => el.appendChild(buildModeButton(key)));
+    el.appendChild(buildComingSoonButton('Agentes', 'bot', AGENTS_MODE_COLOR, () => showAgentsPlaceholder()));
+  }
+  if(creativeEl){
+    creativeEl.innerHTML = '';
+    Object.keys(MODES).filter(key => MODE_GROUPS[key] === 'criatividade').forEach(key => creativeEl.appendChild(buildModeButton(key)));
+  }
+  if(workspaceEl){
+    workspaceEl.innerHTML = '';
+    Object.keys(WORKSPACE_TABLES).forEach(key => workspaceEl.appendChild(buildWorkspaceButton(key)));
+    const settingsBtn = document.createElement('button');
+    settingsBtn.type = 'button';
+    settingsBtn.className = 'mode-btn';
+    settingsBtn.appendChild(buildModeIconBadge('gear', '#8fa0c2'));
+    const settingsLabel = document.createElement('span');
+    settingsLabel.textContent = 'Configurações';
+    settingsBtn.appendChild(settingsLabel);
+    settingsBtn.onclick = () => toggleSettings();
+    workspaceEl.appendChild(settingsBtn);
+  }
 }
 
 function updateNavActiveStates(){
   const homeBtn = document.getElementById('navHomeBtn');
   if(homeBtn) homeBtn.classList.toggle('active', currentView === 'home');
+  const vlowBtn = document.getElementById('navVlowBtn');
+  if(vlowBtn) vlowBtn.classList.toggle('active', currentView === 'vlow');
 }
 
 function applyModeUI(mode){
@@ -5464,6 +6676,7 @@ function applyLoadedState(saved){
   notifySound = !!saved.notifySound;
   responseStyle = RESPONSE_STYLE_GUIDES[saved.responseStyle] ? saved.responseStyle : 'equilibrada';
   chatFontSize = (saved.chatFontSize === 'small' || saved.chatFontSize === 'large') ? saved.chatFontSize : 'medium';
+  vlowLink = typeof saved.vlowLink === 'string' ? saved.vlowLink : '';
 
   selectProvider(apiProvider);
   document.getElementById('profileNameInput').value = saved.profileName || 'Você';
@@ -5657,6 +6870,11 @@ window.onload = () => {
     renderFontSizeToggle();
     showHomeView();
   }
+
+  // Busca o link/vídeo compartilhado do Vlow por baixo dos panos, sem
+  // depender de login — é o único dado que qualquer visitante (inclusive
+  // prestador externo sem conta) precisa ver certo assim que abre o app.
+  loadSharedVlowConfig();
 
   // Login é opcional e não bloqueia nada acima — o app já abriu no modo
   // local de sempre. Isso só confere, por baixo dos panos, se existe uma

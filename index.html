@@ -881,6 +881,30 @@
   .msg.bot:hover .bot-copy-btn{ opacity:1; }
   .msg.bot .bot-copy-btn:hover{ border-color:var(--border); color:var(--text); }
   .msg.bot .bot-copy-btn.copied{ color:var(--accent-2); opacity:1; }
+  .msg.bot .bot-copy-btn.favorited{ color:#fbbf24; opacity:1; }
+  .msg-actions{ display:flex; flex-wrap:wrap; align-items:center; }
+
+  /* Botões de ação (Copiar/WhatsApp/PDF/Card) reaproveitados fora do chat —
+     nos itens de Equipes/Projetos/Compartilhados (Workspace). Visual
+     parecido com .bot-copy-btn, mas sempre visível (sem exigir hover, já
+     que os cards do Workspace não têm esse padrão de "revelar ao passar o
+     mouse" do chat — e no celular não existe hover). */
+  .action-btn{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    background:transparent;
+    border:1px solid transparent;
+    color:var(--text-dim);
+    padding:3px 6px;
+    border-radius:7px;
+    font-size:11px;
+    cursor:pointer;
+    opacity:.85;
+  }
+  .action-btn:hover{ border-color:var(--border); color:var(--text); opacity:1; }
+  .action-btn.copied{ color:var(--accent-2); opacity:1; }
+  .workspace-item-actions{ display:flex; flex-wrap:wrap; gap:2px; margin-top:6px; }
 
   .chat{
     overflow-y:auto;
@@ -1299,6 +1323,16 @@
   .workspace-file-btn:hover{ border-color:var(--accent); }
   .workspace-file-status{ font-size:12px; color:var(--text-dim); align-self:center; }
   .workspace-add-btn{ height:38px; margin-left:auto; }
+  .workspace-error{
+    font-size:12.5px;
+    line-height:1.5;
+    color:#fca5a5;
+    background:rgba(248,113,113,.12);
+    border:1px solid rgba(248,113,113,.35);
+    border-radius:10px;
+    padding:10px 12px;
+    margin:2px 0 4px;
+  }
   .workspace-list{ display:flex; flex-direction:column; gap:10px; margin-top:4px; }
   .workspace-item{
     display:flex;
@@ -1336,6 +1370,33 @@
     flex-shrink:0;
   }
   .workspace-delete-btn:hover{ color:#f87171; }
+
+  .task-due-badge{
+    align-self:flex-start;
+    font-size:11px;
+    font-weight:600;
+    padding:2px 9px;
+    border-radius:20px;
+    background:rgba(129,140,248,.18);
+    color:#818cf8;
+  }
+  .task-due-badge.task-due-overdue{ background:rgba(248,113,113,.18); color:#f87171; }
+  .task-item.task-overdue{ border-color:rgba(248,113,113,.4); background:rgba(248,113,113,.06); }
+  .task-notify-banner{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    justify-content:space-between;
+    font-size:12.5px;
+    line-height:1.5;
+    color:var(--text-dim);
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:10px 12px;
+    margin:2px 0 12px;
+  }
+  .task-notify-banner button{ flex-shrink:0; height:34px; padding:0 12px; font-size:12.5px; }
 
   .footer-disclaimer{
     font-size:10.5px;
@@ -1984,6 +2045,8 @@
     <button type="button" class="new-chat-btn" onclick="startNewConversation()">+ Nova conversa</button>
     <button type="button" class="nav-btn active" id="navHomeBtn" onclick="showHomeView()"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.5 12 4l8 7.5V20a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg> Início</button>
     <button type="button" class="nav-btn" id="navVlowBtn" onclick="showVlowView()"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5.5" width="14" height="13" rx="2.2"/><path d="M16.5 10.8l4.4-2.9a.8.8 0 0 1 1.1.7v7.8a.8.8 0 0 1-1.1.7l-4.4-2.9z"/><path d="M8 9.3v5.4l4.6-2.7z" class="filled"/></svg> Vlow</button>
+    <button type="button" class="nav-btn" id="navTarefasBtn" onclick="showTarefasView()"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v5l3.2 1.8"/></svg> Tarefas</button>
+    <button type="button" class="nav-btn" id="navFavoritosBtn" onclick="showFavoritosView()"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.6 6.1.7-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6-4.5-4.2 6.1-.7z"/></svg> Favoritos</button>
     <div class="sidebar-section-label">Especialistas</div>
     <div class="mode-switch" id="modeSwitch"></div>
     <div class="sidebar-section-label">Criatividade</div>
@@ -2015,7 +2078,7 @@
     <div class="settings-section">
       <div class="settings-section-title">IA generativa</div>
       <div class="settings-row">
-        <label style="width:100%">Opcional — sem isso, o AtlasIA usa a base de FAQ local</label>
+        <label style="width:100%">Opcional — sem isso, o AtlasIA usa a base de FAQ local. Alternativa: role até "Conta" e faça login para usar a IA da empresa sem precisar colar nenhuma chave aqui.</label>
       </div>
       <div class="provider-toggle">
         <button type="button" id="providerGeminiBtn" class="provider-btn active" onclick="selectProvider('gemini')">Google Gemini <span class="tag-free">grátis</span></button>
@@ -2189,76 +2252,52 @@
    Ajuste os textos abaixo para refletir as regras reais
    do seu convênio/plano de saúde.
    ========================================================= */
-const CREDENCIAMENTO_KB = [
+/* =========================================================
+   GERAL — modo de propósito geral (sem restrição de assunto). O
+   credenciamento de prestadores de saúde tem um modo próprio, o Trabalho
+   (que reúne apoio ao dia a dia profissional + credenciamento) — este modo
+   aqui é o "coringa": qualquer pergunta, qualquer assunto.
+   ========================================================= */
+const GERAL_KB = [
   {
-    id: "quem-pode",
-    keywords: ["quem pode", "credenciar", "elegivel", "elegível", "tipos de prestador", "categorias", "quem se credencia"],
-    title: "Quem pode se credenciar",
-    answer: "Podem solicitar credenciamento: médicos e demais profissionais de saúde (pessoa física), clínicas, consultórios, laboratórios de análises clínicas, hospitais e prontos-socorros, e serviços de apoio diagnóstico e terapêutico (SADT). Cada categoria tem uma lista específica de documentos exigidos."
+    id: "o-que-este-modo-faz",
+    keywords: ["o que voce faz", "pra que serve esse modo", "no que voce ajuda", "o que voce sabe fazer"],
+    title: "No que a Lumi pode ajudar no modo Geral",
+    answer: "Este modo não tem um assunto fixo — pode perguntar sobre qualquer coisa: dúvidas do dia a dia, redação e revisão de textos, programação, estudos, planejamento de tarefas, ideias, explicações de conceitos, e muito mais. Se o assunto for especificamente credenciamento de prestadores de saúde, o modo Trabalho tem um conhecimento mais aprofundado sobre esse processo específico."
   },
   {
-    id: "documentos-pf",
-    keywords: ["documentos pessoa fisica", "documentos médico", "documentos profissional", "crm", "registro profissional", "o que preciso", "documentacao pf"],
-    title: "Documentos — Pessoa Física (profissional de saúde)",
-    answer: "Para profissionais (pessoa física), normalmente são exigidos:\n• RG e CPF\n• Registro no conselho de classe (CRM, CRO, COREN, CREFITO etc.) com situação regular\n• Comprovante de especialização/título de especialista, quando aplicável\n• Comprovante de endereço do consultório\n• Comprovante de dados bancários (para pagamentos)\n• Certidão negativa de antecedentes éticos do conselho de classe\n• Currículo profissional atualizado"
+    id: "escrever-textos",
+    keywords: ["escrever texto", "revisar texto", "redigir", "melhorar um texto", "corrigir texto"],
+    title: "Escrever ou revisar um texto",
+    answer: "Cole o texto aqui e diga o objetivo (ex: deixar mais formal, mais curto, corrigir erros, adaptar pra outro público) que a Lumi ajuda a revisar ou reescrever. Pra e-mails e relatórios de trabalho especificamente, o modo Trabalho tem dicas mais direcionadas."
   },
   {
-    id: "documentos-pj",
-    keywords: ["documentos pessoa juridica", "documentos clinica", "documentos hospital", "cnpj", "documentacao pj", "documentos empresa"],
-    title: "Documentos — Pessoa Jurídica (clínica, hospital, laboratório)",
-    answer: "Para pessoa jurídica, normalmente são exigidos:\n• Contrato social atualizado e CNPJ\n• Alvará de funcionamento e alvará sanitário vigentes\n• Responsável técnico com registro no conselho de classe\n• Certidões negativas (federal, estadual, municipal, trabalhista e FGTS)\n• Comprovante de endereço da unidade\n• Licença ambiental (quando aplicável, ex: hospitais e laboratórios)\n• Dados bancários da pessoa jurídica"
+    id: "programacao",
+    keywords: ["programar", "codigo", "código", "bug", "erro no codigo", "linguagem de programacao"],
+    title: "Ajuda com programação",
+    answer: "Pode colar um trecho de código, descrever o erro que está aparecendo, ou explicar o que você quer construir que a Lumi ajuda a escrever, revisar ou depurar — em qualquer linguagem."
   },
   {
-    id: "como-iniciar",
-    keywords: ["como iniciar", "como comecar", "como começar", "processo", "solicitar credenciamento", "primeiro passo", "onde comecar", "cadastro"],
-    title: "Como iniciar o processo",
-    answer: "O credenciamento começa com o preenchimento do formulário de solicitação (portal ou e-mail dedicado), anexando a documentação exigida para a categoria correspondente. Após o envio, a equipe de credenciamento faz uma triagem documental antes de seguir para a análise técnica."
+    id: "estudos",
+    keywords: ["estudar", "explicar conceito", "duvida sobre materia", "resumo de estudo", "preparar prova"],
+    title: "Estudos e explicações",
+    answer: "A Lumi pode explicar um conceito de um jeito mais simples, montar um resumo de estudo, ou ajudar a organizar um plano de revisão pra uma prova ou apresentação."
   },
   {
-    id: "prazo-analise",
-    keywords: ["prazo", "quanto tempo", "demora", "tempo de analise", "analise leva"],
-    title: "Prazo de análise",
-    answer: "O prazo médio de análise é de 20 a 30 dias úteis após o recebimento de toda a documentação completa. Pendências documentais reiniciam a contagem do prazo, por isso é importante enviar tudo corretamente na primeira submissão."
-  },
-  {
-    id: "status",
-    keywords: ["status", "acompanhar", "andamento", "consultar processo", "onde acompanho"],
-    title: "Como acompanhar o status",
-    answer: "O status do processo pode ser acompanhado pelo portal do credenciado (login com CPF/CNPJ) ou solicitado por e-mail à central de credenciamento, informando o número de protocolo gerado no envio da solicitação."
-  },
-  {
-    id: "recusa",
-    keywords: ["recusado", "negado", "reprovado", "motivos de recusa", "por que foi negado", "indeferido"],
-    title: "Motivos comuns de recusa",
-    answer: "As recusas mais comuns são: documentação incompleta ou vencida, registro no conselho de classe irregular ou suspenso, ausência de responsável técnico habilitado, e não atendimento aos critérios de rede assistencial vigentes na região (ex: já há cobertura suficiente na especialidade/área)."
-  },
-  {
-    id: "recredenciamento",
-    keywords: ["recredenciamento", "renovar", "renovação", "vencimento do credenciamento", "atualizar cadastro"],
-    title: "Recredenciamento e renovação",
-    answer: "O recredenciamento é periódico (geralmente anual ou bienal, conforme contrato) e exige atualização de certidões e documentos vencidos. O prestador recebe um aviso prévio antes do vencimento para regularizar a documentação e evitar suspensão."
-  },
-  {
-    id: "pagamento",
-    keywords: ["pagamento", "tabela", "valores", "reembolso", "glosa", "faturamento"],
-    title: "Pagamentos e tabela de procedimentos",
-    answer: "Após o credenciamento, o prestador recebe acesso à tabela de procedimentos e valores vigente, além das instruções de faturamento (periodicidade de envio de guias, prazo de pagamento e canal para tratar glosas)."
-  },
-  {
-    id: "contato",
-    keywords: ["contato", "suporte", "duvida", "dúvida", "falar com alguem", "atendimento", "telefone", "email"],
-    title: "Contato e suporte",
-    answer: "Para dúvidas específicas do seu processo, procure a central de credenciamento do seu convênio/plano (e-mail ou telefone informado no formulário de solicitação), sempre citando o número de protocolo, quando existir."
+    id: "organizar-tarefas",
+    keywords: ["organizar tarefas", "priorizar", "planejar o dia", "lista de tarefas", "produtividade"],
+    title: "Organizar tarefas e prioridades",
+    answer: "Descreva o que você precisa fazer (mesmo que seja uma lista bagunçada) que a Lumi ajuda a organizar por prioridade, sugerir prazos realistas, ou quebrar uma tarefa grande em passos menores."
   }
 ];
 
-const CREDENCIAMENTO_GREETING = "Olá! Sou a Lumi, a assistente de IA do AtlasIA, especializada em credenciamento de prestadores de saúde. Posso ajudar com dúvidas sobre o processo, documentação, recredenciamento, tabela de procedimentos/faturamento, e a redigir ou ajustar mensagens para clínicas e prestadores — os modelos prontos pra isso ficam sempre disponíveis em Atalhos (ou digitando \"/\"). No que posso ajudar?";
+const GERAL_GREETING = "Olá! Sou a Lumi, a assistente de IA do AtlasIA. Este é o modo Geral: pode me perguntar sobre qualquer assunto — escrever ou revisar um texto, programar, estudar, organizar tarefas, resolver um problema, o que precisar. (Se for algo específico sobre credenciamento de prestadores de saúde, o modo Trabalho tem um conhecimento mais aprofundado sobre isso.) Como posso ajudar?";
 
-const CREDENCIAMENTO_QUICK_REPLIES = [
+const GERAL_QUICK_REPLIES = [
   "Como você pode me ajudar?",
-  "Tenho uma dúvida sobre credenciamento",
-  "Preciso de um modelo de mensagem pronto",
-  "Me ajuda a redigir uma mensagem pra uma clínica"
+  "Me ajuda a escrever ou revisar um texto",
+  "Tenho uma dúvida sobre um código",
+  "Me ajuda a organizar minhas tarefas"
 ];
 
 /* =========================================================
@@ -2440,16 +2479,76 @@ const TRABALHO_KB = [
     keywords: ["escrever relatorio", "relatorio de trabalho", "relatorio executivo", "resumo executivo"],
     title: "Como escrever um relatório que as pessoas realmente leem",
     answer: "Comece pelo resumo executivo (as conclusões e recomendações principais, em poucas linhas) — nem todo mundo vai ler o relatório inteiro. Depois, estruture em seções curtas com subtítulos, use números concretos em vez de \"muito\"/\"pouco\", e termine cada seção relevante com o que isso significa na prática, não só o dado bruto."
+  },
+  {
+    id: "quem-pode",
+    keywords: ["quem pode", "credenciar", "elegivel", "elegível", "tipos de prestador", "categorias", "quem se credencia"],
+    title: "Quem pode se credenciar",
+    answer: "Podem solicitar credenciamento: médicos e demais profissionais de saúde (pessoa física), clínicas, consultórios, laboratórios de análises clínicas, hospitais e prontos-socorros, e serviços de apoio diagnóstico e terapêutico (SADT). Cada categoria tem uma lista específica de documentos exigidos."
+  },
+  {
+    id: "documentos-pf",
+    keywords: ["documentos pessoa fisica", "documentos médico", "documentos profissional", "crm", "registro profissional", "o que preciso", "documentacao pf"],
+    title: "Documentos — Pessoa Física (profissional de saúde)",
+    answer: "Para profissionais (pessoa física), normalmente são exigidos:\n• RG e CPF\n• Registro no conselho de classe (CRM, CRO, COREN, CREFITO etc.) com situação regular\n• Comprovante de especialização/título de especialista, quando aplicável\n• Comprovante de endereço do consultório\n• Comprovante de dados bancários (para pagamentos)\n• Certidão negativa de antecedentes éticos do conselho de classe\n• Currículo profissional atualizado"
+  },
+  {
+    id: "documentos-pj",
+    keywords: ["documentos pessoa juridica", "documentos clinica", "documentos hospital", "cnpj", "documentacao pj", "documentos empresa"],
+    title: "Documentos — Pessoa Jurídica (clínica, hospital, laboratório)",
+    answer: "Para pessoa jurídica, normalmente são exigidos:\n• Contrato social atualizado e CNPJ\n• Alvará de funcionamento e alvará sanitário vigentes\n• Responsável técnico com registro no conselho de classe\n• Certidões negativas (federal, estadual, municipal, trabalhista e FGTS)\n• Comprovante de endereço da unidade\n• Licença ambiental (quando aplicável, ex: hospitais e laboratórios)\n• Dados bancários da pessoa jurídica"
+  },
+  {
+    id: "como-iniciar",
+    keywords: ["como iniciar", "como comecar", "como começar", "processo", "solicitar credenciamento", "primeiro passo", "onde comecar", "cadastro"],
+    title: "Como iniciar o processo de credenciamento",
+    answer: "O credenciamento começa com o preenchimento do formulário de solicitação (portal ou e-mail dedicado), anexando a documentação exigida para a categoria correspondente. Após o envio, a equipe de credenciamento faz uma triagem documental antes de seguir para a análise técnica."
+  },
+  {
+    id: "prazo-analise",
+    keywords: ["prazo", "quanto tempo", "demora", "tempo de analise", "analise leva"],
+    title: "Prazo de análise do credenciamento",
+    answer: "O prazo médio de análise é de 20 a 30 dias úteis após o recebimento de toda a documentação completa. Pendências documentais reiniciam a contagem do prazo, por isso é importante enviar tudo corretamente na primeira submissão."
+  },
+  {
+    id: "status",
+    keywords: ["status", "acompanhar", "andamento", "consultar processo", "onde acompanho"],
+    title: "Como acompanhar o status do credenciamento",
+    answer: "O status do processo pode ser acompanhado pelo portal do credenciado (login com CPF/CNPJ) ou solicitado por e-mail à central de credenciamento, informando o número de protocolo gerado no envio da solicitação."
+  },
+  {
+    id: "recusa",
+    keywords: ["recusado", "negado", "reprovado", "motivos de recusa", "por que foi negado", "indeferido"],
+    title: "Motivos comuns de recusa no credenciamento",
+    answer: "As recusas mais comuns são: documentação incompleta ou vencida, registro no conselho de classe irregular ou suspenso, ausência de responsável técnico habilitado, e não atendimento aos critérios de rede assistencial vigentes na região (ex: já há cobertura suficiente na especialidade/área)."
+  },
+  {
+    id: "recredenciamento",
+    keywords: ["recredenciamento", "renovar", "renovação", "vencimento do credenciamento", "atualizar cadastro"],
+    title: "Recredenciamento e renovação",
+    answer: "O recredenciamento é periódico (geralmente anual ou bienal, conforme contrato) e exige atualização de certidões e documentos vencidos. O prestador recebe um aviso prévio antes do vencimento para regularizar a documentação e evitar suspensão."
+  },
+  {
+    id: "pagamento",
+    keywords: ["pagamento", "tabela", "valores", "reembolso", "glosa", "faturamento"],
+    title: "Pagamentos e tabela de procedimentos",
+    answer: "Após o credenciamento, o prestador recebe acesso à tabela de procedimentos e valores vigente, além das instruções de faturamento (periodicidade de envio de guias, prazo de pagamento e canal para tratar glosas)."
+  },
+  {
+    id: "contato",
+    keywords: ["contato", "suporte", "duvida credenciamento", "dúvida credenciamento", "falar com alguem", "atendimento", "telefone", "email credenciamento"],
+    title: "Contato e suporte sobre credenciamento",
+    answer: "Para dúvidas específicas do seu processo, procure a central de credenciamento do seu convênio/plano (e-mail ou telefone informado no formulário de solicitação), sempre citando o número de protocolo, quando existir."
   }
 ];
 
-const TRABALHO_GREETING = "Olá! Sou a Lumi, aqui no modo Trabalho do AtlasIA. Posso ajudar a redigir e revisar e-mails, organizar atas de reunião, montar relatórios e documentar processos do dia a dia. No que você está trabalhando agora?";
+const TRABALHO_GREETING = "Olá! Sou a Lumi, aqui no modo Trabalho do AtlasIA. Posso ajudar tanto com o dia a dia profissional (redigir e revisar e-mails, organizar atas de reunião, montar relatórios, documentar processos) quanto com credenciamento de prestadores de saúde (documentação, prazos, recredenciamento, tabela de procedimentos/faturamento) — os modelos prontos de mensagem pra isso ficam sempre disponíveis em Atalhos (ou digitando \"/\"). No que você está trabalhando agora?";
 
 const TRABALHO_QUICK_REPLIES = [
   "Me ajuda a escrever um e-mail",
-  "Como organizar a ata desta reunião?",
-  "Preciso estruturar um relatório",
-  "Documentar um processo do time"
+  "Tenho uma dúvida sobre credenciamento",
+  "Preciso de um modelo de mensagem pronto",
+  "Preciso estruturar um relatório"
 ];
 
 /* =========================================================
@@ -2491,11 +2590,11 @@ const MODES = {
     label: "Geral",
     icon: "message",
     color: "#a78bfa",
-    emptyHeading: "Olá. Quais orientações você busca?",
-    greeting: CREDENCIAMENTO_GREETING,
-    quickReplies: CREDENCIAMENTO_QUICK_REPLIES,
-    kb: CREDENCIAMENTO_KB,
-    systemPromptIntro: "Você é a Lumi, a assistente de IA (feminino) do sistema AtlasIA, especializada em credenciamento de prestadores de saúde (médicos, clínicas, hospitais, laboratórios) junto a convênios/planos de saúde. Sempre que falar de si mesma, use o nome Lumi e a primeira pessoa no feminino. Seu foco principal é esse assunto: dúvidas sobre o processo de credenciamento, documentação exigida, recredenciamento, tabela de procedimentos e faturamento, e também ajudar a redigir, revisar ou ajustar mensagens e e-mails de contato/negociação com clínicas e prestadores. Se o usuário pedir um modelo de mensagem pronto sobre credenciamento (cronograma de pagamento, e-mails, dados de contrato etc.), lembre que eles já estão disponíveis automaticamente no botão Atalhos ou digitando \"/\" na caixa de mensagem, sem precisar reescrevê-los do zero. Você ainda pode ajudar com perguntas de apoio ao trabalho (ex: revisar um texto, tirar uma dúvida rápida de português, explicar um termo), mas evite se desviar para assuntos totalmente fora do escopo de credenciamento/relacionamento com prestadores — nesses casos, indique com cordialidade que esse modo é focado em credenciamento e que os outros modos especializados (BI & Dados, Financeiro, IA & Automação, Trabalho) estão disponíveis no menu, se fizer sentido para a pergunta. Responda sempre em português do Brasil, de forma objetiva e cordial."
+    emptyHeading: "Olá. Como posso ajudar hoje?",
+    greeting: GERAL_GREETING,
+    quickReplies: GERAL_QUICK_REPLIES,
+    kb: GERAL_KB,
+    systemPromptIntro: "Você é a Lumi, a assistente de IA (feminino) do sistema AtlasIA, atuando agora no modo Geral, em português do Brasil. Sempre que falar de si mesma, use o nome Lumi e a primeira pessoa no feminino. Este é o modo de propósito geral do AtlasIA: ajude com qualquer assunto que a pessoa trouxer — responder perguntas, escrever e revisar textos, resolver problemas, programar, estudar, organizar tarefas, dar ideias, e o que mais for pedido. Nunca recuse ou redirecione um pedido só porque o assunto foge de um tema específico — isso não existe neste modo, esse é justamente o seu papel: ajudar em qualquer coisa. Se a pergunta for sobre credenciamento de prestadores de saúde, responda normalmente também — apenas saiba que o modo Trabalho tem uma base de conhecimento mais aprofundada sobre esse processo específico, e pode mencionar essa opção quando fizer sentido, sem nunca deixar de responder aqui primeiro. Os outros modos especializados do app (BI & Dados, Financeiro, IA & Automação, Trabalho, Imagens) só devem ser sugeridos como um complemento útil, nunca como forma de recusar ou adiar uma resposta. Responda sempre em português do Brasil, de forma objetiva e cordial."
   },
   bi: {
     label: "BI & Dados",
@@ -2535,7 +2634,7 @@ const MODES = {
     greeting: TRABALHO_GREETING,
     quickReplies: TRABALHO_QUICK_REPLIES,
     kb: TRABALHO_KB,
-    systemPromptIntro: "Você é a Lumi, a assistente de IA (feminino) do sistema AtlasIA, atuando agora no modo Trabalho, em português do Brasil. Sempre que falar de si mesma, use o nome Lumi e a primeira pessoa no feminino. Seu foco é apoio ao dia a dia profissional: redigir e revisar e-mails, organizar atas/resumos de reunião, estruturar relatórios e documentar processos internos. Seja objetiva e prática — quando a pessoa colar um texto pra revisar, aponte melhorias concretas (não só reescreva sem explicar o que mudou), e quando faltar contexto (público do e-mail, objetivo do relatório), pergunte antes de escrever do zero."
+    systemPromptIntro: "Você é a Lumi, a assistente de IA (feminino) do sistema AtlasIA, atuando agora no modo Trabalho, em português do Brasil. Sempre que falar de si mesma, use o nome Lumi e a primeira pessoa no feminino. Este modo cobre duas frentes: (1) apoio geral ao dia a dia profissional — redigir e revisar e-mails, organizar atas/resumos de reunião, estruturar relatórios e documentar processos internos; e (2) credenciamento de prestadores de saúde (médicos, clínicas, hospitais, laboratórios) junto a convênios/planos de saúde — dúvidas sobre o processo, documentação exigida, prazos, recredenciamento, tabela de procedimentos e faturamento, além de ajudar a redigir ou ajustar mensagens e e-mails de contato/negociação com clínicas e prestadores. Se o usuário pedir um modelo de mensagem pronto sobre credenciamento (cronograma de pagamento, e-mails, dados de contrato etc.), lembre que eles já estão disponíveis automaticamente no botão Atalhos ou digitando \"/\" na caixa de mensagem, sem precisar reescrevê-los do zero. Seja objetiva e prática — quando a pessoa colar um texto pra revisar, aponte melhorias concretas (não só reescreva sem explicar o que mudou), e quando faltar contexto (público do e-mail, objetivo do relatório), pergunte antes de escrever do zero. Para dados específicos de credenciamento (número de protocolo, prazo exato de um caso, valores de tabela) que você não tem certeza, não invente — oriente a pessoa a confirmar no portal do credenciado ou com a central de credenciamento."
   },
   imagens: {
     label: "Imagens",
@@ -2561,7 +2660,7 @@ const MODE_BANNERS = {
   bi: 'ℹ️ Modo BI & Dados: especializado em Excel, Power BI, SQL, indicadores, dashboards e análise de dados para empresas. Anexe uma planilha ou CSV pra gerar um dashboard automático.',
   financeiro: '⚠️ Modo Financeiro: conteúdo educativo sobre organização financeira e dívidas, gerado por IA. Não é aconselhamento financeiro personalizado nem substitui um profissional licenciado (educador financeiro, Procon, ou os canais oficiais de negociação).',
   automacao: 'ℹ️ IA & Automação: criação de agentes, automações, prompts e integrações com APIs.',
-  trabalho: 'ℹ️ Trabalho: e-mails, documentos, reuniões, relatórios e processos do dia a dia.',
+  trabalho: 'ℹ️ Trabalho: e-mails, documentos, reuniões, relatórios, processos do dia a dia e credenciamento de prestadores de saúde.',
   imagens: 'ℹ️ Imagens: gere imagens com IA a partir de uma descrição, ou anexe uma foto pra eu analisar.'
 };
 
@@ -2714,7 +2813,14 @@ Fico à disposição e agradeço desde já pela atenção.`
    ENGINE
    ========================================================= */
 let apiKey = null; // fica só em memória, nunca persistido em disco
-let apiProvider = 'gemini'; // 'gemini' (grátis) ou 'openai' (pago)
+// Provedor padrão pra quem ainda não escolheu nenhum (primeira visita, ou
+// login novo sem preferência salva): 'openai', porque é o provedor cuja
+// chave a empresa configurou no ai-proxy (ver supabase_ai_proxy.ts) — assim
+// uma conta recém-criada, sem chave própria, já cai direto no provedor que
+// de fato tem uma chave da empresa disponível no servidor, em vez de tentar
+// o Gemini (que erraria com "chave da empresa não configurada" se só a
+// OPENAI_API_KEY tiver sido cadastrada nos Secrets do Supabase).
+let apiProvider = 'openai'; // 'gemini' (grátis) ou 'openai' (pago)
 
 const PROVIDER_INFO = {
   gemini: {
@@ -2741,7 +2847,7 @@ function selectProvider(provider){
   document.getElementById('getKeyLink').href = PROVIDER_INFO[provider].signupUrl;
   document.getElementById('providerHint').textContent = PROVIDER_INFO[provider].hint;
   populateModelSelect();
-  if(apiKey) updateStatusPill(true);
+  updateStatusPill();
   saveState();
 }
 
@@ -2840,6 +2946,370 @@ function copyToClipboard(text){
   }
 }
 
+/* =========================================================
+   COMPARTILHAR / EXPORTAR — botões reaproveitados em toda resposta da Lumi
+   no chat E nos itens de Equipes/Projetos/Compartilhados (Workspace):
+   copiar, mandar por WhatsApp, exportar em PDF, e gerar um "card" (imagem
+   PNG) com uma marca d'água discreta da AtlasIA.
+   ========================================================= */
+
+/* WhatsApp: abre uma conversa já com o texto preenchido (wa.me), funciona
+   em qualquer navegador/aparelho. Limitação real (não dá pra contornar só
+   com código do site): não anexa arquivo/PDF automaticamente, só o texto —
+   pra mandar um arquivo de verdade a pessoa usaria o menu de compartilhar
+   nativo do celular, que é outro mecanismo. */
+function shareViaWhatsApp(text){
+  const trimmed = (text || '').trim();
+  if(!trimmed){ showToast('Nada pra compartilhar ainda.'); return; }
+  const url = 'https://wa.me/?text=' + encodeURIComponent(trimmed);
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
+
+/* Remove marcação markdown básica antes de exportar pra PDF/card — o PDF
+   exportado é texto simples (não uma réplica com formatação rica da
+   resposta), o que já cobre bem o caso de uso de "levar esse texto pra
+   fora do app". */
+function stripMarkdownForExport(text){
+  return (text || '')
+    .replace(/```[\s\S]*?```/g, m => m.replace(/```/g, ''))
+    .replace(/`/g, '')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/\*([^*]+)\*/g, '$1')
+    .replace(/^>\s?/gm, '')
+    .replace(/^[-*]\s+/gm, '• ');
+}
+
+async function exportTextAsPdf(text){
+  const trimmed = (text || '').trim();
+  if(!trimmed){ showToast('Nada pra exportar ainda.'); return; }
+  try{
+    await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+    if(typeof window.jspdf === 'undefined' || !window.jspdf.jsPDF) throw new Error('jsPDF não carregou');
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    const marginX = 48, marginTop = 72, marginBottom = 56;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const usableWidth = pageWidth - marginX * 2;
+
+    const drawHeader = () => {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.setTextColor(40, 40, 40);
+      doc.text('AtlasIA', marginX, 38);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(140, 140, 140);
+      doc.text(new Date().toLocaleString('pt-BR'), pageWidth - marginX, 38, { align: 'right' });
+      doc.setDrawColor(220, 220, 220);
+      doc.line(marginX, 48, pageWidth - marginX, 48);
+    };
+    const drawFooter = () => {
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(8);
+      doc.setTextColor(175, 175, 175);
+      doc.text('Gerado pelo AtlasIA', pageWidth / 2, pageHeight - 28, { align: 'center' });
+    };
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11);
+    doc.setTextColor(25, 25, 25);
+    const plainText = stripMarkdownForExport(trimmed);
+    const lines = doc.splitTextToSize(plainText, usableWidth);
+
+    drawHeader();
+    let y = marginTop;
+    const lineHeight = 15;
+    lines.forEach(line => {
+      if(y > pageHeight - marginBottom){
+        drawFooter();
+        doc.addPage();
+        drawHeader();
+        y = marginTop;
+      }
+      doc.text(line, marginX, y);
+      y += lineHeight;
+    });
+    drawFooter();
+
+    doc.save('atlasia-' + Date.now() + '.pdf');
+  }catch(e){
+    showToast('⚠️ Não consegui gerar o PDF (verifique sua internet e tente de novo).');
+  }
+}
+
+/* Quebra o texto em linhas que cabem em maxWidth, respeitando quebras de
+   parágrafo já existentes no texto original — usado pra montar o card. */
+function wrapCanvasText(ctx, text, maxWidth){
+  const paragraphs = text.split(/\n+/);
+  const lines = [];
+  paragraphs.forEach(p => {
+    const words = p.split(/\s+/).filter(Boolean);
+    if(!words.length){ lines.push(''); return; }
+    let line = '';
+    words.forEach(word => {
+      const test = line ? line + ' ' + word : word;
+      if(line && ctx.measureText(test).width > maxWidth){
+        lines.push(line);
+        line = word;
+      } else {
+        line = test;
+      }
+    });
+    if(line) lines.push(line);
+  });
+  return lines;
+}
+
+// Cards são pensados pra um trecho curto/citável, não a resposta inteira
+// (senão vira uma imagem gigante, difícil de compartilhar) — corta com "…"
+// quando o texto passa disso.
+const CARD_MAX_CHARS = 700;
+
+function drawCardWatermark(ctx, width, height, padding){
+  const logoImg = document.querySelector('img.logo');
+  const wmSize = 30;
+  const baseline = height - padding + 10;
+  if(logoImg && logoImg.complete && logoImg.naturalWidth){
+    ctx.globalAlpha = 0.6;
+    try{ ctx.drawImage(logoImg, width - padding - wmSize, baseline - wmSize, wmSize, wmSize); }catch(e){ /* segue só com o texto se a imagem não estiver pronta */ }
+    ctx.globalAlpha = 1;
+  }
+  ctx.textAlign = 'right';
+  ctx.fillStyle = 'rgba(143,160,194,0.75)';
+  ctx.font = '500 13px -apple-system, Segoe UI, Roboto, Arial, sans-serif';
+  ctx.fillText('AtlasIA', width - padding - wmSize - 10, baseline - wmSize / 2 + 4);
+  ctx.textAlign = 'left';
+}
+
+/* Gera uma imagem (PNG) estilizada da resposta, com uma marca d'água
+   discreta da AtlasIA no canto — pensada pra postar/compartilhar (inclusive
+   por WhatsApp, anexando a imagem baixada). */
+function exportTextAsCard(text){
+  const trimmed = stripMarkdownForExport((text || '').trim());
+  if(!trimmed){ showToast('Nada pra gerar o card ainda.'); return; }
+  try{
+    const content = trimmed.length > CARD_MAX_CHARS ? trimmed.slice(0, CARD_MAX_CHARS).trim() + '…' : trimmed;
+    const width = 900;
+    const padding = 56;
+    const fontSize = 30;
+    const lineHeight = Math.round(fontSize * 1.45);
+    const maxTextWidth = width - padding * 2;
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    ctx.font = '600 ' + fontSize + 'px -apple-system, Segoe UI, Roboto, Arial, sans-serif';
+    const lines = wrapCanvasText(ctx, content, maxTextWidth);
+
+    const headerHeight = 96;
+    const footerHeight = 76;
+    const height = Math.max(480, headerHeight + lines.length * lineHeight + footerHeight);
+    canvas.width = width;
+    canvas.height = height;
+
+    const grad = ctx.createLinearGradient(0, 0, width, height);
+    grad.addColorStop(0, '#05070d');
+    grad.addColorStop(1, '#0c1220');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.fillStyle = '#63a6ff';
+    ctx.font = '700 22px -apple-system, Segoe UI, Roboto, Arial, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText('AtlasIA', padding, 46);
+
+    ctx.fillStyle = '#eef2fb';
+    ctx.font = '600 ' + fontSize + 'px -apple-system, Segoe UI, Roboto, Arial, sans-serif';
+    let y = headerHeight;
+    lines.forEach(line => { ctx.fillText(line, padding, y); y += lineHeight; });
+
+    drawCardWatermark(ctx, width, height, padding);
+
+    const link = document.createElement('a');
+    link.download = 'atlasia-card-' + Date.now() + '.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }catch(e){
+    showToast('⚠️ Não consegui gerar o card.');
+  }
+}
+
+/* Botões pequenos reaproveitados tanto nas respostas do chat quanto nos
+   itens de Workspace — `btnClass` deixa escolher o visual certo pra cada
+   contexto (.bot-copy-btn no chat, com hover-reveal; .action-btn sempre
+   visível nos cards do Workspace). */
+function buildCopyActionButton(text, btnClass){
+  const btn = document.createElement('button');
+  btn.className = btnClass;
+  btn.textContent = 'Copiar';
+  btn.onclick = () => {
+    copyToClipboard(text);
+    btn.textContent = 'Copiado ✓';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copiar'; btn.classList.remove('copied'); }, 1500);
+  };
+  return btn;
+}
+function buildWhatsAppActionButton(text, btnClass){
+  const btn = document.createElement('button');
+  btn.className = btnClass;
+  btn.textContent = '📲 WhatsApp';
+  btn.onclick = () => shareViaWhatsApp(text);
+  return btn;
+}
+function buildPdfActionButton(text, btnClass){
+  const btn = document.createElement('button');
+  btn.className = btnClass;
+  btn.textContent = '📄 PDF';
+  btn.onclick = () => exportTextAsPdf(text);
+  return btn;
+}
+function buildCardActionButton(text, btnClass){
+  const btn = document.createElement('button');
+  btn.className = btnClass;
+  btn.textContent = '🖼️ Card';
+  btn.onclick = () => exportTextAsCard(text);
+  return btn;
+}
+
+/* =========================================================
+   FAVORITOS — estrela em qualquer resposta da Lumi no chat, que a coloca
+   automaticamente numa aba dedicada (ver showFavoritosView, mais abaixo).
+   Não precisa de tabela nova no Supabase: o favorito é só um campo
+   (favorite: true) dentro da própria mensagem, guardado junto com o resto
+   da conversa — sincroniza sozinho pelo mesmo mecanismo que já existe
+   (buildStateSnapshot/syncStateToCloud) pra quem estiver logado, e local
+   mesmo sem login.
+   ========================================================= */
+function toggleFavoriteMessage(convId, idx){
+  const conv = conversations.find(c => c.id === convId);
+  if(!conv || !conv.messages[idx]) return false;
+  conv.messages[idx].favorite = !conv.messages[idx].favorite;
+  saveState();
+  return conv.messages[idx].favorite;
+}
+
+function buildFavoriteButton(convId, idx, favorite){
+  const btn = document.createElement('button');
+  btn.className = 'bot-copy-btn' + (favorite ? ' favorited' : '');
+  btn.textContent = favorite ? '⭐ Favoritada' : '☆ Favoritar';
+  btn.onclick = () => {
+    const isFav = toggleFavoriteMessage(convId, idx);
+    btn.textContent = isFav ? '⭐ Favoritada' : '☆ Favoritar';
+    btn.classList.toggle('favorited', isFav);
+    if(currentView === 'favoritos') renderFavoritosView();
+  };
+  return btn;
+}
+
+function getFavoriteMessages(){
+  const result = [];
+  conversations.forEach(conv => {
+    conv.messages.forEach((entry, idx) => {
+      if(entry.favorite){ result.push({ convId: conv.id, convTitle: conv.title, idx, text: entry.text }); }
+    });
+  });
+  return result;
+}
+
+function showFavoritosView(){
+  closeOverlayPanels();
+  currentView = 'favoritos';
+  currentConvId = null;
+  renderModeSwitch();
+  updateNavActiveStates();
+  document.getElementById('modeBanner').classList.remove('show');
+  renderConversationList();
+  renderFavoritosView();
+  closeSidebarIfMobile();
+}
+
+function renderFavoritosView(){
+  const chat = document.getElementById('chat');
+  chat.innerHTML = '';
+
+  const wrap = document.createElement('div');
+  wrap.className = 'vlow-view workspace-view';
+
+  const heading = document.createElement('h2');
+  heading.className = 'vlow-heading';
+  heading.textContent = 'Favoritos';
+  wrap.appendChild(heading);
+
+  const subtitle = document.createElement('p');
+  subtitle.className = 'vlow-subtitle';
+  subtitle.textContent = 'Respostas da Lumi que você marcou com a estrela, de qualquer conversa — clique em "☆ Favoritar" embaixo de qualquer resposta no chat pra adicionar.';
+  wrap.appendChild(subtitle);
+
+  const listWrap = document.createElement('div');
+  listWrap.className = 'workspace-list';
+  listWrap.id = 'favoritosList';
+  wrap.appendChild(listWrap);
+
+  chat.appendChild(wrap);
+  renderFavoritosList();
+}
+
+function renderFavoritosList(){
+  const listWrap = document.getElementById('favoritosList');
+  if(!listWrap) return;
+  const favs = getFavoriteMessages();
+  listWrap.innerHTML = '';
+  if(!favs.length){
+    const p = document.createElement('p');
+    p.className = 'vlow-empty';
+    p.textContent = 'Nenhuma resposta favoritada ainda.';
+    listWrap.appendChild(p);
+    return;
+  }
+  favs.forEach(fav => {
+    const card = document.createElement('div');
+    card.className = 'workspace-item';
+
+    const info = document.createElement('div');
+    info.className = 'workspace-item-info';
+
+    const convLabel = document.createElement('span');
+    convLabel.className = 'workspace-item-sub';
+    convLabel.textContent = fav.convTitle || 'Conversa';
+    info.appendChild(convLabel);
+
+    const text = document.createElement('p');
+    text.className = 'workspace-item-desc';
+    text.textContent = fav.text.length > 400 ? fav.text.slice(0, 400) + '…' : fav.text;
+    info.appendChild(text);
+
+    const actions = document.createElement('div');
+    actions.className = 'workspace-item-actions';
+    actions.appendChild(buildCopyActionButton(fav.text, 'action-btn'));
+    actions.appendChild(buildWhatsAppActionButton(fav.text, 'action-btn'));
+    actions.appendChild(buildPdfActionButton(fav.text, 'action-btn'));
+    actions.appendChild(buildCardActionButton(fav.text, 'action-btn'));
+    const openBtn = document.createElement('button');
+    openBtn.type = 'button';
+    openBtn.className = 'action-btn';
+    openBtn.textContent = 'Abrir conversa →';
+    openBtn.onclick = () => switchConversation(fav.convId);
+    actions.appendChild(openBtn);
+    info.appendChild(actions);
+
+    card.appendChild(info);
+
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'workspace-delete-btn';
+    delBtn.setAttribute('aria-label', 'Remover dos favoritos');
+    delBtn.textContent = '✕';
+    delBtn.onclick = () => { toggleFavoriteMessage(fav.convId, fav.idx); renderFavoritosList(); };
+    card.appendChild(delBtn);
+
+    listWrap.appendChild(card);
+  });
+}
+
 function saveKey(){
   const val = document.getElementById('apiKeyInput').value.trim();
   const info = PROVIDER_INFO[apiProvider];
@@ -2848,7 +3318,7 @@ function saveKey(){
     return;
   }
   apiKey = val;
-  updateStatusPill(true);
+  updateStatusPill();
   addBotMessage("IA generativa ativada (" + info.label + "). Agora posso responder de forma mais livre, além da base de perguntas frequentes. Vou lembrar dessa chave neste navegador, então não precisa colar de novo da próxima vez.");
   toggleSettings();
   saveState();
@@ -2857,19 +3327,30 @@ function saveKey(){
 function clearKey(){
   apiKey = null;
   document.getElementById('apiKeyInput').value = '';
-  updateStatusPill(false);
-  addBotMessage("IA generativa desativada. Voltei ao modo de perguntas frequentes local.");
+  updateStatusPill();
+  addBotMessage(cloudUser
+    ? "Chave pessoal removida. Como você está logado, continuo respondendo com a IA generativa da empresa (sem precisar de chave própria)."
+    : "IA generativa desativada. Voltei ao modo de perguntas frequentes local. Você também pode fazer login para usar a IA da empresa sem precisar de chave própria.");
   saveState();
 }
 
-function updateStatusPill(on){
+/* Reflete no "pill" do topo qual das 3 fontes de resposta está ativa no
+   momento: chave pessoal colada (apiKey), IA da empresa via login (sem
+   chave própria, ver hasAiAccess()/providerFetch()), ou só a base local de
+   perguntas frequentes quando nenhuma das duas está disponível. Não recebe
+   mais parâmetro — sempre relê apiKey/cloudUser na hora, pra nunca ficar
+   dessincronizado depois de login/logout ou de colar/remover uma chave. */
+function updateStatusPill(){
   const pill = document.getElementById('modelPill');
   const text = document.getElementById('modelPillText');
   if(!pill || !text) return;
-  if(on){
+  if(apiKey){
     pill.classList.add('on');
     const model = (typeof preferredModel !== 'undefined' && preferredModel[apiProvider]) ? preferredModel[apiProvider] : '';
     text.textContent = PROVIDER_INFO[apiProvider].label + (model ? ' · ' + model : '');
+  } else if(cloudUser){
+    pill.classList.add('on');
+    text.textContent = "IA da empresa (login)";
   } else {
     pill.classList.remove('on');
     text.textContent = "Modo FAQ (local)";
@@ -2965,7 +3446,12 @@ function renderMarkdown(text){
   return html;
 }
 
-function addBotMessage(text, record){
+/* `replayEntry`/`replayIndex` só são passados por replayConversation()
+   (reabrindo uma conversa salva) — é como a estrela de favorito sabe se
+   essa mensagem específica já estava favoritada, e como o clique nela sabe
+   em qual (conversa, posição) gravar a mudança. Numa mensagem nova/ao vivo,
+   essas posições vêm de recordMessage() logo abaixo. */
+function addBotMessage(text, record, replayEntry, replayIndex){
   const chat = document.getElementById('chat');
   const div = document.createElement('div');
   div.className = 'msg bot';
@@ -2975,29 +3461,42 @@ function addBotMessage(text, record){
   content.innerHTML = renderMarkdown(text);
   div.appendChild(content);
 
-  const copyBtn = document.createElement('button');
-  copyBtn.className = 'bot-copy-btn';
-  copyBtn.textContent = 'Copiar';
-  copyBtn.onclick = () => {
-    copyToClipboard(text);
-    copyBtn.textContent = 'Copiado ✓';
-    copyBtn.classList.add('copied');
-    setTimeout(() => { copyBtn.textContent = 'Copiar'; copyBtn.classList.remove('copied'); }, 1500);
-  };
-  div.appendChild(copyBtn);
+  const actions = document.createElement('div');
+  actions.className = 'msg-actions';
+
+  let convId = null, idx = null, favorite = false;
+  if(replayEntry){
+    convId = currentConvId;
+    idx = replayIndex;
+    favorite = !!replayEntry.favorite;
+  } else if(record !== false){
+    recordMessage({ kind: 'bot', text });
+    const conv = conversations.find(c => c.id === currentConvId);
+    if(conv){ convId = conv.id; idx = conv.messages.length - 1; }
+  }
+  if(convId !== null && idx !== null){
+    actions.appendChild(buildFavoriteButton(convId, idx, favorite));
+  }
+
+  actions.appendChild(buildCopyActionButton(text, 'bot-copy-btn'));
 
   if(typeof speechSynthesis !== 'undefined'){
     const speakBtn = document.createElement('button');
     speakBtn.className = 'bot-copy-btn';
     speakBtn.textContent = '🔊 Ouvir';
     speakBtn.onclick = () => speakText(text, speakBtn);
-    div.appendChild(speakBtn);
+    actions.appendChild(speakBtn);
   }
+
+  actions.appendChild(buildWhatsAppActionButton(text, 'bot-copy-btn'));
+  actions.appendChild(buildPdfActionButton(text, 'bot-copy-btn'));
+  actions.appendChild(buildCardActionButton(text, 'bot-copy-btn'));
+
+  div.appendChild(actions);
 
   chat.appendChild(div);
   chat.scrollTop = chat.scrollHeight;
   if(notifySound) playNotifySound();
-  if(record !== false) recordMessage({ kind: 'bot', text });
 }
 
 function addTemplateMessage(shortcut, record){
@@ -3515,6 +4014,329 @@ function copyVlowLink(){
   }
 }
 
+/* =========================================================
+   TAREFAS — lembretes com data/hora, guardados na conta (Supabase, tabela
+   "tasks"), com aviso via notificação do navegador quando a hora chega.
+   Precisa de login (mesma ideia do Workspace: dado interno da conta, não
+   compartilhado publicamente como o Vlow) — ver showTarefasView →
+   showLoginGate quando não há login. Também pode ser criado direto no chat
+   pedindo pra Lumi (ex: "me lembra às 15h de X") — ver TASK_REMINDER_GUIDE
+   e extractTaskTags(), mais abaixo perto de buildSystemPrompt/sendMessage.
+   ========================================================= */
+let tasks = []; // cache local da última lista carregada (usado pelo poller)
+let taskPollTimer = null;
+
+function showTarefasView(){
+  closeOverlayPanels();
+  currentView = 'tarefas';
+  currentConvId = null;
+  renderModeSwitch();
+  updateNavActiveStates();
+  document.getElementById('modeBanner').classList.remove('show');
+  renderConversationList();
+  if(!cloudUser){
+    showLoginGate('⏰', 'Tarefas', 'Os lembretes ficam guardados na sua conta, por isso essa área só aparece pra quem está logado. Entre pra criar e ver suas tarefas.');
+    return;
+  }
+  renderTarefasView();
+  closeSidebarIfMobile();
+}
+
+function renderTarefasView(){
+  const chat = document.getElementById('chat');
+  chat.innerHTML = '';
+
+  const wrap = document.createElement('div');
+  wrap.className = 'vlow-view workspace-view';
+  wrap.id = 'workspaceView_tarefas';
+
+  const heading = document.createElement('h2');
+  heading.className = 'vlow-heading';
+  heading.textContent = 'Tarefas';
+  wrap.appendChild(heading);
+
+  const subtitle = document.createElement('p');
+  subtitle.className = 'vlow-subtitle';
+  subtitle.textContent = 'Anote um lembrete com data e hora — a Lumi te avisa quando chegar a hora. Você também pode pedir direto no chat, em qualquer modo (ex: "me lembra às 15h de ligar pro fornecedor").';
+  wrap.appendChild(subtitle);
+
+  const banner = buildTaskNotifyBanner();
+  if(banner) wrap.appendChild(banner);
+
+  wrap.appendChild(buildTaskForm());
+
+  const listWrap = document.createElement('div');
+  listWrap.className = 'workspace-list';
+  listWrap.id = 'tasksList';
+  const loading = document.createElement('p');
+  loading.className = 'vlow-empty';
+  loading.textContent = 'Carregando…';
+  listWrap.appendChild(loading);
+  wrap.appendChild(listWrap);
+
+  chat.appendChild(wrap);
+
+  loadTasks();
+}
+
+/* Aviso pra ativar notificação do navegador — só aparece se o navegador
+   suporta a API e a pessoa ainda não decidiu (nem permitiu, nem bloqueou).
+   Pedir permissão exige um clique real da pessoa (não dá pra pedir sozinho
+   ao abrir a tela), por isso o botão em vez de pedir direto. */
+function buildTaskNotifyBanner(){
+  if(!('Notification' in window)){
+    const note = document.createElement('p');
+    note.className = 'task-notify-banner';
+    note.textContent = 'Esse navegador não tem suporte a notificações — os lembretes ainda aparecem como um aviso na tela, mas só enquanto o AtlasIA estiver aberto.';
+    return note;
+  }
+  if(Notification.permission === 'granted'){
+    return null;
+  }
+  const banner = document.createElement('div');
+  banner.className = 'task-notify-banner';
+  const text = document.createElement('span');
+  text.textContent = Notification.permission === 'denied'
+    ? 'As notificações deste navegador estão bloqueadas pra essa página. Sem elas, os lembretes só aparecem como um aviso na tela enquanto o AtlasIA estiver aberto.'
+    : 'Ative as notificações do navegador pra receber um aviso na hora certa, mesmo com o AtlasIA minimizado.';
+  banner.appendChild(text);
+  if(Notification.permission !== 'denied'){
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'vlow-share-btn';
+    btn.textContent = 'Ativar notificações';
+    btn.onclick = () => enableTaskNotifications();
+    banner.appendChild(btn);
+  }
+  return banner;
+}
+
+function enableTaskNotifications(){
+  if(!('Notification' in window)) return;
+  Notification.requestPermission().then(() => {
+    if(currentView === 'tarefas') renderTarefasView();
+  });
+}
+
+function buildTaskForm(){
+  const form = document.createElement('div');
+  form.className = 'workspace-form';
+
+  const titleInput = document.createElement('input');
+  titleInput.type = 'text';
+  titleInput.id = 'taskTitleInput';
+  titleInput.className = 'workspace-input';
+  titleInput.placeholder = 'O que você precisa lembrar? *';
+  form.appendChild(titleInput);
+
+  const dueInput = document.createElement('input');
+  dueInput.type = 'datetime-local';
+  dueInput.id = 'taskDueInput';
+  dueInput.className = 'workspace-input';
+  form.appendChild(dueInput);
+
+  const addBtn = document.createElement('button');
+  addBtn.type = 'button';
+  addBtn.className = 'vlow-share-btn workspace-add-btn';
+  addBtn.textContent = 'Adicionar lembrete';
+  addBtn.onclick = () => addTask();
+  form.appendChild(addBtn);
+
+  return form;
+}
+
+function showTaskInlineError(message){
+  showWorkspaceInlineError('tarefas', message);
+}
+function clearTaskInlineError(){
+  clearWorkspaceInlineError('tarefas');
+}
+
+async function addTask(){
+  if(!cloudUser){ showToast('⚠️ Faça login para adicionar.'); return; }
+  const client = getSupabaseClient();
+  if(!client){ showToast('⚠️ Sem conexão com o serviço da nuvem agora.'); return; }
+
+  const titleInput = document.getElementById('taskTitleInput');
+  const dueInput = document.getElementById('taskDueInput');
+  const title = titleInput ? titleInput.value.trim() : '';
+  const dueRaw = dueInput ? dueInput.value : '';
+  if(!title || !dueRaw){ showToast('⚠️ Preencha o lembrete e a data/hora.'); return; }
+  const dueDate = new Date(dueRaw);
+  if(isNaN(dueDate.getTime())){ showToast('⚠️ Data/hora inválida.'); return; }
+
+  try{
+    const { error } = await client.from('tasks').insert({ title, due_at: dueDate.toISOString(), notified: false });
+    if(error) throw error;
+    if(titleInput) titleInput.value = '';
+    if(dueInput) dueInput.value = '';
+    clearTaskInlineError();
+    await loadTasks();
+    showToast('✓ Lembrete criado.');
+  }catch(e){
+    showToast('⚠️ Não consegui salvar o lembrete.');
+    showTaskInlineError(describeSupabaseSetupError(e, 'supabase_setup_tarefas.sql'));
+  }
+}
+
+async function deleteTask(id){
+  if(!confirm('Remover este lembrete?')) return;
+  const client = getSupabaseClient();
+  if(!client || !cloudUser) return;
+  try{
+    const { error } = await client.from('tasks').delete().eq('id', id);
+    if(error) throw error;
+    clearTaskInlineError();
+    await loadTasks();
+  }catch(e){
+    showToast('⚠️ Não consegui remover.');
+    showTaskInlineError(describeSupabaseSetupError(e, 'supabase_setup_tarefas.sql'));
+  }
+}
+
+async function loadTasks(){
+  const listWrap = document.getElementById('tasksList');
+  if(!listWrap) return;
+  const client = getSupabaseClient();
+  if(!client){
+    listWrap.innerHTML = '';
+    const p = document.createElement('p');
+    p.className = 'vlow-empty';
+    p.textContent = 'Sem conexão com o serviço da nuvem agora.';
+    listWrap.appendChild(p);
+    return;
+  }
+  try{
+    const { data, error } = await client.from('tasks').select('*').order('due_at', { ascending: true });
+    if(error) throw error;
+    tasks = data || [];
+    clearTaskInlineError();
+    renderTasksList(tasks);
+  }catch(e){
+    listWrap.innerHTML = '';
+    const p = document.createElement('p');
+    p.className = 'vlow-empty';
+    p.textContent = 'Não consegui carregar os lembretes agora.';
+    listWrap.appendChild(p);
+    showTaskInlineError(describeSupabaseSetupError(e, 'supabase_setup_tarefas.sql'));
+  }
+}
+
+function formatTaskDue(iso){
+  try{
+    const d = new Date(iso);
+    if(isNaN(d.getTime())) return iso;
+    const date = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    const time = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    return date + ' às ' + time;
+  }catch(e){ return iso; }
+}
+
+function renderTasksList(items){
+  const listWrap = document.getElementById('tasksList');
+  if(!listWrap) return;
+  listWrap.innerHTML = '';
+  if(!items.length){
+    const p = document.createElement('p');
+    p.className = 'vlow-empty';
+    p.textContent = 'Nenhum lembrete ainda. Adicione o primeiro acima, ou peça direto pra Lumi no chat.';
+    listWrap.appendChild(p);
+    return;
+  }
+  const now = Date.now();
+  items.forEach(item => {
+    const overdue = new Date(item.due_at).getTime() <= now;
+    const card = document.createElement('div');
+    card.className = 'workspace-item task-item' + (overdue ? ' task-overdue' : '');
+
+    const info = document.createElement('div');
+    info.className = 'workspace-item-info';
+
+    const title = document.createElement('strong');
+    title.textContent = item.title || '';
+    info.appendChild(title);
+
+    const badge = document.createElement('span');
+    badge.className = 'task-due-badge' + (overdue ? ' task-due-overdue' : '');
+    badge.textContent = (overdue ? '⏰ venceu — ' : '') + formatTaskDue(item.due_at);
+    info.appendChild(badge);
+
+    card.appendChild(info);
+
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'workspace-delete-btn';
+    delBtn.setAttribute('aria-label', 'Remover');
+    delBtn.textContent = '✕';
+    delBtn.onclick = () => deleteTask(item.id);
+    card.appendChild(delBtn);
+
+    listWrap.appendChild(card);
+  });
+}
+
+/* Verificador periódico: a cada 20s, pergunta ao Supabase se há algum
+   lembrete cuja hora já chegou e que ainda não foi avisado. Roda o tempo
+   todo que a pessoa está logada, não só com a aba Tarefas aberta — assim
+   o aviso chega mesmo conversando num modo diferente. Ao avisar, marca
+   notified=true na nuvem, pra não repetir o aviso a cada ciclo/recarregada
+   de página (inclusive em outro aparelho logado na mesma conta). */
+function startTaskReminderPoller(){
+  if(taskPollTimer) return;
+  checkDueTasks();
+  taskPollTimer = setInterval(checkDueTasks, 20000);
+}
+function stopTaskReminderPoller(){
+  if(taskPollTimer){ clearInterval(taskPollTimer); taskPollTimer = null; }
+}
+
+async function checkDueTasks(){
+  if(!cloudUser) return;
+  const client = getSupabaseClient();
+  if(!client) return;
+  try{
+    const nowIso = new Date().toISOString();
+    const { data, error } = await client.from('tasks').select('*').eq('notified', false).lte('due_at', nowIso);
+    if(error || !data || !data.length) return;
+    for(const t of data){
+      fireTaskNotification(t);
+      try{ await client.from('tasks').update({ notified: true }).eq('id', t.id); }catch(e){ /* tenta de novo no próximo ciclo */ }
+    }
+    if(currentView === 'tarefas') loadTasks();
+  }catch(e){ /* falha pontual de rede — o próximo ciclo tenta de novo */ }
+}
+
+function fireTaskNotification(t){
+  const body = t.title;
+  if('Notification' in window && Notification.permission === 'granted'){
+    try{
+      const n = new Notification('⏰ Lembrete — AtlasIA', { body, tag: 'atlasia-task-' + t.id });
+      n.onclick = () => { try{ window.focus(); }catch(e){} };
+      return;
+    }catch(e){ /* alguns navegadores recusam Notification fora de contexto seguro — cai pro toast abaixo */ }
+  }
+  showToast('⏰ ' + body);
+}
+
+/* Cria uma tarefa a partir de uma tag [[LEMBRETE: ...]] que a Lumi incluiu
+   na resposta (ver TASK_REMINDER_GUIDE/extractTaskTags, perto de
+   buildSystemPrompt) — mesma tabela/mesma lógica da tela de Tarefas. */
+async function createTaskFromChat(title, dueLocal){
+  const client = getSupabaseClient();
+  if(!client || !cloudUser) return false;
+  const dueDate = new Date(dueLocal);
+  if(!title || isNaN(dueDate.getTime())) return false;
+  try{
+    const { error } = await client.from('tasks').insert({ title, due_at: dueDate.toISOString(), notified: false });
+    if(error) throw error;
+    if(currentView === 'tarefas') loadTasks();
+    return true;
+  }catch(e){
+    showToast('⚠️ Não consegui salvar o lembrete "' + title + '".');
+    return false;
+  }
+}
+
 /* Tela inicial de conversa vazia (dentro de um modo/especialista), no
    estilo "O que temos para fazer hoje?" de outros apps de IA — some assim
    que a primeira mensagem é enviada. */
@@ -3601,6 +4423,53 @@ const WORKSPACE_TABLES = {
 };
 
 const WORKSPACE_STATUS_LABELS = { nao_iniciado: 'Não iniciado', em_andamento: 'Em andamento', concluido: 'Concluído' };
+
+/* Traduz um erro técnico do Supabase (tabela/bucket inexistente, política de
+   segurança, rede) numa mensagem que a pessoa realmente consegue agir a
+   partir dela — em vez de um erro genérico "não consegui salvar", que não
+   diz se o problema é configuração (script SQL nunca rodado) ou outra coisa. */
+function describeSupabaseSetupError(e, scriptName){
+  const script = scriptName || 'supabase_setup_v1.5.sql';
+  const msg = (e && (e.message || e.error_description || e.hint || e.details || '')) || '';
+  const code = e && e.code;
+  const lower = String(msg).toLowerCase();
+  if(code === '42P01' || (lower.includes('relation') && lower.includes('does not exist')) || lower.includes('could not find the table')){
+    return 'O banco de dados ainda não está pronto para essa área: a tabela usada por ela não existe no seu projeto Supabase. É preciso rodar o script ' + script + ' no SQL Editor do Supabase (uma vez só) pra criar a tabela necessária.';
+  }
+  if(lower.includes('bucket not found')){
+    return 'O espaço de armazenamento de arquivos ainda não está configurado no Supabase (o bucket não existe). Rode o script ' + script + ' no SQL Editor do Supabase pra criar os buckets necessários.';
+  }
+  if(code === '42501' || lower.includes('row-level security') || lower.includes('row level security')){
+    return 'O Supabase recusou a operação por política de segurança (RLS). Confira se todas as políticas do script ' + script + ' foram aplicadas no seu projeto — ou se você está mesmo logado.';
+  }
+  if(lower.includes('failed to fetch') || lower.includes('networkerror') || lower.includes('timeout')){
+    return 'Não consegui conectar ao servidor agora. Confira sua internet e tente de novo.';
+  }
+  return msg || 'Algo deu errado. Tente de novo em instantes.';
+}
+
+/* Aviso persistente (não some sozinho como o toast) mostrado logo abaixo do
+   formulário de Equipes/Projetos/Compartilhados quando salvar/enviar falha
+   — importante porque a causa mais comum (script SQL não rodado ainda) exige
+   uma ação da pessoa, e um toast de 2,8s costuma passar despercebido. */
+function showWorkspaceInlineError(key, message){
+  const wrap = document.getElementById('workspaceView_' + key);
+  if(!wrap) return;
+  let el = document.getElementById('wsError_' + key);
+  if(!el){
+    el = document.createElement('p');
+    el.id = 'wsError_' + key;
+    el.className = 'workspace-error';
+    const form = wrap.querySelector('.workspace-form');
+    if(form) form.insertAdjacentElement('afterend', el);
+    else wrap.appendChild(el);
+  }
+  el.textContent = '⚠️ ' + message;
+}
+function clearWorkspaceInlineError(key){
+  const el = document.getElementById('wsError_' + key);
+  if(el) el.remove();
+}
 
 function showWorkspaceView(key){
   const cfg = WORKSPACE_TABLES[key];
@@ -3770,9 +4639,12 @@ async function handleWorkspaceFileSelect(key){
     const urlField = document.getElementById('wsField_' + key + '_url');
     if(urlField) urlField.value = url;
     if(statusEl) statusEl.textContent = '✓ ' + file.name;
+    clearWorkspaceInlineError(key);
   }catch(e){
     if(statusEl) statusEl.textContent = '';
-    showToast('⚠️ Não consegui enviar o arquivo: ' + (e && e.message ? e.message : 'tente de novo.'));
+    const desc = describeSupabaseSetupError(e);
+    showToast('⚠️ Não consegui enviar o arquivo.');
+    showWorkspaceInlineError(key, desc);
   }finally{
     if(fileInput) fileInput.value = '';
   }
@@ -3803,10 +4675,13 @@ async function addWorkspaceItem(key){
     });
     const fileStatus = document.getElementById('wsFileStatus_' + key);
     if(fileStatus) fileStatus.textContent = '';
+    clearWorkspaceInlineError(key);
     await loadWorkspaceItems(key);
     showToast('✓ Adicionado.');
   }catch(e){
-    showToast('⚠️ Não consegui salvar: ' + (e && e.message ? e.message : 'tente de novo.'));
+    const desc = describeSupabaseSetupError(e);
+    showToast('⚠️ Não consegui salvar.');
+    showWorkspaceInlineError(key, desc);
   }
 }
 
@@ -3818,9 +4693,12 @@ async function deleteWorkspaceItem(key, id){
   try{
     const { error } = await client.from(cfg.table).delete().eq('id', id);
     if(error) throw error;
+    clearWorkspaceInlineError(key);
     await loadWorkspaceItems(key);
   }catch(e){
-    showToast('⚠️ Não consegui remover: ' + (e && e.message ? e.message : 'tente de novo.'));
+    const desc = describeSupabaseSetupError(e);
+    showToast('⚠️ Não consegui remover.');
+    showWorkspaceInlineError(key, desc);
   }
 }
 
@@ -3840,14 +4718,42 @@ async function loadWorkspaceItems(key){
   try{
     const { data, error } = await client.from(cfg.table).select('*').order('created_at', { ascending: false });
     if(error) throw error;
+    clearWorkspaceInlineError(key);
     renderWorkspaceItems(key, data || []);
   }catch(e){
     listWrap.innerHTML = '';
     const p = document.createElement('p');
     p.className = 'vlow-empty';
-    p.textContent = 'Não consegui carregar agora. Tente de novo em instantes.';
+    p.textContent = 'Não consegui carregar a lista agora.';
     listWrap.appendChild(p);
+    showWorkspaceInlineError(key, describeSupabaseSetupError(e));
   }
+}
+
+/* Monta o texto de um item de Workspace pra copiar/mandar por WhatsApp/
+   exportar (PDF ou card) — cada aba tem campos diferentes, então o formato
+   muda conforme a chave (equipes/projetos/compartilhados). */
+function itemShareText(key, item){
+  if(key === 'equipes'){
+    let t = '👥 ' + (item.name || '');
+    if(item.role) t += '\nCargo: ' + item.role;
+    if(item.contact) t += '\nContato: ' + item.contact;
+    return t;
+  }
+  if(key === 'projetos'){
+    let t = '📁 ' + (item.title || '');
+    t += '\nStatus: ' + (WORKSPACE_STATUS_LABELS[item.status] || 'Não iniciado');
+    if(item.responsible) t += '\nResponsável: ' + item.responsible;
+    if(item.description) t += '\n\n' + item.description;
+    return t;
+  }
+  if(key === 'compartilhados'){
+    let t = '🔗 ' + (item.title || '');
+    if(item.description) t += '\n' + item.description;
+    if(item.url) t += '\n' + item.url;
+    return t;
+  }
+  return '';
 }
 
 function renderWorkspaceItems(key, items){
@@ -3901,6 +4807,15 @@ function renderWorkspaceItems(key, items){
         info.appendChild(link);
       }
     }
+
+    const shareText = itemShareText(key, item);
+    const actions = document.createElement('div');
+    actions.className = 'workspace-item-actions';
+    actions.appendChild(buildCopyActionButton(shareText, 'action-btn'));
+    actions.appendChild(buildWhatsAppActionButton(shareText, 'action-btn'));
+    actions.appendChild(buildPdfActionButton(shareText, 'action-btn'));
+    actions.appendChild(buildCardActionButton(shareText, 'action-btn'));
+    info.appendChild(actions);
 
     card.appendChild(info);
 
@@ -4140,6 +5055,15 @@ function updateAccountUI(){
     loggedOutBox.style.display = 'flex';
   }
   updateSyncIndicator('synced');
+  // Lembretes de Tarefas exigem login (ficam guardados na conta, ver
+  // WORKSPACE/TASKS) — liga/desliga o verificador periódico junto com o
+  // estado de login, pra não ficar consultando o Supabase sem necessidade
+  // nem perder lembretes de quem acabou de entrar.
+  if(cloudUser){ startTaskReminderPoller(); } else { stopTaskReminderPoller(); }
+  // O pill de status (topo) também muda com login/logout: quem não tem
+  // chave própria colada passa a ter (ou perder) acesso à IA da empresa
+  // via ai-proxy só por causa do login — ver updateStatusPill()/hasAiAccess().
+  updateStatusPill();
   refreshLoginDependentView();
 }
 
@@ -4149,6 +5073,11 @@ function updateAccountUI(){
    acompanhar na hora sem precisar recarregar a página. */
 function refreshLoginDependentView(){
   if(currentView === 'vlow'){ renderVlowView(); return; }
+  if(currentView === 'tarefas'){ showTarefasView(); return; }
+  // Favoritos não exige login (é derivado do histórico local de conversas),
+  // mas logar/deslogar pode trocar esse histórico inteiro (reconcileCloudState),
+  // então atualiza a lista também, caso a pessoa esteja vendo essa aba.
+  if(currentView === 'favoritos'){ renderFavoritosView(); return; }
   if(WORKSPACE_TABLES[currentView]){ showWorkspaceView(currentView); }
 }
 
@@ -4353,9 +5282,9 @@ function replayConversation(conv){
   }
   const chat = document.getElementById('chat');
   chat.innerHTML = '';
-  conv.messages.forEach(entry => {
+  conv.messages.forEach((entry, idx) => {
     if(entry.kind === 'user') addUserMessage(entry.text, false);
-    else if(entry.kind === 'bot') addBotMessage(entry.text, false);
+    else if(entry.kind === 'bot') addBotMessage(entry.text, false, entry, idx);
     else if(entry.kind === 'template') addTemplateMessage({ label: entry.label, message: entry.text }, false);
   });
 }
@@ -4634,7 +5563,14 @@ function renderModeSwitch(){
     const settingsLabel = document.createElement('span');
     settingsLabel.textContent = 'Configurações';
     settingsBtn.appendChild(settingsLabel);
-    settingsBtn.onclick = () => toggleSettings();
+    // Usa setAttribute (não a propriedade .onclick) de propósito: o listener
+    // global de "clique fora fecha o painel" (perto do fim do arquivo)
+    // identifica os botões que abrem Configurações pelo atributo onclick no
+    // HTML (via querySelector [onclick*="toggleSettings()"]) pra não fechar
+    // o painel no mesmo clique que acabou de abrir ele. Com .onclick (função
+    // JS) esse seletor não bate, e o painel abria e fechava no mesmo clique
+    // — parecia que o botão não fazia nada.
+    settingsBtn.setAttribute('onclick', 'toggleSettings()');
     workspaceEl.appendChild(settingsBtn);
   }
 }
@@ -4644,6 +5580,10 @@ function updateNavActiveStates(){
   if(homeBtn) homeBtn.classList.toggle('active', currentView === 'home');
   const vlowBtn = document.getElementById('navVlowBtn');
   if(vlowBtn) vlowBtn.classList.toggle('active', currentView === 'vlow');
+  const tarefasBtn = document.getElementById('navTarefasBtn');
+  if(tarefasBtn) tarefasBtn.classList.toggle('active', currentView === 'tarefas');
+  const favoritosBtn = document.getElementById('navFavoritosBtn');
+  if(favoritosBtn) favoritosBtn.classList.toggle('active', currentView === 'favoritos');
 }
 
 function applyModeUI(mode){
@@ -5164,14 +6104,14 @@ async function handleFileSelect(event){
     currentAttachment = { name: file.name, text: truncateText(result.text, 14000) };
     label.textContent = '📎 ' + file.name;
 
-    if(apiKey){
+    if(hasAiAccess()){
       addBotMessage('Anexei o arquivo **' + file.name + '**. Pode perguntar sobre o conteúdo dele.');
     } else {
-      addBotMessage('Anexei o arquivo **' + file.name + '**, mas pra eu conseguir ler e responder sobre o conteúdo, ative a IA generativa em Configurações (o Gemini é grátis).');
+      addBotMessage('Anexei o arquivo **' + file.name + '**, mas pra eu conseguir ler e responder sobre o conteúdo, ative a IA generativa em Configurações (o Gemini é grátis) ou faça login pra usar a IA da empresa.');
     }
 
     if(result.rows && result.rows.length){
-      if(apiKey){
+      if(hasAiAccess()){
         await generateAiDashboard(result.rows, file.name);
       } else {
         await renderQuickChart(result.rows, file.name);
@@ -5746,25 +6686,14 @@ function isImagensMetaQuestion(text){
 }
 
 async function generateImageOpenAI(prompt){
-  const res = await fetch('https://api.openai.com/v1/images/generations', {
+  const headers = { 'Content-Type': 'application/json' };
+  if(apiKey) headers['Authorization'] = 'Bearer ' + apiKey;
+  const res = await providerFetch('https://api.openai.com/v1/images/generations', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + apiKey
-    },
+    headers: headers,
     body: JSON.stringify({ model: 'dall-e-3', prompt: prompt, n: 1, size: '1024x1024', response_format: 'b64_json' })
-  });
-  if(!res.ok){
-    const errBody = await res.text();
-    let detail = '';
-    try{
-      const parsed = JSON.parse(errBody);
-      detail = parsed?.error?.message || parsed?.error?.code || '';
-    }catch(e){ /* corpo não era JSON, ignora */ }
-    const err = new Error(detail || ('HTTP ' + res.status));
-    err.status = res.status;
-    throw err;
-  }
+  }, AI_CALL_TIMEOUT_MS);
+  if(!res.ok) throw await buildApiError(res);
   const data = await res.json();
   const b64 = data?.data?.[0]?.b64_json;
   if(!b64) throw new Error('A OpenAI não retornou uma imagem.');
@@ -5776,9 +6705,11 @@ async function generateImageOpenAI(prompt){
 const GEMINI_IMAGE_MODEL = 'gemini-2.5-flash-image';
 
 async function generateImageGemini(prompt){
-  const res = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_IMAGE_MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`, {
+  const headers = { 'Content-Type': 'application/json' };
+  if(apiKey) headers['x-goog-api-key'] = apiKey;
+  const res = await providerFetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_IMAGE_MODEL}:generateContent`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: headers,
     body: JSON.stringify({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
@@ -5853,8 +6784,8 @@ async function sendMessage(){
   clearPendingImage();
 
   try{
-    if(image && !apiKey){
-      addBotMessage('Pra eu conseguir "ver" e responder sobre a imagem, ative a IA generativa em Configurações (o Gemini é grátis) — a base local de perguntas frequentes não lê imagens.');
+    if(image && !hasAiAccess()){
+      addBotMessage('Pra eu conseguir "ver" e responder sobre a imagem, ative a IA generativa em Configurações (o Gemini é grátis) ou faça login pra usar a IA da empresa — a base local de perguntas frequentes não lê imagens.');
       return;
     }
 
@@ -5877,8 +6808,8 @@ async function sendMessage(){
       const impliedImgPrompt = (!explicitImgPrompt && currentMode === 'imagens' && !isImagensMetaQuestion(text)) ? text : null;
       const imgPrompt = explicitImgPrompt || impliedImgPrompt;
       if(imgPrompt){
-        if(!apiKey){
-          addBotMessage('Pra gerar imagens, ative a IA generativa em Configurações → IA generativa (o Gemini é grátis) — a base local de perguntas frequentes não gera imagens.');
+        if(!hasAiAccess()){
+          addBotMessage('Pra gerar imagens, ative a IA generativa em Configurações → IA generativa (o Gemini é grátis) ou faça login pra usar a IA da empresa — a base local de perguntas frequentes não gera imagens.');
           return;
         }
         document.getElementById('sendBtn').disabled = true;
@@ -5901,15 +6832,23 @@ async function sendMessage(){
     showTyping();
 
     try{
-      if(apiKey){
+      if(hasAiAccess()){
         const questionText = text || 'Descreva o que você vê nesta imagem e comente o que for relevante.';
         const rawReply = apiProvider === 'gemini' ? await askGemini(questionText, image) : await askOpenAI(questionText, image);
         hideTyping();
-        const { clean, found } = extractMemoryTags(rawReply);
+        const { clean: cleanMem, found } = extractMemoryTags(rawReply);
+        const { clean, found: taskFound } = extractTaskTags(cleanMem);
         addBotMessage(clean || rawReply);
         if(found.length){
           found.forEach(note => addMemoryNote(note));
           showToast(found.length === 1 ? '🧠 Memória atualizada: "' + found[0] + '"' : '🧠 ' + found.length + ' novas memórias salvas');
+        }
+        if(taskFound.length){
+          if(!cloudUser){
+            showToast('⚠️ Faça login pra eu conseguir salvar lembretes.');
+          } else {
+            for(const tf of taskFound){ await createTaskFromChat(tf.title, tf.due); }
+          }
         }
       } else {
         await new Promise(r=>setTimeout(r, 450)); // simula processamento
@@ -5947,6 +6886,32 @@ const RELIABILITY_GUIDE = "Regras de confiabilidade: responda só o que você sa
    removido da resposta antes de mostrar na tela (ver extractMemoryTags). */
 const MEMORY_TAG_REGEX = /\[\[MEMORIZE:\s*([^\]]{1,300}?)\s*\]\]/gi;
 
+/* Tag equivalente à de memória, mas pra lembretes com hora marcada (aba
+   Tarefas) — o modelo calcula a data/hora exata (recebe a data/hora atual
+   no prompt, ver TASK_REMINDER_GUIDE) e devolve no formato
+   AAAA-MM-DDTHH:MM. Extraída/removida do texto antes de mostrar na tela
+   (ver extractTaskTags) e usada pra criar a tarefa de verdade no Supabase
+   (ver createTaskFromChat, perto da seção de Tarefas). */
+const TASK_TAG_REGEX = /\[\[LEMBRETE:\s*([^|\]]{1,120}?)\s*\|\s*(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})\s*\]\]/gi;
+
+function extractTaskTags(text){
+  const found = [];
+  const clean = (text || '').replace(TASK_TAG_REGEX, (_, title, due) => {
+    const t = title.trim();
+    if(t && due) found.push({ title: t, due });
+    return '';
+  }).replace(/\n{3,}/g, '\n\n').trim();
+  return { clean, found };
+}
+
+/* Instrui o modelo a criar lembretes com hora marcada quando a pessoa pedir
+   isso explicitamente no chat (integração pedida pra Tarefas) — em
+   qualquer modo, não só no modo Trabalho, já que "me lembra de X" pode
+   surgir em qualquer conversa. Depende da data/hora atual (injetada logo
+   abaixo) pra calcular corretamente pedidos relativos ("amanhã", "daqui a
+   2 horas", "sexta-feira"). */
+const TASK_REMINDER_GUIDE = "Lembretes com hora marcada: se o usuário pedir explicitamente para ser lembrado de algo em um horário ou data específica (ex: \"me lembra às 15h de ligar pro fornecedor\", \"me avisa amanhã de manhã sobre a reunião\", \"lembrete pra sexta às 9h\"), calcule a data e hora exata (formato AAAA-MM-DDTHH:MM, 24h) com base na data e hora atual informada abaixo, e inclua ao final da resposta, em uma linha própria, a tag: [[LEMBRETE: título curto e claro do lembrete|AAAA-MM-DDTHH:MM]]. Pode incluir mais de uma tag se a pessoa pedir vários lembretes de uma vez. Não use essa tag se não houver um horário ou data específica mencionado — nesse caso, pergunte quando a pessoa quer ser lembrada em vez de inventar um horário. Sempre confirme no texto da sua resposta (fora da tag) que o lembrete foi criado, repetindo a data/hora de forma legível para a pessoa conferir. Nunca explique a tag nem mencione sua sintaxe; ela é removida automaticamente antes do usuário ver a resposta.";
+
 /* Aplicado sempre que há um arquivo anexado ou uma imagem/foto pra
    analisar, em qualquer modo (não só BI) — eleva o nível da resposta pra
    perto de uma análise sênior, com estrutura e recomendação prática, em
@@ -5961,6 +6926,11 @@ function buildSystemPrompt(){
   if(memoryNotes.length){
     prompt += "\n\nNotas que este usuário pediu para você lembrar entre conversas (use quando forem relevantes, sem precisar citar todas de uma vez):\n" +
       memoryNotes.map(n => "- " + n).join('\n');
+  }
+  {
+    const now = new Date();
+    prompt += "\n\nData e hora atual: " + now.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' }) + ", " + now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + " (ISO: " + now.toISOString() + "). Use esta referência para calcular datas/horas relativas mencionadas pelo usuário (ex: \"amanhã\", \"daqui a 2 horas\", \"sexta-feira\") — não repita esse texto literalmente para a pessoa, é só uma referência interna.";
+    prompt += "\n\n" + TASK_REMINDER_GUIDE;
   }
   if(currentAttachment){
     prompt += "\n\nConteúdo extraído do arquivo que o usuário anexou (\"" + currentAttachment.name + "\") — use como contexto para responder perguntas sobre ele quando fizer sentido. Esse arquivo pode conter dados sensíveis (pessoais, financeiros ou de saúde) — trate com cuidado: use exatamente o que está no texto abaixo (nunca invente ou estime números/valores que não estejam explícitos nele) e não repita dados sensíveis desnecessariamente na resposta além do que a pergunta pedir:\n\n" +
@@ -6019,6 +6989,67 @@ async function buildApiError(res){
   return err;
 }
 
+/* =========================================================
+   AI-PROXY — acesso à IA sem precisar de chave própria
+   Quando a pessoa loga na conta mas não colou nenhuma chave pessoal, as
+   chamadas à OpenAI/Gemini passam pela Edge Function "ai-proxy" do
+   Supabase (ver supabase_ai_proxy.ts) em vez de irem direto pra API do
+   provedor. A Edge Function injeta a chave DA EMPRESA no servidor — essa
+   chave nunca é baixada pro navegador, só o resultado da chamada. A chave
+   pessoal (apiKey) continua funcionando exatamente como sempre funcionou
+   (chamada direta, sem passar por nenhum servidor intermediário) — isso
+   não muda em nada pra quem já usa a própria chave.
+   ========================================================= */
+
+/* true quando há algum jeito de usar a IA generativa agora: chave pessoal
+   colada, OU login ativo (que dá acesso à chave da empresa via ai-proxy).
+   Usado nos pontos que hoje decidem "responder com IA" vs "só base local". */
+function hasAiAccess(){
+  return !!apiKey || !!cloudUser;
+}
+
+/* Encaminha uma chamada de IA pela Edge Function "ai-proxy" do Supabase,
+   usando o token de login da pessoa (não a chave da empresa — essa fica só
+   no servidor) pra provar que quem está pedindo é um usuário autenticado.
+   Devolve um Response (mesmo formato do fetch/fetchWithTimeout: .ok,
+   .status, .json(), .text()), já com o status/corpo que o provedor real
+   (OpenAI/Gemini) respondeu — assim quem chama isso (callOpenAIModel,
+   callGeminiModel, etc.) não precisa saber se a chamada foi direta ou via
+   proxy, o contrato é idêntico. */
+async function callAiProxy(url, options, timeoutMs){
+  const client = getSupabaseClient();
+  if(!client){
+    throw new Error('Não consegui acessar a IA da empresa agora (Supabase indisponível). Cole sua própria chave em Configurações, ou tente de novo em instantes.');
+  }
+  const { data: sessionData } = await client.auth.getSession();
+  const token = sessionData && sessionData.session && sessionData.session.access_token;
+  if(!token){
+    throw new Error('Faça login para usar a IA da empresa sem precisar de uma chave própria.');
+  }
+  return await fetchWithTimeout(SUPABASE_URL + '/functions/v1/ai-proxy', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify({
+      url: url,
+      method: (options && options.method) || 'POST',
+      headers: (options && options.headers) || {},
+      body: options ? options.body : undefined
+    })
+  }, timeoutMs);
+}
+
+/* Ponto único por onde toda chamada à OpenAI/Gemini deve passar: usa a
+   chave pessoal direto quando ela existe (comportamento de sempre, sem
+   nenhuma mudança de rota), ou — quando não há chave pessoal mas a pessoa
+   está logada — passa pelo ai-proxy. Se não há nem chave nem login, lança
+   um erro explicativo (quem chama decide se mostra isso ao usuário ou cai
+   pra base local). */
+async function providerFetch(url, options, timeoutMs){
+  if(apiKey) return await fetchWithTimeout(url, options, timeoutMs);
+  if(cloudUser) return await callAiProxy(url, options, timeoutMs);
+  throw new Error('Ative a IA generativa em Configurações (com sua própria chave) ou faça login para usar a IA da empresa.');
+}
+
 /* Tenta, em ordem, cada modelo de getModelOrder(provider) — pula pro próximo
    em caso de 429 (cota) ou 404 (modelo descontinuado), e desiste nos demais
    erros. Devolve o resultado da primeira chamada bem-sucedida, ou lança o
@@ -6050,12 +7081,14 @@ async function callOpenAIModel(model, systemPrompt, userText, image){
         { type: 'image_url', image_url: { url: image.dataUrl } }
       ]
     : userText;
-  const res = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
+  // Com chave pessoal, manda a Authorization aqui mesmo (chamada direta, como
+  // sempre). Sem chave pessoal (login via ai-proxy), NÃO manda Authorization
+  // nenhuma pra OpenAI — a Edge Function injeta a chave da empresa no servidor.
+  const headers = { 'Content-Type': 'application/json' };
+  if(apiKey) headers['Authorization'] = 'Bearer ' + apiKey;
+  const res = await providerFetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + apiKey
-    },
+    headers: headers,
     body: JSON.stringify({
       model: model,
       messages: [
@@ -6090,13 +7123,32 @@ async function askOpenAI(userText, image){
         'Isso costuma acontecer quando o arquivo é aberto direto no navegador (endereço começando com "file://") — abra por um servidor local ou pelo link publicado do site.'
       );
     }
-    let hint = 'Verifique a chave e o billing da conta.';
-    if(lastErr?.status === 429){
-      hint = 'Isso geralmente indica falta de crédito/billing configurado na conta da OpenAI (não é erro na chave), ou muitas chamadas em pouco tempo. Confira em platform.openai.com/settings/organization/billing/overview.';
-    } else if(lastErr?.status === 401){
-      hint = 'A chave parece inválida ou foi revogada. Gere uma nova em platform.openai.com/api-keys.';
-    } else if(lastErr?.status === 404){
-      hint = 'Os modelos testados não estão mais disponíveis na API da OpenAI. Me avise para eu atualizar a lista de modelos do app.';
+    // Dica muda conforme o caminho: com chave pessoal, fala direto com quem
+    // colou a chave; via ai-proxy (login, sem chave própria), quem vê essa
+    // mensagem não tem chave nenhuma pra conferir — a dica precisa apontar
+    // pro administrador (Secrets do Supabase) ou sugerir colar uma chave
+    // própria como alternativa.
+    let hint;
+    if(apiKey){
+      hint = 'Verifique a chave e o billing da conta.';
+      if(lastErr?.status === 429){
+        hint = 'Isso geralmente indica falta de crédito/billing configurado na conta da OpenAI (não é erro na chave), ou muitas chamadas em pouco tempo. Confira em platform.openai.com/settings/organization/billing/overview.';
+      } else if(lastErr?.status === 401){
+        hint = 'A chave parece inválida ou foi revogada. Gere uma nova em platform.openai.com/api-keys.';
+      } else if(lastErr?.status === 404){
+        hint = 'Os modelos testados não estão mais disponíveis na API da OpenAI. Me avise para eu atualizar a lista de modelos do app.';
+      }
+    } else {
+      hint = 'Peça pro administrador conferir a chave da empresa (Secrets do Supabase) — ou, se preferir, cole sua própria chave em Configurações.';
+      if(lastErr?.status === 429){
+        hint = 'A chave da empresa parece sem crédito/billing configurado na OpenAI, ou muitas chamadas em pouco tempo — peça pro administrador conferir. Se preferir, cole sua própria chave em Configurações como alternativa.';
+      } else if(lastErr?.status === 401){
+        hint = 'A chave da empresa parece inválida ou foi revogada — peça pro administrador gerar uma nova. Se preferir, cole sua própria chave em Configurações como alternativa.';
+      } else if(lastErr?.status === 404){
+        hint = 'Os modelos testados não estão mais disponíveis na API da OpenAI. Me avise para eu atualizar a lista de modelos do app.';
+      } else if(lastErr?.status === 500){
+        hint = 'A chave da empresa pra OpenAI ainda não foi configurada no servidor (Secrets do Supabase, OPENAI_API_KEY) — peça pro administrador cadastrar, ou cole sua própria chave em Configurações.';
+      }
     }
     throw new Error('Falha na chamada à OpenAI (' + (lastErr?.status || '?') + ').' + (lastErr?.detail ? ' Detalhe: ' + lastErr.detail + '.' : '') + ' ' + hint);
   }
@@ -6135,7 +7187,7 @@ function populateModelSelect(){
 function setPreferredModel(){
   const select = document.getElementById('modelSelect');
   preferredModel[apiProvider] = select.value;
-  if(apiKey) updateStatusPill(true);
+  updateStatusPill();
   saveState();
 }
 
@@ -6176,9 +7228,15 @@ async function callGeminiModel(model, systemPrompt, userText, image){
   if(image){
     parts.push({ inline_data: { mime_type: image.mimeType, data: image.dataUrl.split(',')[1] || '' } });
   }
-  const res = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`, {
+  // Chave do Gemini vai sempre no header x-goog-api-key (nunca mais na URL
+  // via ?key=...) — assim a mesma forma de montar o pedido serve tanto pra
+  // chamada direta (chave pessoal) quanto pra quando ela passa pelo
+  // ai-proxy (que reaproveita o campo "headers" do pedido).
+  const headers = { 'Content-Type': 'application/json' };
+  if(apiKey) headers['x-goog-api-key'] = apiKey;
+  const res = await providerFetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: headers,
     body: JSON.stringify({
       system_instruction: { parts: [{ text: systemPrompt }] },
       contents: [{ role: 'user', parts }],
@@ -6209,13 +7267,29 @@ async function askGemini(userText, image){
         'Solução: abra o AtlasIA através de um servidor local em vez de abrir o arquivo direto — no VS Code, instale a extensão "Live Server", clique com o botão direito no arquivo .html e escolha "Open with Live Server" (ele abre um endereço tipo http://127.0.0.1:5500/... no navegador, e aí a chamada funciona).'
       );
     }
-    let hint = 'Verifique se a chave foi copiada corretamente do Google AI Studio.';
-    if(lastErr?.status === 429){
-      hint = 'A Google não está liberando cota gratuita pela API pra nenhum dos modelos testados nesta chave/projeto no momento (isso é uma mudança recente deles, não é um limite específico da sua conta). Considere ativar o faturamento no Google AI Studio, ou usar o modo FAQ local / OpenAI como alternativa.';
-    } else if(lastErr?.status === 404){
-      hint = 'Os modelos testados não estão mais disponíveis na API da Google (ela descontinua modelos com frequência). Me avise para eu atualizar a lista de modelos do app.';
-    } else if(lastErr?.status === 400 || lastErr?.status === 403){
-      hint = 'A chave parece inválida, expirada, ou sem permissão. Gere uma nova em aistudio.google.com/apikey.';
+    // Mesma lógica de askOpenAI(): dica diferente conforme veio de chave
+    // pessoal ou do ai-proxy (login sem chave própria).
+    let hint;
+    if(apiKey){
+      hint = 'Verifique se a chave foi copiada corretamente do Google AI Studio.';
+      if(lastErr?.status === 429){
+        hint = 'A Google não está liberando cota gratuita pela API pra nenhum dos modelos testados nesta chave/projeto no momento (isso é uma mudança recente deles, não é um limite específico da sua conta). Considere ativar o faturamento no Google AI Studio, ou usar o modo FAQ local / OpenAI como alternativa.';
+      } else if(lastErr?.status === 404){
+        hint = 'Os modelos testados não estão mais disponíveis na API da Google (ela descontinua modelos com frequência). Me avise para eu atualizar a lista de modelos do app.';
+      } else if(lastErr?.status === 400 || lastErr?.status === 403){
+        hint = 'A chave parece inválida, expirada, ou sem permissão. Gere uma nova em aistudio.google.com/apikey.';
+      }
+    } else {
+      hint = 'Peça pro administrador conferir a chave da empresa (Secrets do Supabase) — ou, se preferir, cole sua própria chave em Configurações.';
+      if(lastErr?.status === 429){
+        hint = 'A Google não está liberando cota gratuita pra chave da empresa no momento — peça pro administrador conferir o faturamento no Google AI Studio. Se preferir, cole sua própria chave em Configurações como alternativa.';
+      } else if(lastErr?.status === 404){
+        hint = 'Os modelos testados não estão mais disponíveis na API da Google (ela descontinua modelos com frequência). Me avise para eu atualizar a lista de modelos do app.';
+      } else if(lastErr?.status === 400 || lastErr?.status === 403){
+        hint = 'A chave da empresa parece inválida, expirada ou sem permissão — peça pro administrador gerar uma nova. Se preferir, cole sua própria chave em Configurações como alternativa.';
+      } else if(lastErr?.status === 500){
+        hint = 'A chave da empresa pro Gemini ainda não foi configurada no servidor (Secrets do Supabase, GEMINI_API_KEY) — peça pro administrador cadastrar, ou cole sua própria chave em Configurações.';
+      }
     }
     throw new Error('Falha na chamada ao Gemini (' + (lastErr?.status || '?') + ').' + (lastErr?.detail ? ' Detalhe: ' + lastErr.detail + '.' : '') + ' ' + hint);
   }
@@ -6369,7 +7443,7 @@ function applyLoadedState(saved){
   // Por isso preserva a chave que já estava em memória/local em vez de
   // apagar quando um estado vindo da nuvem (sem apiKey) é aplicado.
   apiKey = saved.apiKey || apiKey || null;
-  apiProvider = saved.apiProvider || 'gemini';
+  apiProvider = saved.apiProvider || 'openai';
   preferredModel = saved.preferredModel || preferredModel;
   conversations = saved.conversations || [];
   currentConvId = saved.currentConvId;
@@ -6390,8 +7464,8 @@ function applyLoadedState(saved){
   updateProfileName();
   if(apiKey){
     document.getElementById('apiKeyInput').value = apiKey;
-    updateStatusPill(true);
   }
+  updateStatusPill();
   applyModeUI(currentMode);
   renderMemoryList();
   applyTheme(themeMode);
@@ -6567,7 +7641,12 @@ window.onload = () => {
     applyLoadedState(saved);
     addBotMessage("Bem-vindo de volta! Lembrei da sua última conversa e das suas configurações neste navegador.", false);
   } else {
-    selectProvider('gemini');
+    // Primeira visita (sem nada salvo neste navegador): parte do provedor
+    // padrão (apiProvider já inicializado como 'openai' — ver comentário
+    // junto da declaração de apiProvider), não hardcoded aqui, pra não
+    // voltar a divergir do provedor que a empresa de fato configurou no
+    // ai-proxy.
+    selectProvider(apiProvider);
     updateProfileName();
     renderMemoryList();
     renderThemeToggle();

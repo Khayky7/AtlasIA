@@ -7113,10 +7113,16 @@ async function callOpenAIModel(model, systemPrompt, userText, image){
   // genérico de sempre, mostra o motivo real que a própria OpenAI mandou
   // (finish_reason, recusa por segurança, etc.), pra dar pra diagnosticar
   // direto pelo chat, sem precisar caçar isso nos Logs do Supabase.
-  const reason = data.choices?.[0]?.message?.refusal
+  let reason = data.choices?.[0]?.message?.refusal
     || data.choices?.[0]?.finish_reason
-    || (data.error && (data.error.message || data.error.code))
-    || 'motivo não informado pela OpenAI';
+    || (data.error && (data.error.message || data.error.code || data.error));
+  if(!reason){
+    // Nenhum dos campos esperados apareceu — em vez de um "motivo não
+    // informado" que não ajuda em nada a diagnosticar, mostra um pedaço
+    // cru do que realmente voltou, pra dar pra ver o formato de verdade.
+    try{ reason = 'resposta em formato inesperado: ' + JSON.stringify(data).slice(0, 300); }
+    catch(e){ reason = 'resposta em formato inesperado (não deu nem pra descrever)'; }
+  }
   return "Não consegui gerar uma resposta agora (motivo: " + reason + "). Tente reformular a pergunta, ou tente de novo.";
 }
 
@@ -7267,10 +7273,13 @@ async function callGeminiModel(model, systemPrompt, userText, image){
   // Mesma ideia de callOpenAIModel: em vez do aviso genérico, mostra o
   // motivo real (finishReason, bloqueio de segurança do promptFeedback,
   // etc.) direto na mensagem, pra diagnosticar sem precisar dos Logs.
-  const reason = data.candidates?.[0]?.finishReason
+  let reason = data.candidates?.[0]?.finishReason
     || (data.promptFeedback && data.promptFeedback.blockReason)
-    || (data.error && (data.error.message || data.error.code))
-    || 'motivo não informado pelo Gemini';
+    || (data.error && (data.error.message || data.error.code || data.error));
+  if(!reason){
+    try{ reason = 'resposta em formato inesperado: ' + JSON.stringify(data).slice(0, 300); }
+    catch(e){ reason = 'resposta em formato inesperado (não deu nem pra descrever)'; }
+  }
   return "Não consegui gerar uma resposta agora (motivo: " + reason + "). Tente reformular a pergunta, ou tente de novo.";
 }
 

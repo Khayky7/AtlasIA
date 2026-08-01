@@ -7107,7 +7107,17 @@ async function callOpenAIModel(model, systemPrompt, userText, image){
 
   if(!res.ok) throw await buildApiError(res);
   const data = await res.json();
-  return data.choices?.[0]?.message?.content?.trim() || "Não consegui gerar uma resposta agora.";
+  const content = data.choices?.[0]?.message?.content;
+  if(content && content.trim()) return content.trim();
+  // A chamada teve sucesso (200) mas voltou sem texto — em vez do aviso
+  // genérico de sempre, mostra o motivo real que a própria OpenAI mandou
+  // (finish_reason, recusa por segurança, etc.), pra dar pra diagnosticar
+  // direto pelo chat, sem precisar caçar isso nos Logs do Supabase.
+  const reason = data.choices?.[0]?.message?.refusal
+    || data.choices?.[0]?.finish_reason
+    || (data.error && (data.error.message || data.error.code))
+    || 'motivo não informado pela OpenAI';
+  return "Não consegui gerar uma resposta agora (motivo: " + reason + "). Tente reformular a pergunta, ou tente de novo.";
 }
 
 /* API pública usada por sendMessage() quando o provedor ativo é a OpenAI:
@@ -7252,7 +7262,16 @@ async function callGeminiModel(model, systemPrompt, userText, image){
 
   if(!res.ok) throw await buildApiError(res);
   const data = await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "Não consegui gerar uma resposta agora.";
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if(text && text.trim()) return text.trim();
+  // Mesma ideia de callOpenAIModel: em vez do aviso genérico, mostra o
+  // motivo real (finishReason, bloqueio de segurança do promptFeedback,
+  // etc.) direto na mensagem, pra diagnosticar sem precisar dos Logs.
+  const reason = data.candidates?.[0]?.finishReason
+    || (data.promptFeedback && data.promptFeedback.blockReason)
+    || (data.error && (data.error.message || data.error.code))
+    || 'motivo não informado pelo Gemini';
+  return "Não consegui gerar uma resposta agora (motivo: " + reason + "). Tente reformular a pergunta, ou tente de novo.";
 }
 
 /* Equivalente a askOpenAI(), mas para o Gemini como provedor ativo — mesma

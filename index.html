@@ -811,10 +811,6 @@
     -webkit-overflow-scrolling:touch;
   }
   .templates.open{ display:flex; }
-  /* O Copiloto ganhou uma área de resultado (mensagem pronta + botões)
-     além do formulário, então precisa de mais espaço vertical que os
-     outros painéis desse mesmo estilo (Atalhos). */
-  #copilotoPanel.open{ max-height:520px; }
   .copiloto-result-bubble{
     background:var(--panel-2);
     border:1px solid var(--border);
@@ -2190,7 +2186,7 @@
         <span class="dot"></span>
         <span>Atalhos</span>
       </div>
-      <div id="copilotoPill" class="status-pill" onclick="toggleCopiloto()">
+      <div id="copilotoPill" class="status-pill" onclick="showCopilotoView()">
         <span class="dot"></span>
         <span>Copiloto</span>
       </div>
@@ -2382,12 +2378,6 @@
   <div id="templatesPanel" class="templates">
     <div class="hint">Clique em um atalho para inserir o modelo pronto na conversa (e copiar automaticamente para a área de transferência).</div>
     <div id="templatesGrid" class="templates-grid"></div>
-  </div>
-
-  <div id="copilotoPanel" class="templates">
-    <div class="hint">Escolha objetivo, cliente, clínica, canal e tom — a Lumi monta a mensagem pra você, usando o histórico da clínica quando ela já estiver cadastrada.</div>
-    <div id="copilotoForm" class="workspace-form"></div>
-    <div id="copilotoResult"></div>
   </div>
 
   <div class="chat" id="chat"></div>
@@ -3084,10 +3074,6 @@ function closeOverlayPanels(except){
   if(except !== 'templates'){
     const templatesPanel = document.getElementById('templatesPanel');
     if(templatesPanel) templatesPanel.classList.remove('open');
-  }
-  if(except !== 'copiloto'){
-    const copilotoPanel = document.getElementById('copilotoPanel');
-    if(copilotoPanel) copilotoPanel.classList.remove('open');
   }
   if(except !== 'slash') closeSlashMenu();
   if(except !== 'suggest'){
@@ -5026,12 +5012,13 @@ async function generateReajusteContraproposta(){
 }
 
 /* =========================================================
-   COPILOTO — painel ao lado de Atalhos (ver copilotoPill/copilotoPanel no
-   HTML) que monta uma mensagem sob medida a partir de 5 escolhas
-   (objetivo, cliente, clínica, canal, tom) em vez de depender só de
-   modelos fixos. Quando a clínica escolhida já está cadastrada (ver
-   WORKSPACE_TABLES.clinicas), o histórico/status/tabela dela entra no
-   contexto — a IA usa isso pra deixar a mensagem mais específica, mas
+   COPILOTO — tela cheia (mesmo padrão de Reajuste/Contratos), aberta pelo
+   pill "Copiloto" no cabeçalho (ver showCopilotoView) — que monta uma
+   mensagem sob medida a partir de 5 escolhas (objetivo, cliente, clínica,
+   canal, tom) em vez de depender só de modelos fixos. Quando a clínica
+   escolhida já está cadastrada (ver WORKSPACE_TABLES.clinicas), o
+   histórico/status/tabela dela entra no contexto — a IA usa isso pra
+   deixar a mensagem mais específica, mas
    nunca inventa dado de uma clínica que não esteja no cadastro.
    ========================================================= */
 const COPILOTO_OBJETIVOS = [
@@ -5046,13 +5033,47 @@ const COPILOTO_OBJETIVOS = [
 const COPILOTO_CANAIS = [['whatsapp', 'WhatsApp'], ['email', 'E-mail']];
 const COPILOTO_TONS = [['formal', 'Formal'], ['cordial', 'Cordial'], ['direto', 'Direto']];
 
-function toggleCopiloto(){
-  hapticTap();
-  const panel = document.getElementById('copilotoPanel');
-  const willOpen = !!panel && !panel.classList.contains('open');
-  closeOverlayPanels(willOpen ? 'copiloto' : null);
-  if(panel) panel.classList.toggle('open');
-  if(willOpen) renderCopilotoForm();
+function showCopilotoView(){
+  closeOverlayPanels();
+  currentView = 'copiloto';
+  currentConvId = null;
+  renderModeSwitch();
+  updateNavActiveStates();
+  document.getElementById('modeBanner').classList.remove('show');
+  renderConversationList();
+  renderCopilotoView();
+  closeSidebarIfMobile();
+}
+
+async function renderCopilotoView(){
+  const chat = document.getElementById('chat');
+  chat.innerHTML = '';
+
+  const wrap = document.createElement('div');
+  wrap.className = 'vlow-view';
+
+  const heading = document.createElement('h2');
+  heading.className = 'vlow-heading';
+  heading.textContent = 'Copiloto';
+  wrap.appendChild(heading);
+
+  const subtitle = document.createElement('p');
+  subtitle.className = 'vlow-subtitle';
+  subtitle.textContent = 'Escolha objetivo, cliente, clínica, canal e tom — a Lumi monta a mensagem pra você, usando o histórico da clínica quando ela já estiver cadastrada.';
+  wrap.appendChild(subtitle);
+
+  const form = document.createElement('div');
+  form.id = 'copilotoForm';
+  form.className = 'workspace-form';
+  wrap.appendChild(form);
+
+  const resultBox = document.createElement('div');
+  resultBox.id = 'copilotoResult';
+  wrap.appendChild(resultBox);
+
+  chat.appendChild(wrap);
+
+  await renderCopilotoForm();
 }
 
 async function renderCopilotoForm(){
@@ -5179,10 +5200,8 @@ async function generateCopilotoMessage(){
   const clinicaCadastrada = clinicaId ? (dataCache.clinicas || []).find(c => c.id === clinicaId) : null;
   const nomeClinica = clinicaCadastrada ? clinicaCadastrada.nome : clinicaTexto;
 
-  // O resultado fica DENTRO do próprio painel do Copiloto (copilotoResult),
-  // nunca no chat — é por isso que não chamamos addBotMessage/toggleCopiloto
-  // aqui: o painel continua aberto, na mesma aba, com o texto pronto logo
-  // abaixo do formulário.
+  // O resultado fica DENTRO da própria tela do Copiloto (copilotoResult),
+  // nunca no chat — é por isso que não chamamos addBotMessage aqui.
   const resultBox = document.getElementById('copilotoResult');
   if(!nomeClinica){
     if(resultBox) resultBox.innerHTML = '<p class="vlow-empty">Escolha uma clínica cadastrada ou digite o nome dela antes de montar a mensagem.</p>';
@@ -6849,6 +6868,7 @@ function refreshLoginDependentView(){
   // busca com o resultado atualizado.
   if(currentView === 'busca'){ renderGlobalSearchView(); return; }
   if(currentView === 'comparadorClinicas'){ showComparadorClinicasView(); return; }
+  if(currentView === 'copiloto'){ renderCopilotoView(); return; }
   if(WORKSPACE_TABLES[currentView]){ showWorkspaceView(currentView); }
 }
 
@@ -10115,7 +10135,7 @@ window.onload = () => {
     // dele (inclusive pra poder digitar direto no campo de mensagem sem
     // precisar fechar manualmente antes). Os próprios botões que abrem/fecham
     // os painéis ficam de fora dessa checagem pra não abrir-e-fechar no mesmo clique.
-    const isPanelToggleTrigger = e.target.closest('[onclick*="toggleSettings()"], [onclick*="toggleTemplates()"], [onclick*="toggleCopiloto()"]');
+    const isPanelToggleTrigger = e.target.closest('[onclick*="toggleSettings()"], [onclick*="toggleTemplates()"]');
     if(!isPanelToggleTrigger){
       const settingsPanel = document.getElementById('settingsPanel');
       if(settingsPanel && settingsPanel.classList.contains('open') && !settingsPanel.contains(e.target)){
@@ -10124,10 +10144,6 @@ window.onload = () => {
       const templatesPanel = document.getElementById('templatesPanel');
       if(templatesPanel && templatesPanel.classList.contains('open') && !templatesPanel.contains(e.target)){
         templatesPanel.classList.remove('open');
-      }
-      const copilotoPanel = document.getElementById('copilotoPanel');
-      if(copilotoPanel && copilotoPanel.classList.contains('open') && !copilotoPanel.contains(e.target)){
-        copilotoPanel.classList.remove('open');
       }
     }
 

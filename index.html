@@ -2881,7 +2881,19 @@ Fico à disposição e agradeço desde já pela atenção.`
 /* =========================================================
    ENGINE
    ========================================================= */
-let apiKey = null; // fica só em memória, nunca persistido em disco
+// Uma chave própria por provedor (Gemini e OpenAI têm formatos diferentes e
+// não são intercambiáveis) — antes disso existia só UMA variável apiKey
+// compartilhada entre os dois provedores, e trocar de provedor em
+// Configurações não limpava nem trocava o valor, então quem tinha colado
+// uma chave da OpenAI (formato "sk-...") e depois trocava pra Gemini caía
+// exatamente no erro "API key not valid" (a chave errada sendo mandada pro
+// provedor errado). apiKey continua existindo como um "espelho" da chave do
+// provedor ATUALMENTE selecionado (é o que o resto do código já lê em todo
+// lugar — askGemini, askOpenAI, hasAiAccess etc.), só que agora sincronizado
+// com apiKeyByProvider sempre que o provedor muda (ver selectProvider) ou a
+// chave é salva/removida (ver saveKey/clearKey).
+let apiKeyByProvider = { gemini: null, openai: null };
+let apiKey = null; // fica só em memória, nunca persistido em disco (espelha apiKeyByProvider[apiProvider])
 // Provedor padrão pra quem ainda não escolheu nenhum (primeira visita, ou
 // login novo sem preferência salva): 'gemini', porque no Gemini a busca na
 // internet fica sempre ligada automaticamente (ver webSearchEnabled) sem
@@ -2915,6 +2927,10 @@ const PROVIDER_INFO = {
 
 function selectProvider(provider){
   apiProvider = provider;
+  // Troca pra chave própria DESSE provedor (nunca a do outro — ver
+  // comentário junto de apiKeyByProvider) e já reflete no campo da tela.
+  apiKey = apiKeyByProvider[provider] || null;
+  document.getElementById('apiKeyInput').value = apiKey || '';
   document.getElementById('providerGeminiBtn').classList.toggle('active', provider === 'gemini');
   document.getElementById('providerOpenAIBtn').classList.toggle('active', provider === 'openai');
   document.getElementById('apiKeyInput').placeholder = PROVIDER_INFO[provider].placeholder;
@@ -3610,6 +3626,7 @@ function saveKey(){
     return;
   }
   apiKey = val;
+  apiKeyByProvider[apiProvider] = val;
   updateStatusPill();
   addBotMessage("IA generativa ativada (" + info.label + "). Agora posso responder de forma mais livre, além da base de perguntas frequentes. Vou lembrar dessa chave neste navegador, então não precisa colar de novo da próxima vez.");
   toggleSettings();
@@ -3618,6 +3635,7 @@ function saveKey(){
 
 function clearKey(){
   apiKey = null;
+  apiKeyByProvider[apiProvider] = null;
   document.getElementById('apiKeyInput').value = '';
   updateStatusPill();
   addBotMessage(cloudUser
@@ -5692,7 +5710,7 @@ function buildStateSnapshot(){
   const nameInput = document.getElementById('profileNameInput');
   return {
     v: 1,
-    apiKey, apiProvider, preferredModel,
+    apiKey, apiKeyByProvider, apiProvider, preferredModel,
     profileName: nameInput ? nameInput.value : 'Você',
     conversations, currentConvId, convCounter,
     currentMode, memoryNotes,
@@ -6484,6 +6502,7 @@ function forgetAllData(){
     try{ persistentStorage.removeItem(STORAGE_KEY); }catch(e){ /* ignora */ }
   }
   apiKey = null;
+  apiKeyByProvider = { gemini: null, openai: null };
   document.getElementById('apiKeyInput').value = '';
   updateStatusPill(false);
   document.getElementById('profileNameInput').value = 'Você';
@@ -8450,12 +8469,31 @@ function handleInputKeydown(event){
    pra retomar a última visita. Fica numa função à parte pra poder ser
    chamada tanto no boot local normal quanto depois de logar numa conta. */
 function applyLoadedState(saved){
-  // saved.apiKey só existe quando "saved" veio do localStorage deste
-  // aparelho (a nuvem nunca guarda a chave — ver syncStateToCloud()).
-  // Por isso preserva a chave que já estava em memória/local em vez de
-  // apagar quando um estado vindo da nuvem (sem apiKey) é aplicado.
-  apiKey = saved.apiKey || apiKey || null;
+  // saved.apiKey/apiKeyByProvider só existem quando "saved" veio do
+  // localStorage deste aparelho (a nuvem nunca guarda chave nenhuma — ver
+  // syncStateToCloud()). Por isso preserva o que já estava em memória/local
+  // em vez de apagar quando um estado vindo da nuvem (sem chave) é aplicado.
+  if(saved.apiKeyByProvider && typeof saved.apiKeyByProvider === 'object'){
+    apiKeyByProvider = {
+      gemini: saved.apiKeyByProvider.gemini || null,
+      openai: saved.apiKeyByProvider.openai || null
+    };
+  } else if(saved.apiKey){
+    // Estado salvo por uma versão antiga do app (antes de separar a chave
+    // por provedor — ver comentário junto de apiKeyByProvider). Chave no
+    // formato "sk-..." é sempre da OpenAI, não importa qual provedor estava
+    // selecionado no momento em que foi salva — é exatamente o cenário que
+    // causava "API key not valid" (uma chave OpenAI antiga sendo mandada
+    // pro Gemini depois de trocar de provedor). Qualquer outro formato migra
+    // pro provedor que estava selecionado na época, como antes.
+    if(saved.apiKey.startsWith('sk-')){
+      apiKeyByProvider.openai = saved.apiKey;
+    } else {
+      apiKeyByProvider[saved.apiProvider || 'gemini'] = saved.apiKey;
+    }
+  }
   apiProvider = saved.apiProvider || 'gemini';
+  apiKey = apiKeyByProvider[apiProvider] || apiKey || null;
   preferredModel = saved.preferredModel || preferredModel;
   conversations = saved.conversations || [];
   currentConvId = saved.currentConvId;

@@ -773,6 +773,17 @@
   }
   .mode-banner.show{ display:block; }
 
+  .offline-banner{
+    display:none;
+    padding:10px 22px;
+    background:rgba(230,160,60,.12);
+    border-bottom:1px solid var(--border);
+    color:#e6a03c;
+    font-size:12px;
+    line-height:1.5;
+  }
+  .offline-banner.show{ display:block; }
+
   .templates{
     display:none;
     padding:14px 22px;
@@ -2136,6 +2147,7 @@
     </div>
   </aside>
   <div class="app">
+  <div id="offlineBanner" class="offline-banner">📡 Você está offline. A página abriu normalmente e o que já estava salvo continua disponível, mas busca na internet e IA generativa (que dependem de conexão) ficam fora do ar até a internet voltar — dá pra usar a base de perguntas frequentes (modo FAQ local) enquanto isso.</div>
   <div id="modeBanner" class="mode-banner">⚠️ Modo Financeiro: conteúdo educativo sobre organização financeira e dívidas, gerado por IA. Não é aconselhamento financeiro personalizado nem substitui um profissional licenciado (educador financeiro, Procon, ou os canais oficiais de negociação).</div>
 
   <div id="settingsPanel" class="settings">
@@ -4088,7 +4100,13 @@ async function uploadFileToStorage(bucket, file, pathPrefix){
    de exibição rápida/offline (ver applyLoadedState), mas o valor da nuvem
    é a fonte da verdade (ver loadSharedVlowConfig, chamada no boot).
    ========================================================= */
-let vlowLink = '';
+// Valor padrão, embutido no código: aparece pra todo mundo (inclusive sem
+// login) desde a primeira abertura, mesmo antes da nuvem responder ou se a
+// tabela app_config ainda não tiver um valor salvo. Ver loadSharedVlowConfig
+// logo abaixo — se a nuvem já tiver outro link salvo, ele tem prioridade;
+// se estiver vazia, este padrão é automaticamente gravado lá também, pra
+// virar o valor definitivo de todo mundo dali em diante.
+let vlowLink = 'https://drive.google.com/file/d/14Au7AfSDfYIaRkqknhlyAzFAIGJ6xJBb/view?usp=sharing';
 let vlowCloudSyncTimer = null;
 
 /* =========================================================
@@ -4252,12 +4270,23 @@ async function loadSharedVlowConfig(){
       .select('value')
       .eq('key', 'vlow')
       .single();
-    if(error || !data || !data.value) return;
+    if(error || !data || !data.value){
+      // Nenhum valor salvo na nuvem ainda: se a pessoa estiver logada,
+      // aproveita pra já gravar o link padrão como o valor compartilhado —
+      // assim, da próxima vez, ele vem pronto da nuvem pra QUALQUER
+      // visitante (logado ou não), sem precisar que alguém cole o link
+      // manualmente na aba Vlow primeiro.
+      if(cloudUser && vlowLink) await saveSharedVlowConfig(vlowLink);
+      return;
+    }
     const link = typeof data.value.link === 'string' ? data.value.link : '';
     if(link && link !== vlowLink){
       vlowLink = link;
       saveState();
       if(currentView === 'vlow') renderVlowView();
+    } else if(!link && cloudUser && vlowLink){
+      // Registro existe mas o campo "link" está vazio: mesma ideia acima.
+      await saveSharedVlowConfig(vlowLink);
     }
   }catch(e){ /* sem internet, tabela ainda não criada etc. — segue só local */ }
 }
@@ -6021,14 +6050,22 @@ function updateProfileName(){
 function updateOnlineStatus(){
   const pill = document.getElementById('onlinePill');
   const text = document.getElementById('onlineText');
-  if(!pill || !text) return;
-  if(navigator.onLine === false){
-    pill.classList.remove('on');
-    text.textContent = 'Offline';
-  } else {
-    pill.classList.add('on');
-    text.textContent = 'Online';
+  const banner = document.getElementById('offlineBanner');
+  const offline = navigator.onLine === false;
+  if(pill && text){
+    if(offline){
+      pill.classList.remove('on');
+      text.textContent = 'Offline';
+    } else {
+      pill.classList.add('on');
+      text.textContent = 'Online';
+    }
   }
+  // Banner fica visível o tempo todo que estiver offline (não só um toast
+  // que some sozinho), já que a pessoa pode ficar navegando por várias
+  // telas do app enquanto isso — precisa continuar sabendo o motivo de
+  // buscas/IA não funcionarem.
+  if(banner) banner.classList.toggle('show', offline);
 }
 
 /* =========================================================
@@ -7438,6 +7475,21 @@ async function sendMessage(){
     showTyping();
 
     try{
+      // Offline: nem tenta a chamada de rede (que só ia falhar de forma
+      // confusa) — avisa direto e, se possível, ainda responde pela base
+      // local de perguntas frequentes, que não depende de internet.
+      if(navigator.onLine === false && hasAiAccess() && !image){
+        await new Promise(r=>setTimeout(r, 300));
+        hideTyping();
+        const hit = searchKB(text);
+        if(hit){
+          addBotMessage('📡 Você está offline, então respondi com a base local de perguntas frequentes (sem IA generativa/busca):\n\n' + hit.answer);
+        } else {
+          addBotMessage('📡 Você está offline agora, então não consigo usar a IA generativa nem buscar na internet. Não encontrei essa resposta na base local de perguntas frequentes — tente de novo assim que a conexão voltar.');
+          addQuickReplies(MODES[currentMode].quickReplies);
+        }
+        return;
+      }
       if(hasAiAccess()){
         const questionText = text || 'Descreva o que você vê nesta imagem e comente o que for relevante.';
         await refreshRagContext(questionText);
@@ -7600,6 +7652,103 @@ function buildWorkspaceDataContext(){
   if(!parts.length) return '';
   return "\n\nDados internos do Workspace do AtlasIA desta empresa (use pra responder perguntas sobre tarefas, projetos, equipe ou itens compartilhados — são dados reais e atuais desta conta; não invente nem complete o que não estiver listado aqui, e não confunda com dados de outra empresa/sistema):\n" + parts.join('\n');
 }
+
+/* =========================================================
+   TOOL MANAGER — camada central que decide, antes de cada chamada ao
+   modelo de IA, quais fontes de contexto/ferramentas ativar (Internet,
+   SQL, RAG, APIs, Fluxos), em vez de ligar tudo sempre em toda mensagem:
+
+                          AtlasIA
+                             │
+                    🧠 Tool Manager (aqui embaixo)
+        ┌───────────┬────────────┬───────────┬────────────┐
+        │           │            │           │            │
+   🌐 Internet    🗄 SQL       📄 RAG       🔗 APIs      ⚙️ Fluxos
+   (busca web,   (dataCache/  (documentos   (reservado —  (reservado —
+   condicional,  Supabase —   indexados —   nenhuma API   nenhum motor
+   ver           buildWork-   ver           externa       de automação
+   needsWebSearch spaceData-  RAG_RELEVANCE  própria      implementado
+   abaixo)       Context,     _THRESHOLD    integrada     ainda)
+                 mais abaixo) mais abaixo)   ainda)
+        │           │            │           │            │
+        └───────────┴────────────┴───────────┴────────────┘
+                             │
+                 📦 Contexto Inteligente (buildSystemPrompt)
+                             │
+                       🤖 OpenAI • Gemini
+                             │
+                        💬 Resposta
+
+   SQL e RAG já funcionam como módulos de contexto condicionais — SQL
+   (buildWorkspaceDataContext) só entra se a conta tiver dado cadastrado e
+   estiver logada, e RAG (refreshRagContext) só entra se achar um trecho
+   relevante o bastante nos documentos indexados. O que faltava era
+   Internet: antes, a IA tentava buscar na web em TODA mensagem, mesmo
+   pra algo como "resuma esse texto" ou "explique o que é X". Agora passa
+   por needsWebSearch() antes — a decisão acontece ANTES da chamada à
+   OpenAI/Gemini (ver askOpenAI/askGemini, mais abaixo), nunca depois.
+   APIs e Fluxos são só pontos de extensão reservados por enquanto — não
+   há nenhuma API externa própria nem motor de automação plugado ainda;
+   quando um for criado, é aqui (ToolManager.decide) que ele entra como
+   um novo campo, do mesmo jeito que os outros.
+   ========================================================= */
+
+// Palavras/expressões que indicam que a pergunta pede informação "de
+// agora" (preço, notícia, resultado, clima etc.) — quando bate uma
+// destas, a Internet é ativada. Lista enxuta de propósito: deixar de
+// buscar quando devia é bem menos grave do que buscar toda hora à toa.
+const WEB_SEARCH_TRIGGER_WORDS = [
+  'notícia', 'noticia', 'notícias', 'noticias', 'manchete',
+  'hoje', 'agora', 'atualidade', 'atualizado', 'atualizada', 'ao vivo', 'em tempo real',
+  'cotação', 'cotacao', 'dólar', 'dolar', 'câmbio', 'cambio', 'bolsa de valores', 'ibovespa',
+  'preço atual', 'preco atual', 'previsão do tempo', 'previsao do tempo', 'clima em', 'clima de', 'vai chover',
+  'resultado do jogo', 'resultado de hoje', 'placar', 'campeonato', 'quem ganhou',
+  'eleição', 'eleicao', 'eleições', 'eleicoes',
+  'legislação atualizada', 'legislacao atualizada', 'lei mais recente', 'última versão da lei', 'ultima versao da lei',
+  'lançou', 'lancou', 'lançamento recente', 'lancamento recente', 'versão mais recente', 'versao mais recente',
+  'esse ano', 'este ano', 'nesse mês', 'neste mes', 'essa semana', 'nesta semana'
+];
+
+// Pistas fortes de que a tarefa é auto-contida (não depende de nada "de
+// agora") — checadas ANTES das palavras de gatilho acima, pra evitar
+// falso positivo (ex: "resuma essa notícia que eu colei aqui" não deveria
+// buscar na internet, já que o conteúdo já está no texto da pergunta).
+const NO_SEARCH_HINT_WORDS = [
+  'resuma', 'resumir', 'resumo de', 'resumo do texto',
+  'gere um email', 'gerar email', 'escreva um email', 'redija um email', 'redija uma mensagem',
+  'explique o conceito', 'explique o que é', 'o que é', 'o que significa', 'como funciona',
+  'crie um código', 'crie uma função', 'escreva um código', 'código em', 'programação em', 'debug', 'corrija esse código',
+  'corrija esse texto', 'revise este texto', 'revise esse texto', 'traduza', 'reescreva'
+];
+
+/* Decide se a pergunta atual precisa de busca na internet — chamada
+   antes de montar a chamada à OpenAI/Gemini (askOpenAI/askGemini),
+   nunca depois. Checagem simples de palavras-chave, sem gastar uma
+   chamada extra de IA só pra "decidir se decide" — suficiente pros
+   casos de uso do AtlasIA e sem custo/latência adicional. */
+function needsWebSearch(text){
+  const t = (text || '').toLowerCase();
+  if(!t) return false;
+  if(NO_SEARCH_HINT_WORDS.some(w => t.includes(w))) return false;
+  return WEB_SEARCH_TRIGGER_WORDS.some(w => t.includes(w));
+}
+
+const ToolManager = {
+  /* Ponto único de decisão: recebe o texto da pergunta e devolve quais
+     módulos entram no contexto desta mensagem. SQL/RAG continuam sendo
+     refinados pelas próprias funções (buildWorkspaceDataContext/
+     refreshRagContext, mais abaixo) — aqui é só refletido/documentado,
+     pra Internet passar a seguir a mesma lógica central que elas. */
+  decide(userText){
+    return {
+      internet: navigator.onLine !== false && needsWebSearch(userText),
+      sql: !!cloudUser,       // buildWorkspaceDataContext decide o resto (só entra se houver dado)
+      rag: true,              // refreshRagContext decide o resto (só entra se achar trecho relevante)
+      apis: false,            // reservado — nenhuma API externa própria integrada ainda
+      fluxos: false           // reservado — nenhum motor de automação/fluxos implementado ainda
+    };
+  }
+};
 
 /* =========================================================
    RAG — busca por relevância em documentos indexados (biblioteca
@@ -7999,9 +8148,15 @@ async function callOpenAIModelSearch(model, systemPrompt, userText){
    imagem, usa a Chat Completions normal (callOpenAIModel, com visão). */
 async function askOpenAI(userText, image){
   const systemPrompt = buildSystemPrompt();
+  // Tool Manager decide ANTES da chamada se esta pergunta precisa de
+  // internet — evita bater na Responses API (mais lenta) em toda
+  // mensagem, incluindo as que claramente não precisam (resumir texto,
+  // gerar email, explicar conceito, responder usando documentos anexados,
+  // programação etc.).
+  const useSearch = !image && ToolManager.decide(userText).internet;
   try{
     return await tryModelsInOrder('openai', async (model) => {
-      if(image) return await callOpenAIModel(model, systemPrompt, userText, image);
+      if(image || !useSearch) return await callOpenAIModel(model, systemPrompt, userText, image);
       try{
         return await callOpenAIModelSearch(model, systemPrompt, userText);
       }catch(searchErr){
@@ -8177,8 +8332,12 @@ async function callGeminiModel(model, systemPrompt, userText, image, useSearch){
    mensagem explicativa em português (cota, chave inválida, timeout, etc.). */
 async function askGemini(userText, image){
   const systemPrompt = buildSystemPrompt();
+  // Mesma decisão central do Tool Manager usada pra OpenAI — busca só
+  // entra quando a pergunta realmente parece precisar de algo "de agora".
+  const useSearch = ToolManager.decide(userText).internet;
   try{
     return await tryModelsInOrder('gemini', async (model) => {
+      if(!useSearch) return await callGeminiModel(model, systemPrompt, userText, image, false);
       try{
         return await callGeminiModel(model, systemPrompt, userText, image, true);
       }catch(searchErr){

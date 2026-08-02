@@ -7706,7 +7706,18 @@ const WEB_SEARCH_TRIGGER_WORDS = [
   'eleição', 'eleicao', 'eleições', 'eleicoes',
   'legislação atualizada', 'legislacao atualizada', 'lei mais recente', 'última versão da lei', 'ultima versao da lei',
   'lançou', 'lancou', 'lançamento recente', 'lancamento recente', 'versão mais recente', 'versao mais recente',
-  'esse ano', 'este ano', 'nesse mês', 'neste mes', 'essa semana', 'nesta semana'
+  'esse ano', 'este ano', 'nesse mês', 'neste mes', 'essa semana', 'nesta semana',
+  // Busca de prestador/clínica por localização — é o uso mais central do
+  // modo Trabalho (credenciamento) e tinha ficado de fora da lista original:
+  // sem um destes termos, a pergunta caía como "não precisa de internet" e a
+  // IA respondia com base só no que já sabia (ou inventava), em vez de
+  // buscar nomes reais de clínicas/prestadores na região pedida.
+  'clínica', 'clinica', 'clínicas', 'clinicas', 'consultório', 'consultorio',
+  'laboratório em', 'laboratorio em', 'hospital em', 'unidade de saúde', 'unidade de saude',
+  'prestador de saúde', 'prestador de saude', 'credenciada em', 'credenciado em',
+  'na região', 'na regiao', 'da região', 'da regiao', 'região de', 'regiao de',
+  'perto de', 'próximo a', 'proximo a', 'endereço da', 'endereco da', 'endereço de', 'endereco de',
+  'telefone da', 'telefone de', 'contato da', 'contato de', 'no bairro', 'na cidade de'
 ];
 
 // Pistas fortes de que a tarefa é auto-contida (não depende de nada "de

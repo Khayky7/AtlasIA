@@ -703,6 +703,7 @@
 
   .accent-swatches{
     display:flex;
+    flex-wrap:wrap;
     gap:10px;
   }
   .accent-swatch{
@@ -2128,6 +2129,10 @@
         <span class="dot"></span>
         <span>Atalhos</span>
       </div>
+      <div id="copilotoPill" class="status-pill" onclick="toggleCopiloto()">
+        <span class="dot"></span>
+        <span>Copiloto</span>
+      </div>
       <button type="button" class="header-icon-btn" title="Memória" onclick="toggleSettings()"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3a4 4 0 0 0-4 4 3.5 3.5 0 0 0-1 6.8A3.5 3.5 0 0 0 7.5 19H9V3z"/><path d="M15 3a4 4 0 0 1 4 4 3.5 3.5 0 0 1 1 6.8A3.5 3.5 0 0 1 16.5 19H15V3z"/><line x1="12" y1="19" x2="12" y2="22"/></svg></button>
       <button type="button" class="header-icon-btn" title="Atalhos de teclado (?)" onclick="showShortcutsHelp()"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="6" width="19" height="13" rx="2.2"/><line x1="6" y1="10" x2="6" y2="10.01"/><line x1="9.5" y1="10" x2="9.5" y2="10.01"/><line x1="13" y1="10" x2="13" y2="10.01"/><line x1="16.5" y1="10" x2="16.5" y2="10.01"/><line x1="6" y1="13.3" x2="6" y2="13.31"/><line x1="9.5" y1="13.3" x2="9.5" y2="13.31"/><line x1="13" y1="13.3" x2="13" y2="13.31"/><line x1="16.5" y1="13.3" x2="16.5" y2="13.31"/><line x1="7.5" y1="16.3" x2="15.5" y2="16.3"/></svg></button>
       <div class="header-avatar-wrap" onclick="toggleSettings()" title="Configurações">
@@ -2144,6 +2149,7 @@
     <button type="button" class="nav-btn" id="navVlowBtn" onclick="showVlowView()"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5.5" width="14" height="13" rx="2.2"/><path d="M16.5 10.8l4.4-2.9a.8.8 0 0 1 1.1.7v7.8a.8.8 0 0 1-1.1.7l-4.4-2.9z"/><path d="M8 9.3v5.4l4.6-2.7z" class="filled"/></svg> Vlow</button>
     <button type="button" class="nav-btn" id="navTarefasBtn" onclick="showTarefasView()"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v5l3.2 1.8"/></svg> Tarefas</button>
     <button type="button" class="nav-btn" id="navReajusteBtn" onclick="showReajusteView()"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="12" y1="6.5" x2="12" y2="17.5"/><path d="M15 9.2c0-1.3-1.3-2.4-3-2.4s-3 1-3 2.2c0 3.2 6 1.6 6 4.8 0 1.3-1.3 2.4-3 2.4s-3-1-3-2.4"/></svg> Reajuste</button>
+    <button type="button" class="nav-btn" id="navContratosBtn" onclick="showContratosView()"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg> Contratos</button>
     <button type="button" class="nav-btn" id="navFavoritosBtn" onclick="showFavoritosView()"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.6 6.1.7-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6-4.5-4.2 6.1-.7z"/></svg> Favoritos</button>
     <button type="button" class="nav-btn" id="navBuscaBtn" onclick="showGlobalSearchView()"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6.5"/><line x1="20.5" y1="20.5" x2="15" y2="15"/></svg> Buscar tudo</button>
     <div class="sidebar-section-label">Especialistas</div>
@@ -2175,7 +2181,7 @@
   <div id="modeBanner" class="mode-banner">⚠️ Modo Financeiro: conteúdo educativo sobre organização financeira e dívidas, gerado por IA. Não é aconselhamento financeiro personalizado nem substitui um profissional licenciado (educador financeiro, Procon, ou os canais oficiais de negociação).</div>
 
   <div id="settingsPanel" class="settings">
-    <div class="settings-section">
+    <div class="settings-section" id="iaGenerativaSection">
       <div class="settings-section-title">IA generativa</div>
       <div class="settings-row">
         <label style="width:100%">Opcional — sem isso, o AtlasIA usa a base de FAQ local. Alternativa: role até "Conta" e faça login para usar a IA da empresa sem precisar colar nenhuma chave aqui.</label>
@@ -2193,6 +2199,9 @@
         <a id="getKeyLink" href="#" target="_blank" rel="noopener" class="get-key-link">Não tem chave ainda? Clique aqui para gerar uma grátis (abre em nova aba) →</a>
       </div>
       <div class="hint" id="providerHint"></div>
+    </div>
+    <div class="settings-section" id="iaGenerativaOwnerNote" style="display:none">
+      <div class="hint">🔒 A configuração de IA generativa (provedor e chave) é restrita ao dono da conta. Você continua usando a IA da empresa normalmente via login.</div>
     </div>
 
     <div class="settings-section">
@@ -2267,6 +2276,7 @@
       <div id="accountLoggedIn" class="account-box" style="display:none">
         <span class="account-status-dot"></span>
         <span class="account-email" id="accountEmail"></span>
+        <span id="ownerBadge" class="tag-free" style="display:none">Dono</span>
         <div style="flex:1"></div>
         <button type="button" class="secondary" onclick="signOutCloud()">Sair</button>
       </div>
@@ -2311,6 +2321,11 @@
   <div id="templatesPanel" class="templates">
     <div class="hint">Clique em um atalho para inserir o modelo pronto na conversa (e copiar automaticamente para a área de transferência).</div>
     <div id="templatesGrid" class="templates-grid"></div>
+  </div>
+
+  <div id="copilotoPanel" class="templates">
+    <div class="hint">Escolha objetivo, cliente, clínica, canal e tom — a Lumi monta a mensagem pra você, usando o histórico da clínica quando ela já estiver cadastrada.</div>
+    <div id="copilotoForm" class="workspace-form"></div>
   </div>
 
   <div class="chat" id="chat"></div>
@@ -3008,6 +3023,10 @@ function closeOverlayPanels(except){
     const templatesPanel = document.getElementById('templatesPanel');
     if(templatesPanel) templatesPanel.classList.remove('open');
   }
+  if(except !== 'copiloto'){
+    const copilotoPanel = document.getElementById('copilotoPanel');
+    if(copilotoPanel) copilotoPanel.classList.remove('open');
+  }
   if(except !== 'slash') closeSlashMenu();
   if(except !== 'suggest'){
     const pop = document.getElementById('suggestPopover');
@@ -3606,7 +3625,7 @@ function renderGlobalSearchResults(){
 
   const compMatches = dataCache.compartilhados.filter(i => normalize(i.title || '').includes(query) || normalize(i.description || '').includes(query));
   if(compMatches.length){
-    groups.push({ label: '🔗 Compartilhados', items: compMatches.map(i => ({
+    groups.push({ label: '🔗 Anotações', items: compMatches.map(i => ({
       title: i.title || '',
       desc: i.description || '',
       onClick: () => showWorkspaceView('compartilhados')
@@ -4921,6 +4940,555 @@ async function generateReajusteContraproposta(){
 }
 
 /* =========================================================
+   COPILOTO — painel ao lado de Atalhos (ver copilotoPill/copilotoPanel no
+   HTML) que monta uma mensagem sob medida a partir de 5 escolhas
+   (objetivo, cliente, clínica, canal, tom) em vez de depender só de
+   modelos fixos. Quando a clínica escolhida já está cadastrada (ver
+   WORKSPACE_TABLES.clinicas), o histórico/status/tabela dela entra no
+   contexto — a IA usa isso pra deixar a mensagem mais específica, mas
+   nunca inventa dado de uma clínica que não esteja no cadastro.
+   ========================================================= */
+const COPILOTO_OBJETIVOS = [
+  ['primeiro_contato', 'Primeiro contato'],
+  ['cobranca', 'Cobrança'],
+  ['reajuste', 'Reajuste de tabela'],
+  ['documentacao', 'Solicitar documentação'],
+  ['retorno', 'Retorno/follow-up'],
+  ['negociacao', 'Negociação geral'],
+  ['outro', 'Outro']
+];
+const COPILOTO_CANAIS = [['whatsapp', 'WhatsApp'], ['email', 'E-mail']];
+const COPILOTO_TONS = [['formal', 'Formal'], ['cordial', 'Cordial'], ['direto', 'Direto']];
+
+function toggleCopiloto(){
+  hapticTap();
+  const panel = document.getElementById('copilotoPanel');
+  const willOpen = !!panel && !panel.classList.contains('open');
+  closeOverlayPanels(willOpen ? 'copiloto' : null);
+  if(panel) panel.classList.toggle('open');
+  if(willOpen) renderCopilotoForm();
+}
+
+async function renderCopilotoForm(){
+  const form = document.getElementById('copilotoForm');
+  if(!form) return;
+  form.innerHTML = '<span class="vlow-empty">Carregando clínicas cadastradas…</span>';
+
+  // Clínicas cadastradas entram como opção de seleção (pra puxar o
+  // histórico automaticamente); sem login ou sem nenhuma cadastrada, o
+  // campo de texto livre abaixo continua funcionando normalmente.
+  let clinicas = [];
+  if(cloudUser){
+    await refreshDataCache();
+    clinicas = dataCache.clinicas || [];
+  }
+
+  form.innerHTML = '';
+
+  const objetivoLabel = document.createElement('label');
+  objetivoLabel.className = 'reajuste-field-label';
+  objetivoLabel.textContent = 'Objetivo';
+  const objetivoSelect = document.createElement('select');
+  objetivoSelect.className = 'workspace-input';
+  objetivoSelect.id = 'copilotoObjetivo';
+  COPILOTO_OBJETIVOS.forEach(([val, label]) => {
+    const opt = document.createElement('option');
+    opt.value = val; opt.textContent = label;
+    objetivoSelect.appendChild(opt);
+  });
+  objetivoLabel.appendChild(objetivoSelect);
+  form.appendChild(objetivoLabel);
+
+  const clienteLabel = document.createElement('label');
+  clienteLabel.className = 'reajuste-field-label';
+  clienteLabel.textContent = 'Cliente (nome de quem recebe)';
+  const clienteInput = document.createElement('input');
+  clienteInput.type = 'text';
+  clienteInput.className = 'workspace-input';
+  clienteInput.id = 'copilotoCliente';
+  clienteInput.placeholder = 'Ex: Dra. Fulana, responsável pela clínica';
+  clienteLabel.appendChild(clienteInput);
+  form.appendChild(clienteLabel);
+
+  const clinicaSelectLabel = document.createElement('label');
+  clinicaSelectLabel.className = 'reajuste-field-label';
+  clinicaSelectLabel.textContent = 'Clínica cadastrada (opcional — puxa o histórico dela)';
+  const clinicaSelect = document.createElement('select');
+  clinicaSelect.className = 'workspace-input';
+  clinicaSelect.id = 'copilotoClinicaSelect';
+  const naoListadaOpt = document.createElement('option');
+  naoListadaOpt.value = '';
+  naoListadaOpt.textContent = clinicas.length ? 'Não listada — digitar nome abaixo' : (cloudUser ? 'Nenhuma clínica cadastrada ainda' : 'Faça login pra usar clínicas cadastradas');
+  clinicaSelect.appendChild(naoListadaOpt);
+  clinicas.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = c.nome + (c.cidade ? ' — ' + c.cidade : '');
+    clinicaSelect.appendChild(opt);
+  });
+  clinicaSelectLabel.appendChild(clinicaSelect);
+  form.appendChild(clinicaSelectLabel);
+
+  const clinicaTextLabel = document.createElement('label');
+  clinicaTextLabel.className = 'reajuste-field-label';
+  clinicaTextLabel.textContent = 'Nome da clínica (se não estiver na lista acima)';
+  const clinicaTextInput = document.createElement('input');
+  clinicaTextInput.type = 'text';
+  clinicaTextInput.className = 'workspace-input';
+  clinicaTextInput.id = 'copilotoClinicaTexto';
+  clinicaTextInput.placeholder = 'Ex: Clínica Vida Saudável';
+  clinicaTextLabel.appendChild(clinicaTextInput);
+  form.appendChild(clinicaTextLabel);
+
+  const canalLabel = document.createElement('label');
+  canalLabel.className = 'reajuste-field-label';
+  canalLabel.textContent = 'Canal';
+  const canalSelect = document.createElement('select');
+  canalSelect.className = 'workspace-input';
+  canalSelect.id = 'copilotoCanal';
+  COPILOTO_CANAIS.forEach(([val, label]) => {
+    const opt = document.createElement('option');
+    opt.value = val; opt.textContent = label;
+    canalSelect.appendChild(opt);
+  });
+  canalLabel.appendChild(canalSelect);
+  form.appendChild(canalLabel);
+
+  const tomLabel = document.createElement('label');
+  tomLabel.className = 'reajuste-field-label';
+  tomLabel.textContent = 'Tom';
+  const tomSelect = document.createElement('select');
+  tomSelect.className = 'workspace-input';
+  tomSelect.id = 'copilotoTom';
+  COPILOTO_TONS.forEach(([val, label]) => {
+    const opt = document.createElement('option');
+    opt.value = val; opt.textContent = label;
+    tomSelect.appendChild(opt);
+  });
+  tomLabel.appendChild(tomSelect);
+  form.appendChild(tomLabel);
+
+  const genBtn = document.createElement('button');
+  genBtn.type = 'button';
+  genBtn.className = 'vlow-share-btn workspace-add-btn';
+  genBtn.id = 'copilotoGenBtn';
+  genBtn.textContent = '✨ Montar mensagem';
+  genBtn.onclick = generateCopilotoMessage;
+  form.appendChild(genBtn);
+}
+
+async function generateCopilotoMessage(){
+  const objetivo = document.getElementById('copilotoObjetivo').value;
+  const objetivoLabel = (COPILOTO_OBJETIVOS.find(o => o[0] === objetivo) || [,'Outro'])[1];
+  const cliente = document.getElementById('copilotoCliente').value.trim();
+  const clinicaId = document.getElementById('copilotoClinicaSelect').value;
+  const clinicaTexto = document.getElementById('copilotoClinicaTexto').value.trim();
+  const canal = document.getElementById('copilotoCanal').value;
+  const canalLabel = (COPILOTO_CANAIS.find(c => c[0] === canal) || [,canal])[1];
+  const tom = document.getElementById('copilotoTom').value;
+  const tomLabel = (COPILOTO_TONS.find(t => t[0] === tom) || [,tom])[1];
+
+  const clinicaCadastrada = clinicaId ? (dataCache.clinicas || []).find(c => c.id === clinicaId) : null;
+  const nomeClinica = clinicaCadastrada ? clinicaCadastrada.nome : clinicaTexto;
+
+  if(!nomeClinica){
+    addBotMessage('Escolha uma clínica cadastrada ou digite o nome dela antes de montar a mensagem.', false);
+    return;
+  }
+  if(!hasAiAccess()){
+    addBotMessage('Pra usar o Copiloto, ative a IA generativa em Configurações (o Gemini é grátis) ou faça login pra usar a IA da empresa.', false);
+    return;
+  }
+
+  toggleCopiloto();
+  const btn = document.getElementById('copilotoGenBtn');
+  showTyping();
+  try{
+    const systemPrompt = "Você é a Lumi, assistente do AtlasIA, escrevendo uma mensagem de credenciamento/relacionamento com clínicas parceiras da Vixting, seguindo exatamente o objetivo, canal e tom informados. Use o histórico da clínica (se fornecido) pra deixar a mensagem específica e coerente com o que já foi conversado antes — nunca invente um fato, valor, prazo ou combinado que não esteja no histórico. Adeque o formato ao canal: WhatsApp pede mensagem mais curta e direta (sem cabeçalho de e-mail); e-mail pede saudação, corpo e despedida formais. Responda em português do Brasil, só com o texto pronto da mensagem (sem explicações antes ou depois).";
+    let userText = 'Objetivo: ' + objetivoLabel + '\nCliente/destinatário: ' + (cliente || 'não informado') + '\nClínica: ' + nomeClinica + '\nCanal: ' + canalLabel + '\nTom: ' + tomLabel + '\n';
+    if(clinicaCadastrada){
+      userText += '\nDados cadastrados desta clínica (use como contexto real, não invente além disso):\n' +
+        'Cidade: ' + (clinicaCadastrada.cidade || 'não informado') + '\n' +
+        'Status: ' + (CLINICA_STATUS_LABELS[clinicaCadastrada.status] || 'Prospecção') + '\n' +
+        'Prazo de pagamento: ' + (clinicaCadastrada.prazo_pagamento || 'não informado') + '\n' +
+        'Tabela de preços/observações: ' + (clinicaCadastrada.tabela_precos || 'não informado') + '\n' +
+        'Histórico de contato/negociação: ' + (clinicaCadastrada.historico || 'não informado') + '\n';
+    }
+    const reply = await askAIRaw(systemPrompt, userText);
+    hideTyping();
+    addBotMessage(reply, false);
+  }catch(err){
+    hideTyping();
+    addBotMessage('Não consegui montar a mensagem agora: ' + err.message, false);
+  }
+}
+
+/* =========================================================
+   COMPARADOR DE CLÍNICAS — pega duas clínicas já cadastradas (ver
+   WORKSPACE_TABLES.clinicas) e compara lado a lado. Como o campo de
+   preço do cadastro é texto livre (cada clínica tem uma tabela
+   diferente, não dá pra somar automaticamente), a pessoa informa aqui um
+   valor mensal de referência pra cada uma — a diferença em R$ e % é
+   calculada em JavaScript puro (nunca pela IA). A IA só entra depois,
+   opcionalmente, pra resumir a comparação e apontar uma recomendação,
+   em cima dos números já calculados.
+   ========================================================= */
+let comparadorClinicaAId = null;
+let comparadorClinicaBId = null;
+let comparadorValorA = null;
+let comparadorValorB = null;
+
+async function showComparadorClinicasView(){
+  closeOverlayPanels();
+  currentView = 'comparadorClinicas';
+  currentConvId = null;
+  renderModeSwitch();
+  updateNavActiveStates();
+  document.getElementById('modeBanner').classList.remove('show');
+  renderConversationList();
+  if(!cloudUser){
+    showLoginGate('🏥', 'Comparador de Clínicas', 'Compara clínicas já cadastradas, por isso só aparece pra quem está logado. Entre pra usar.');
+    return;
+  }
+  await refreshDataCache(true);
+  renderComparadorClinicasView();
+  closeSidebarIfMobile();
+}
+
+function renderComparadorClinicasView(){
+  const chat = document.getElementById('chat');
+  chat.innerHTML = '';
+
+  const wrap = document.createElement('div');
+  wrap.className = 'vlow-view';
+
+  const heading = document.createElement('h2');
+  heading.className = 'vlow-heading';
+  heading.textContent = 'Comparador de Clínicas';
+  wrap.appendChild(heading);
+
+  const subtitle = document.createElement('p');
+  subtitle.className = 'vlow-subtitle';
+  subtitle.textContent = 'Escolha duas clínicas já cadastradas e informe um valor mensal de referência pra cada uma — a diferença em R$ e % aparece na hora.';
+  wrap.appendChild(subtitle);
+
+  const clinicas = dataCache.clinicas || [];
+  if(clinicas.length < 2){
+    const empty = document.createElement('p');
+    empty.className = 'vlow-empty';
+    empty.textContent = 'Cadastre pelo menos duas clínicas na aba Clínicas antes de comparar.';
+    wrap.appendChild(empty);
+    chat.appendChild(wrap);
+    return;
+  }
+
+  wrap.appendChild(buildComparadorClinicaSlot('A', clinicas));
+  wrap.appendChild(buildComparadorClinicaSlot('B', clinicas));
+
+  const resultsWrap = document.createElement('div');
+  resultsWrap.id = 'comparadorResults';
+  wrap.appendChild(resultsWrap);
+
+  const genBtn = document.createElement('button');
+  genBtn.type = 'button';
+  genBtn.className = 'vlow-share-btn';
+  genBtn.id = 'comparadorGenBtn';
+  genBtn.style.marginTop = '10px';
+  genBtn.textContent = '✨ Gerar comparação com a IA';
+  genBtn.onclick = generateComparadorClinicas;
+  wrap.appendChild(genBtn);
+
+  chat.appendChild(wrap);
+  renderComparadorResults();
+}
+
+function buildComparadorClinicaSlot(letra, clinicas){
+  const box = document.createElement('div');
+  box.className = 'workspace-form';
+
+  const selectLabel = document.createElement('label');
+  selectLabel.className = 'reajuste-field-label';
+  selectLabel.textContent = 'Clínica ' + letra;
+  const select = document.createElement('select');
+  select.className = 'workspace-input';
+  select.id = 'comparadorSelect' + letra;
+  const placeholderOpt = document.createElement('option');
+  placeholderOpt.value = '';
+  placeholderOpt.textContent = 'Selecione...';
+  select.appendChild(placeholderOpt);
+  clinicas.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = c.nome + (c.cidade ? ' — ' + c.cidade : '');
+    select.appendChild(opt);
+  });
+  select.value = (letra === 'A' ? comparadorClinicaAId : comparadorClinicaBId) || '';
+  select.onchange = () => {
+    if(letra === 'A') comparadorClinicaAId = select.value || null;
+    else comparadorClinicaBId = select.value || null;
+    renderComparadorResults();
+  };
+  selectLabel.appendChild(select);
+  box.appendChild(selectLabel);
+
+  const valorLabel = document.createElement('label');
+  valorLabel.className = 'reajuste-field-label';
+  valorLabel.textContent = 'Valor mensal de referência (R$)';
+  const valorInput = document.createElement('input');
+  valorInput.type = 'number';
+  valorInput.step = '0.01';
+  valorInput.className = 'workspace-input';
+  valorInput.id = 'comparadorValor' + letra;
+  const currentVal = letra === 'A' ? comparadorValorA : comparadorValorB;
+  valorInput.value = currentVal === null || currentVal === undefined ? '' : currentVal;
+  valorInput.oninput = () => {
+    const v = valorInput.value === '' ? null : (parseFloat(valorInput.value) || 0);
+    if(letra === 'A') comparadorValorA = v; else comparadorValorB = v;
+    renderComparadorResults();
+  };
+  valorLabel.appendChild(valorInput);
+  box.appendChild(valorLabel);
+
+  return box;
+}
+
+function findComparadorClinica(id){
+  return (dataCache.clinicas || []).find(c => c.id === id) || null;
+}
+
+function renderComparadorResults(){
+  const wrap = document.getElementById('comparadorResults');
+  if(!wrap) return;
+  wrap.innerHTML = '';
+
+  const clinicaA = findComparadorClinica(comparadorClinicaAId);
+  const clinicaB = findComparadorClinica(comparadorClinicaBId);
+
+  if(clinicaA || clinicaB){
+    const profiles = document.createElement('div');
+    profiles.style.cssText = 'display:flex; flex-direction:column; gap:6px; margin-top:6px;';
+    [clinicaA, clinicaB].forEach((c, i) => {
+      if(!c) return;
+      const line = document.createElement('p');
+      line.className = 'vlow-empty';
+      line.style.margin = '0';
+      line.textContent = (i === 0 ? 'A: ' : 'B: ') + c.nome + ' — ' + (CLINICA_STATUS_LABELS[c.status] || 'Prospecção') +
+        (c.prazo_pagamento ? ' — prazo: ' + c.prazo_pagamento : '') +
+        (c.tabela_precos ? ' — tabela: ' + c.tabela_precos : '');
+      profiles.appendChild(line);
+    });
+    wrap.appendChild(profiles);
+  }
+
+  if(comparadorValorA === null || comparadorValorA === undefined || comparadorValorB === null || comparadorValorB === undefined) return;
+
+  const diffValor = comparadorValorB - comparadorValorA;
+  const diffPercent = comparadorValorA > 0 ? (diffValor / comparadorValorA * 100) : 0;
+
+  const summary = document.createElement('div');
+  summary.className = 'reajuste-summary';
+  summary.style.marginTop = '10px';
+  const cards = [
+    { label: clinicaA ? clinicaA.nome : 'Clínica A', value: formatBRL(comparadorValorA) },
+    { label: clinicaB ? clinicaB.nome : 'Clínica B', value: formatBRL(comparadorValorB) },
+    { label: 'Diferença (B − A)', value: formatBRL(diffValor), cls: diffValor >= 0 ? 'positive' : 'negative' },
+    { label: 'Diferença %', value: diffPercent.toFixed(1) + '%', cls: diffValor >= 0 ? 'positive' : 'negative' }
+  ];
+  cards.forEach(c => {
+    const card = document.createElement('div');
+    card.className = 'reajuste-summary-card';
+    const label = document.createElement('div');
+    label.className = 'label';
+    label.textContent = c.label;
+    const value = document.createElement('div');
+    value.className = 'value' + (c.cls ? ' ' + c.cls : '');
+    value.textContent = c.value;
+    card.appendChild(label);
+    card.appendChild(value);
+    summary.appendChild(card);
+  });
+  wrap.appendChild(summary);
+}
+
+async function generateComparadorClinicas(){
+  const clinicaA = findComparadorClinica(comparadorClinicaAId);
+  const clinicaB = findComparadorClinica(comparadorClinicaBId);
+  if(!clinicaA || !clinicaB){
+    addBotMessage('Selecione as duas clínicas antes de gerar a comparação.', false);
+    return;
+  }
+  if(!hasAiAccess()){
+    addBotMessage('Pra gerar a comparação com IA, ative a IA generativa em Configurações (o Gemini é grátis) ou faça login pra usar a IA da empresa.', false);
+    return;
+  }
+  const btn = document.getElementById('comparadorGenBtn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Gerando...'; }
+  showTyping();
+  try{
+    const systemPrompt = "Você é a Lumi, assistente do AtlasIA, ajudando o time de credenciamento da Vixting a comparar duas clínicas parceiras/em negociação. Use EXCLUSIVAMENTE os dados fornecidos abaixo — nunca invente preço, prazo ou histórico que não esteja ali. Responda em português do Brasil, de forma objetiva. Estruture em: 1) comparação lado a lado de preço/prazo/status; 2) se houver diferença de valor calculada, comente o que ela representa; 3) uma recomendação prática (ex: qual parece mais vantajosa e por quê, ou que ponto vale negociar) baseada só no que foi informado.";
+    let userText = '--- Clínica A: ' + clinicaA.nome + ' ---\n' +
+      'Cidade: ' + (clinicaA.cidade || 'não informado') + '\n' +
+      'Status: ' + (CLINICA_STATUS_LABELS[clinicaA.status] || 'Prospecção') + '\n' +
+      'Prazo de pagamento: ' + (clinicaA.prazo_pagamento || 'não informado') + '\n' +
+      'Tabela de preços/observações: ' + (clinicaA.tabela_precos || 'não informado') + '\n' +
+      'Histórico: ' + (clinicaA.historico || 'não informado') + '\n\n' +
+      '--- Clínica B: ' + clinicaB.nome + ' ---\n' +
+      'Cidade: ' + (clinicaB.cidade || 'não informado') + '\n' +
+      'Status: ' + (CLINICA_STATUS_LABELS[clinicaB.status] || 'Prospecção') + '\n' +
+      'Prazo de pagamento: ' + (clinicaB.prazo_pagamento || 'não informado') + '\n' +
+      'Tabela de preços/observações: ' + (clinicaB.tabela_precos || 'não informado') + '\n' +
+      'Histórico: ' + (clinicaB.historico || 'não informado') + '\n';
+    if(comparadorValorA !== null && comparadorValorB !== null){
+      const diffValor = comparadorValorB - comparadorValorA;
+      const diffPercent = comparadorValorA > 0 ? (diffValor / comparadorValorA * 100) : 0;
+      userText += '\nValor mensal de referência informado — A: ' + formatBRL(comparadorValorA) + ', B: ' + formatBRL(comparadorValorB) + '\n' +
+        'Diferença calculada (B - A): ' + formatBRL(diffValor) + ' (' + diffPercent.toFixed(1) + '%)\n';
+    }
+    const reply = await askAIRaw(systemPrompt, userText);
+    hideTyping();
+    addBotMessage(reply, false);
+  }catch(err){
+    hideTyping();
+    addBotMessage('Não consegui gerar a comparação agora: ' + err.message, false);
+  }finally{
+    if(btn){ btn.disabled = false; btn.textContent = '✨ Gerar comparação com a IA'; }
+  }
+}
+
+/* =========================================================
+   COMPARADOR DE CONTRATOS — sobe dois PDFs, extrai o texto de cada um
+   (reaproveita extractPdfText, já usado pros anexos do chat) e pede à IA
+   pra listar diferenças concretas entre eles — cláusulas, valores,
+   prazos, datas. Fica só nesta sessão (os arquivos não são salvos em
+   lugar nenhum); recarregar a página limpa os dois.
+   ========================================================= */
+let contratoA = null; // { name, text }
+let contratoB = null;
+
+function showContratosView(){
+  closeOverlayPanels();
+  currentView = 'contratos';
+  currentConvId = null;
+  renderModeSwitch();
+  updateNavActiveStates();
+  document.getElementById('modeBanner').classList.remove('show');
+  renderConversationList();
+  renderContratosView();
+  closeSidebarIfMobile();
+}
+
+function renderContratosView(){
+  const chat = document.getElementById('chat');
+  chat.innerHTML = '';
+
+  const wrap = document.createElement('div');
+  wrap.className = 'vlow-view';
+
+  const heading = document.createElement('h2');
+  heading.className = 'vlow-heading';
+  heading.textContent = 'Comparador de Contratos';
+  wrap.appendChild(heading);
+
+  const subtitle = document.createElement('p');
+  subtitle.className = 'vlow-subtitle';
+  subtitle.textContent = 'Suba dois PDFs (ex: contrato antigo e novo, ou duas propostas) e a IA lista as diferenças concretas entre eles — cláusulas, valores, prazos e datas. Só funciona nesta sessão; os arquivos não ficam salvos em lugar nenhum.';
+  wrap.appendChild(subtitle);
+
+  wrap.appendChild(buildContratoSlot('A', contratoA));
+  wrap.appendChild(buildContratoSlot('B', contratoB));
+
+  const compareBtn = document.createElement('button');
+  compareBtn.type = 'button';
+  compareBtn.className = 'vlow-share-btn';
+  compareBtn.id = 'contratosCompareBtn';
+  compareBtn.style.marginTop = '10px';
+  compareBtn.textContent = '🔍 Comparar contratos';
+  compareBtn.disabled = !(contratoA && contratoB);
+  compareBtn.onclick = compareContratos;
+  wrap.appendChild(compareBtn);
+
+  chat.appendChild(wrap);
+}
+
+function buildContratoSlot(letra, contrato){
+  const box = document.createElement('div');
+  box.className = 'workspace-item';
+  box.style.cssText = 'flex-direction:column; align-items:stretch; gap:8px;';
+
+  const label = document.createElement('strong');
+  label.textContent = 'Contrato ' + letra + (contrato ? ': ' + contrato.name : ' — nenhum arquivo ainda');
+  box.appendChild(label);
+
+  const fileBtn = document.createElement('label');
+  fileBtn.className = 'workspace-file-btn';
+  fileBtn.textContent = contrato ? 'Trocar arquivo (PDF)' : 'Escolher arquivo (PDF)';
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = '.pdf';
+  fileInput.id = 'contratoFile' + letra;
+  fileInput.onchange = () => handleContratoFileSelect(letra);
+  fileBtn.appendChild(fileInput);
+  box.appendChild(fileBtn);
+
+  const status = document.createElement('span');
+  status.className = 'workspace-file-status';
+  status.id = 'contratoStatus' + letra;
+  box.appendChild(status);
+
+  return box;
+}
+
+async function handleContratoFileSelect(letra){
+  const fileInput = document.getElementById('contratoFile' + letra);
+  const statusEl = document.getElementById('contratoStatus' + letra);
+  const file = fileInput && fileInput.files && fileInput.files[0];
+  if(!file) return;
+  if(file.name.toLowerCase().split('.').pop() !== 'pdf'){
+    if(statusEl) statusEl.textContent = '⚠️ Só arquivos PDF por enquanto.';
+    if(fileInput) fileInput.value = '';
+    return;
+  }
+  if(statusEl) statusEl.textContent = 'Lendo ' + file.name + '…';
+  try{
+    const result = await extractPdfText(file);
+    if(!result.text || !result.text.trim()){
+      if(statusEl) statusEl.textContent = '⚠️ Não consegui extrair texto desse PDF (pode ser um PDF escaneado sem OCR).';
+      return;
+    }
+    const parsed = { name: file.name, text: truncateText(result.text, 20000) };
+    if(letra === 'A') contratoA = parsed; else contratoB = parsed;
+    renderContratosView();
+  }catch(e){
+    if(statusEl) statusEl.textContent = '⚠️ ' + e.message;
+  }finally{
+    if(fileInput) fileInput.value = '';
+  }
+}
+
+async function compareContratos(){
+  if(!contratoA || !contratoB) return;
+  if(!hasAiAccess()){
+    addBotMessage('Pra comparar os contratos com IA, ative a IA generativa em Configurações (o Gemini é grátis) ou faça login pra usar a IA da empresa.', false);
+    return;
+  }
+  const btn = document.getElementById('contratosCompareBtn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Comparando...'; }
+  showTyping();
+  try{
+    const systemPrompt = "Você é a Lumi, assistente do AtlasIA. Vão te passar o texto de dois contratos/documentos (A e B), extraído de PDF (a formatação pode ter ficado bagunçada na extração — ignore isso e foque no conteúdo). Compare os dois e liste APENAS diferenças concretas e verificáveis entre eles — cláusulas que mudaram, valores, prazos, datas, responsabilidades, condições de pagamento/rescisão. Nunca invente uma diferença que não dê pra confirmar comparando os dois textos; se não conseguir ter certeza sobre algum trecho (ex: por causa de bagunça na extração do PDF), diga isso em vez de arriscar. Responda em português do Brasil, em formato de lista organizada por tema. Termine com um resumo de 1-2 frases do que mudou no geral.";
+    const userText = '--- Contrato A (' + contratoA.name + ') ---\n' + contratoA.text + '\n\n--- Contrato B (' + contratoB.name + ') ---\n' + contratoB.text;
+    const reply = await askAIRaw(systemPrompt, userText);
+    hideTyping();
+    addBotMessage(reply, false);
+  }catch(err){
+    hideTyping();
+    addBotMessage('Não consegui comparar os contratos agora: ' + err.message, false);
+  }finally{
+    if(btn){ btn.disabled = false; btn.textContent = '🔍 Comparar contratos'; }
+  }
+}
+
+/* =========================================================
    TAREFAS — lembretes com data/hora, guardados na conta (Supabase, tabela
    "tasks"), com aviso via notificação do navegador quando a hora chega.
    Precisa de login (mesma ideia do Workspace: dado interno da conta, não
@@ -5072,7 +5640,7 @@ async function addTask(){
   if(isNaN(dueDate.getTime())){ showToast('⚠️ Data/hora inválida.'); return; }
 
   try{
-    const { error } = await client.from('tasks').insert({ title, due_at: dueDate.toISOString(), notified: false });
+    const { error } = await client.from('tasks').insert({ title, due_at: dueDate.toISOString(), notified: false, user_id: cloudUser.id });
     if(error) throw error;
     if(titleInput) titleInput.value = '';
     if(dueInput) dueInput.value = '';
@@ -5233,7 +5801,7 @@ async function createTaskFromChat(title, dueLocal){
   const dueDate = new Date(dueLocal);
   if(!title || isNaN(dueDate.getTime())) return false;
   try{
-    const { error } = await client.from('tasks').insert({ title, due_at: dueDate.toISOString(), notified: false });
+    const { error } = await client.from('tasks').insert({ title, due_at: dueDate.toISOString(), notified: false, user_id: cloudUser.id });
     if(error) throw error;
     if(currentView === 'tarefas') loadTasks();
     return true;
@@ -5276,20 +5844,22 @@ function renderEmptyState(){
 }
 
 /* =========================================================
-   WORKSPACE (Equipes / Projetos / Compartilhados) — dados reais,
-   compartilhados entre toda a equipe (qualquer pessoa logada na conta da
-   empresa vê e edita os mesmos registros), guardados em tabelas do
-   Supabase. Informação interna, então diferente do Vlow: só aparece pra
-   quem está logado (ver showWorkspaceView → showLoginGate quando não há
-   login). As 3 abas usam a mesma estrutura de tela (form + lista), só
-   trocando os campos/tabela — configurado abaixo em WORKSPACE_TABLES.
+   WORKSPACE (Equipes / Projetos / Anotações / Clínicas) — dados reais,
+   guardados em tabelas do Supabase, mas PESSOAIS: cada login só vê e edita
+   os próprios registros (RLS por user_id — ver supabase_setup_workspace_
+   pessoal.sql), mesmo estando na mesma conta/projeto Supabase que outros
+   logins da empresa. Informação interna, então diferente do Vlow: só
+   aparece pra quem está logado (ver showWorkspaceView → showLoginGate
+   quando não há login). As abas usam a mesma estrutura de tela (form +
+   lista), só trocando os campos/tabela — configurado abaixo em
+   WORKSPACE_TABLES.
    ========================================================= */
 const WORKSPACE_TABLES = {
   equipes: {
     table: 'team_members',
     icon: 'bot', color: '#818cf8', emoji: '👥',
     heading: 'Equipes',
-    subtitle: 'Quem faz parte do time — visível e editável só por quem está logado na conta da empresa.',
+    subtitle: 'Seus contatos de equipe — pessoal: só você vê e edita, mesmo estando na mesma empresa que outros logins.',
     emptyText: 'Nenhum integrante cadastrado ainda. Adicione o primeiro abaixo.',
     addLabel: 'Adicionar integrante',
     fields: [
@@ -5302,7 +5872,7 @@ const WORKSPACE_TABLES = {
     table: 'projects',
     icon: 'dashboard', color: '#22d3ee', emoji: '📁',
     heading: 'Projetos',
-    subtitle: 'Quadro de projetos da equipe, com status e responsável.',
+    subtitle: 'Seu quadro de projetos, com status e responsável — pessoal: só você vê e edita.',
     emptyText: 'Nenhum projeto cadastrado ainda. Adicione o primeiro abaixo.',
     addLabel: 'Adicionar projeto',
     fields: [
@@ -5316,9 +5886,9 @@ const WORKSPACE_TABLES = {
   compartilhados: {
     table: 'shared_items',
     icon: 'globe', color: '#34d399', emoji: '🔗',
-    heading: 'Compartilhados',
-    subtitle: 'Links e arquivos importantes da equipe, num só lugar.',
-    emptyText: 'Nada compartilhado ainda. Adicione o primeiro abaixo.',
+    heading: 'Anotações',
+    subtitle: 'Seus links, arquivos e anotações — pessoal: só você vê e edita, mesmo com outras pessoas logadas na mesma empresa.',
+    emptyText: 'Nada guardado ainda. Adicione o primeiro abaixo.',
     addLabel: 'Adicionar item',
     fields: [
       { key: 'title', label: 'Título', type: 'text', required: true },
@@ -5331,7 +5901,7 @@ const WORKSPACE_TABLES = {
     table: 'clinicas',
     icon: 'heartPulse', color: '#f472b6', emoji: '🏥',
     heading: 'Clínicas',
-    subtitle: 'Cadastro de clínicas parceiras/em negociação — cidade, preço de tabela, prazo de pagamento e histórico de contato. Visível e editável só por quem está logado, e é a base que a Lumi usa pra responder perguntas sobre clínicas por região.',
+    subtitle: 'Seu cadastro de clínicas parceiras/em negociação — cidade, preço de tabela, prazo de pagamento e histórico de contato. Pessoal: só você vê e edita, e é a base que a Lumi usa (só pra você) pra responder perguntas sobre clínicas por região.',
     emptyText: 'Nenhuma clínica cadastrada ainda. Adicione a primeira abaixo.',
     addLabel: 'Adicionar clínica',
     setupScript: 'supabase_setup_clinicas.sql',
@@ -5408,7 +5978,7 @@ async function showWorkspaceView(key){
   document.getElementById('modeBanner').classList.remove('show');
   renderConversationList();
   if(!cloudUser){
-    showLoginGate(cfg.emoji, cfg.heading, 'Essa área guarda informação interna da equipe, por isso só aparece pra quem está logado na conta da empresa. Entre pra ver e editar ' + cfg.heading.toLowerCase() + '.');
+    showLoginGate(cfg.emoji, cfg.heading, 'Essa área é pessoal e fica guardada na sua conta, por isso só aparece pra quem está logado. Entre pra ver e editar ' + cfg.heading.toLowerCase() + '.');
     return;
   }
   renderWorkspaceView(key);
@@ -5536,6 +6106,16 @@ async function renderWorkspaceView(key){
   subtitle.textContent = cfg.subtitle;
   wrap.appendChild(subtitle);
 
+  if(key === 'clinicas'){
+    const compareBtn = document.createElement('button');
+    compareBtn.type = 'button';
+    compareBtn.className = 'vlow-share-btn';
+    compareBtn.style.marginBottom = '4px';
+    compareBtn.textContent = '⚖️ Comparar clínicas';
+    compareBtn.onclick = showComparadorClinicasView;
+    wrap.appendChild(compareBtn);
+  }
+
   wrap.appendChild(buildWorkspaceForm(key));
 
   const listWrap = document.createElement('div');
@@ -5655,6 +6235,7 @@ async function addWorkspaceItem(key){
     row[f.key] = value || null;
   });
   if(missingRequired){ showToast('⚠️ Preencha os campos obrigatórios (*).'); return; }
+  row.user_id = cloudUser.id;
 
   try{
     const { error } = await client.from(cfg.table).insert(row);
@@ -5676,7 +6257,7 @@ async function addWorkspaceItem(key){
 }
 
 async function deleteWorkspaceItem(key, id){
-  if(!confirm('Remover este item? Isso afeta todo mundo da equipe.')) return;
+  if(!confirm('Remover este item?')) return;
   const cfg = WORKSPACE_TABLES[key];
   const client = getSupabaseClient();
   if(!client || !cloudUser) return;
@@ -5886,6 +6467,12 @@ const SUPABASE_URL = 'https://bzliafclhhawiofdfnqw.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_uBuLkkJsJVbd2BnDESVFtA_LNEMwP4W';
 let sb = null;
 let cloudUser = null; // sessão atual do Supabase (null = sem login / modo só-local)
+// Papel da conta logada — 'owner' (dono) ou 'member'. Lido da coluna
+// "role" da tabela profiles (ver loadStateFromCloud) — decide quem vê o
+// selo "Dono" e quem tem acesso à seção de IA generativa/chaves em
+// Configurações (ver applyRoleUI). Default 'member' até carregar de
+// verdade, pra nunca liberar algo restrito antes de confirmar o papel.
+let userRole = 'member';
 let cloudSyncTimer = null;
 let cloudLoadedOnce = false;
 
@@ -5965,10 +6552,13 @@ async function loadStateFromCloud(){
   try{
     const { data, error } = await client
       .from('profiles')
-      .select('app_state')
+      .select('app_state, role')
       .eq('id', cloudUser.id)
       .single();
     if(error) return null;
+    // "role" pode não existir ainda (coluna nova) — trata qualquer coisa
+    // diferente de 'owner' como membro comum, nunca o contrário.
+    userRole = data && data.role === 'owner' ? 'owner' : 'member';
     return data && data.app_state && Object.keys(data.app_state).length ? data.app_state : null;
   }catch(e){ return null; }
 }
@@ -6086,6 +6676,7 @@ function updateAccountUI(){
   } else {
     loggedBox.style.display = 'none';
     loggedOutBox.style.display = 'flex';
+    userRole = 'member'; // deslogou: some qualquer resquício de acesso de dono
   }
   updateSyncIndicator('synced');
   // Lembretes de Tarefas exigem login (ficam guardados na conta, ver
@@ -6097,7 +6688,25 @@ function updateAccountUI(){
   // chave própria colada passa a ter (ou perder) acesso à IA da empresa
   // via ai-proxy só por causa do login — ver updateStatusPill()/hasAiAccess().
   updateStatusPill();
+  applyRoleUI();
   refreshLoginDependentView();
+}
+
+/* Aplica as restrições de papel (dono/membro): o selo "Dono" ao lado do
+   e-mail, e o acesso à seção de IA generativa/chaves em Configurações —
+   só o dono da conta configura provedor/chave; quem não é dono nem vê
+   essa seção (mas continua usando a IA da empresa normalmente via
+   login). Sem login nenhum, ninguém tem "papel" — a seção aparece normal
+   pra qualquer visitante configurar sua própria chave pessoal. */
+function applyRoleUI(){
+  const badge = document.getElementById('ownerBadge');
+  if(badge) badge.style.display = (cloudUser && userRole === 'owner') ? 'inline-flex' : 'none';
+
+  const section = document.getElementById('iaGenerativaSection');
+  const note = document.getElementById('iaGenerativaOwnerNote');
+  const restricted = !!cloudUser && userRole !== 'owner';
+  if(section) section.style.display = restricted ? 'none' : '';
+  if(note) note.style.display = restricted ? '' : 'none';
 }
 
 /* Vlow e Workspace (Equipes/Projetos/Compartilhados) mudam de cara
@@ -6116,6 +6725,7 @@ function refreshLoginDependentView(){
   // consegue buscar (Tarefas/Workspace passam a entrar), então refaz a
   // busca com o resultado atualizado.
   if(currentView === 'busca'){ renderGlobalSearchView(); return; }
+  if(currentView === 'comparadorClinicas'){ showComparadorClinicasView(); return; }
   if(WORKSPACE_TABLES[currentView]){ showWorkspaceView(currentView); }
 }
 
@@ -6632,6 +7242,8 @@ function updateNavActiveStates(){
   if(tarefasBtn) tarefasBtn.classList.toggle('active', currentView === 'tarefas');
   const reajusteBtn = document.getElementById('navReajusteBtn');
   if(reajusteBtn) reajusteBtn.classList.toggle('active', currentView === 'reajuste');
+  const contratosBtn = document.getElementById('navContratosBtn');
+  if(contratosBtn) contratosBtn.classList.toggle('active', currentView === 'contratos');
   const favoritosBtn = document.getElementById('navFavoritosBtn');
   if(favoritosBtn) favoritosBtn.classList.toggle('active', currentView === 'favoritos');
   const buscaBtn = document.getElementById('navBuscaBtn');
@@ -6700,11 +7312,26 @@ function renderFontSizeToggle(){
 }
 
 const ACCENT_PRESETS = {
-  azul:    { accent: '#2f7dff', accent2: '#63a6ff' },
-  roxo:    { accent: '#8b5cf6', accent2: '#a78bfa' },
-  verde:   { accent: '#22c55e', accent2: '#4ade80' },
-  rosa:    { accent: '#ec4899', accent2: '#f472b6' },
-  laranja: { accent: '#f97316', accent2: '#fb923c' }
+  azul:      { accent: '#2f7dff', accent2: '#63a6ff' },
+  roxo:      { accent: '#8b5cf6', accent2: '#a78bfa' },
+  verde:     { accent: '#22c55e', accent2: '#4ade80' },
+  rosa:      { accent: '#ec4899', accent2: '#f472b6' },
+  laranja:   { accent: '#f97316', accent2: '#fb923c' },
+  ciano:     { accent: '#06b6d4', accent2: '#22d3ee' },
+  dourado:   { accent: '#d4a017', accent2: '#eab308' },
+  vermelho:  { accent: '#e11d48', accent2: '#f43f5e' },
+  esmeralda: { accent: '#059669', accent2: '#10b981' },
+  indigo:    { accent: '#4f46e5', accent2: '#818cf8' },
+  grafite:   { accent: '#64748b', accent2: '#94a3b8' },
+  turquesa:  { accent: '#14b8a6', accent2: '#2dd4bf' },
+  coral:     { accent: '#fb7185', accent2: '#fda4af' },
+  lima:      { accent: '#84cc16', accent2: '#a3e635' },
+  ameixa:    { accent: '#c026d3', accent2: '#e879f9' },
+  petroleo:  { accent: '#0e7490', accent2: '#67e8f9' },
+  ambar:     { accent: '#d97706', accent2: '#fbbf24' },
+  safira:    { accent: '#1d4ed8', accent2: '#60a5fa' },
+  menta:     { accent: '#5eead4', accent2: '#99f6e4' },
+  carvao:    { accent: '#1e293b', accent2: '#475569' }
 };
 let accentColor = 'azul';
 
@@ -8141,14 +8768,16 @@ function buildSystemPrompt(){
   return prompt;
 }
 
-/* Monta um resumo em texto dos dados do próprio Workspace da empresa
-   (tarefas, projetos, equipe, compartilhados) pra a IA conseguir responder
-   perguntas sobre eles (ex: "quais tarefas estão atrasadas?", "quem é o
-   responsável pelo projeto X?") sem precisar de acesso a banco de dados
-   externo nem de SQL bruto — só lê o que já está carregado no dataCache
-   (mesma fonte da Home Inteligente/Pesquisa Global), então é sempre
-   somente-leitura e limitado aos dados desta conta. Só disponível pra quem
-   está logado (mesma regra do resto do Workspace). */
+/* Monta um resumo em texto dos dados pessoais do próprio Workspace deste
+   usuário (tarefas, projetos, equipe, anotações, clínicas) pra a IA
+   conseguir responder perguntas sobre eles (ex: "quais tarefas estão
+   atrasadas?", "quem é o responsável pelo projeto X?") sem precisar de
+   acesso a banco de dados externo nem de SQL bruto — só lê o que já está
+   carregado no dataCache (mesma fonte da Home Inteligente/Pesquisa
+   Global), que por sua vez só traz o que a RLS do Supabase libera pra
+   este login (ver supabase_setup_workspace_pessoal.sql) — nunca dado de
+   outro usuário. Sempre somente-leitura. Só disponível pra quem está
+   logado (mesma regra do resto do Workspace). */
 function buildWorkspaceDataContext(){
   if(!cloudUser) return '';
   const parts = [];
@@ -8172,7 +8801,7 @@ function buildWorkspaceDataContext(){
     dataCache.equipes.slice(0, 30).forEach(m => parts.push('- ' + m.name + (m.role ? ' (' + m.role + ')' : '')));
   }
   if(dataCache.compartilhados && dataCache.compartilhados.length){
-    parts.push('\nItens em Compartilhados:');
+    parts.push('\nAnotações/links salvos por este usuário:');
     dataCache.compartilhados.slice(0, 30).forEach(i => parts.push('- ' + i.title + (i.description ? ': ' + i.description : '')));
   }
   if(dataCache.clinicas && dataCache.clinicas.length){
@@ -8186,7 +8815,7 @@ function buildWorkspaceDataContext(){
     });
   }
   if(!parts.length) return '';
-  return "\n\nDados internos do Workspace do AtlasIA desta empresa (use pra responder perguntas sobre tarefas, projetos, equipe, itens compartilhados ou clínicas cadastradas — são dados reais e atuais desta conta; não invente nem complete o que não estiver listado aqui, e não confunda com dados de outra empresa/sistema):\n" + parts.join('\n');
+  return "\n\nDados pessoais deste usuário no Workspace do AtlasIA (tarefas, projetos, equipe, anotações ou clínicas que ELE MESMO cadastrou — outros logins não veem isto nem o que eles cadastraram aparece aqui; são dados reais e atuais desta conta; não invente nem complete o que não estiver listado aqui):\n" + parts.join('\n');
 }
 
 /* =========================================================
@@ -8381,7 +9010,7 @@ async function refreshRagContext(queryText){
       .sort((a, b) => b.score - a.score)
       .slice(0, RAG_MAX_CHUNKS);
     if(!scored.length) return;
-    ragContext = "\n\nTrechos relevantes encontrados em documentos indexados na aba Compartilhados (busca por significado, não por palavra exata) — use pra responder se ajudarem na pergunta, e deixe claro na resposta que a informação veio de um documento compartilhado quando usar algum destes trechos:\n\n" +
+    ragContext = "\n\nTrechos relevantes encontrados nos documentos que este usuário indexou na aba Anotações (busca por significado, não por palavra exata) — use pra responder se ajudarem na pergunta, e deixe claro na resposta que a informação veio de um documento salvo pelo próprio usuário quando usar algum destes trechos:\n\n" +
       scored.map((s, i) => '[Trecho ' + (i + 1) + ']\n' + s.content).join('\n\n');
   }catch(e){ /* tabela ainda não criada, sem conexão, etc. — segue a mensagem sem RAG */ }
 }
@@ -8451,7 +9080,7 @@ async function indexSharedItemForRag(item, onProgress){
     if(onProgress) onProgress('Gerando embedding ' + (i + 1) + '/' + chunks.length + '...');
     const embedding = await embedText(chunks[i]);
     if(!embedding) throw new Error('Não consegui gerar o embedding (verifique se está logado e se a chave da empresa/OpenAI está ativa).');
-    rows.push({ shared_item_id: item.id, chunk_index: i, content: chunks[i], embedding: embedding });
+    rows.push({ shared_item_id: item.id, chunk_index: i, content: chunks[i], embedding: embedding, user_id: cloudUser.id });
   }
 
   if(onProgress) onProgress('Salvando...');
@@ -9363,7 +9992,7 @@ window.onload = () => {
     // dele (inclusive pra poder digitar direto no campo de mensagem sem
     // precisar fechar manualmente antes). Os próprios botões que abrem/fecham
     // os painéis ficam de fora dessa checagem pra não abrir-e-fechar no mesmo clique.
-    const isPanelToggleTrigger = e.target.closest('[onclick*="toggleSettings()"], [onclick*="toggleTemplates()"]');
+    const isPanelToggleTrigger = e.target.closest('[onclick*="toggleSettings()"], [onclick*="toggleTemplates()"], [onclick*="toggleCopiloto()"]');
     if(!isPanelToggleTrigger){
       const settingsPanel = document.getElementById('settingsPanel');
       if(settingsPanel && settingsPanel.classList.contains('open') && !settingsPanel.contains(e.target)){
@@ -9372,6 +10001,10 @@ window.onload = () => {
       const templatesPanel = document.getElementById('templatesPanel');
       if(templatesPanel && templatesPanel.classList.contains('open') && !templatesPanel.contains(e.target)){
         templatesPanel.classList.remove('open');
+      }
+      const copilotoPanel = document.getElementById('copilotoPanel');
+      if(copilotoPanel && copilotoPanel.classList.contains('open') && !copilotoPanel.contains(e.target)){
+        copilotoPanel.classList.remove('open');
       }
     }
 

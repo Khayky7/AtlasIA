@@ -431,6 +431,18 @@
   }
   .profile-name-input:hover{ border-color:var(--border); }
   .profile-name-input:focus{ outline:none; border-color:var(--accent); background:var(--bg); }
+  .owner-badge{
+    flex-shrink:0;
+    font-size:10.5px;
+    font-weight:700;
+    padding:3px 8px;
+    border-radius:999px;
+    background:rgba(212,160,23,.18);
+    color:#eab308;
+    border:1px solid rgba(234,179,8,.35);
+    letter-spacing:.02em;
+    white-space:nowrap;
+  }
   .sidebar-settings-btn{
     display:flex;
     align-items:center;
@@ -799,6 +811,27 @@
     -webkit-overflow-scrolling:touch;
   }
   .templates.open{ display:flex; }
+  /* O Copiloto ganhou uma área de resultado (mensagem pronta + botões)
+     além do formulário, então precisa de mais espaço vertical que os
+     outros painéis desse mesmo estilo (Atalhos). */
+  #copilotoPanel.open{ max-height:520px; }
+  .copiloto-result-bubble{
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:12px 14px;
+    font-size:13.5px;
+    line-height:1.5;
+    white-space:normal;
+  }
+  .copiloto-result-bubble p{ margin:0 0 8px; }
+  .copiloto-result-bubble p:last-child{ margin-bottom:0; }
+  .copiloto-result-actions{
+    display:flex;
+    gap:8px;
+    margin-top:8px;
+    flex-wrap:wrap;
+  }
   .templates .hint{ color:var(--text-dim); font-size:11.5px; line-height:1.5; }
   .templates-grid{
     display:grid;
@@ -1286,6 +1319,34 @@
     border-radius:14px;
     background:#000;
   }
+  /* Card usado no lugar do iframe pra links do Google Drive — o embed do
+     Drive costuma mostrar "conteúdo bloqueado" quando o arquivo não está
+     compartilhado como "qualquer pessoa com o link", e não dá pra
+     detectar isso via JS (é uma página de erro dentro do próprio iframe,
+     não um erro de rede) — em vez de arriscar mostrar essa tela feia, a
+     gente já mostra um cartão coeso com botão pra abrir direto no Drive. */
+  .vlow-drive-card{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:14px;
+    aspect-ratio:16/9;
+    padding:24px;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    border-radius:14px;
+    text-align:center;
+  }
+  .vlow-drive-card .vlow-drive-icon{
+    width:64px;height:64px;
+    border-radius:50%;
+    background:linear-gradient(135deg,var(--accent),var(--accent-2));
+    display:flex;align-items:center;justify-content:center;
+    color:#000;
+  }
+  .vlow-drive-card .vlow-drive-icon svg{ width:28px;height:28px; }
+  .vlow-drive-card p{ margin:0; color:var(--text-dim); font-size:13.5px; max-width:320px; }
   .vlow-link-card{
     display:flex;
     align-items:center;
@@ -2172,6 +2233,7 @@
       <div class="profile-block">
         <div class="avatar" id="avatarInitials">V</div>
         <input type="text" id="profileNameInput" class="profile-name-input" value="Você" oninput="updateProfileName()">
+        <span id="sidebarOwnerBadge" class="owner-badge" style="display:none">Dono</span>
         <button class="sidebar-settings-btn" onclick="toggleSettings()" title="Configurações"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="9" cy="18" r="2"/></svg></button>
       </div>
     </div>
@@ -2276,7 +2338,6 @@
       <div id="accountLoggedIn" class="account-box" style="display:none">
         <span class="account-status-dot"></span>
         <span class="account-email" id="accountEmail"></span>
-        <span id="ownerBadge" class="tag-free" style="display:none">Dono</span>
         <div style="flex:1"></div>
         <button type="button" class="secondary" onclick="signOutCloud()">Sair</button>
       </div>
@@ -2326,6 +2387,7 @@
   <div id="copilotoPanel" class="templates">
     <div class="hint">Escolha objetivo, cliente, clínica, canal e tom — a Lumi monta a mensagem pra você, usando o histórico da clínica quando ela já estiver cadastrada.</div>
     <div id="copilotoForm" class="workspace-form"></div>
+    <div id="copilotoResult"></div>
   </div>
 
   <div class="chat" id="chat"></div>
@@ -4558,14 +4620,38 @@ function renderVlowPreview(){
     const empty = document.createElement('p');
     empty.className = 'vlow-empty';
     empty.textContent = cloudUser
-      ? 'Nenhum link/vídeo salvo ainda. Cole um link acima ou anexe um arquivo mp4 — se for um vídeo (YouTube, Vimeo, Loom, Drive ou mp4), ele toca aqui embutido automaticamente.'
+      ? 'Nenhum link/vídeo salvo ainda. Cole um link acima ou anexe um arquivo mp4 — vídeos do YouTube, Vimeo, Loom ou mp4 tocam embutidos automaticamente; links do Google Drive mostram um botão pra abrir por lá.'
       : 'Nenhum vídeo disponível no momento.';
     preview.appendChild(empty);
     return;
   }
 
   const embedUrl = getEmbeddableVideoUrl(link);
-  if(embedUrl){
+  const isDriveLink = /^https?:\/\/drive\.google\.com\//i.test(link);
+  if(isDriveLink){
+    // Nunca embuti direto — o Drive só libera o iframe se o arquivo
+    // estiver compartilhado como "qualquer pessoa com o link", e quando
+    // não está, mostra uma tela de "conteúdo bloqueado" dentro do próprio
+    // iframe (sem gerar nenhum erro que o JS consiga detectar). Pra nunca
+    // arriscar mostrar essa tela feia, já usamos o cartão direto.
+    const card = document.createElement('div');
+    card.className = 'vlow-drive-card';
+    const icon = document.createElement('div');
+    icon.className = 'vlow-drive-icon';
+    icon.innerHTML = iconSvg('video');
+    card.appendChild(icon);
+    const text = document.createElement('p');
+    text.textContent = 'Vídeo/arquivo hospedado no Google Drive — abra direto por lá pra assistir.';
+    card.appendChild(text);
+    const openBtn = document.createElement('a');
+    openBtn.href = link;
+    openBtn.target = '_blank';
+    openBtn.rel = 'noopener noreferrer';
+    openBtn.className = 'vlow-share-btn';
+    openBtn.textContent = 'Abrir no Google Drive ↗';
+    card.appendChild(openBtn);
+    preview.appendChild(card);
+  } else if(embedUrl){
     if(/\.(mp4|webm|ogg)$/i.test(embedUrl)){
       const video = document.createElement('video');
       video.src = embedUrl;
@@ -4973,6 +5059,8 @@ async function renderCopilotoForm(){
   const form = document.getElementById('copilotoForm');
   if(!form) return;
   form.innerHTML = '<span class="vlow-empty">Carregando clínicas cadastradas…</span>';
+  const resultBox = document.getElementById('copilotoResult');
+  if(resultBox) resultBox.innerHTML = '';
 
   // Clínicas cadastradas entram como opção de seleção (pra puxar o
   // histórico automaticamente); sem login ou sem nenhuma cadastrada, o
@@ -5091,18 +5179,23 @@ async function generateCopilotoMessage(){
   const clinicaCadastrada = clinicaId ? (dataCache.clinicas || []).find(c => c.id === clinicaId) : null;
   const nomeClinica = clinicaCadastrada ? clinicaCadastrada.nome : clinicaTexto;
 
+  // O resultado fica DENTRO do próprio painel do Copiloto (copilotoResult),
+  // nunca no chat — é por isso que não chamamos addBotMessage/toggleCopiloto
+  // aqui: o painel continua aberto, na mesma aba, com o texto pronto logo
+  // abaixo do formulário.
+  const resultBox = document.getElementById('copilotoResult');
   if(!nomeClinica){
-    addBotMessage('Escolha uma clínica cadastrada ou digite o nome dela antes de montar a mensagem.', false);
+    if(resultBox) resultBox.innerHTML = '<p class="vlow-empty">Escolha uma clínica cadastrada ou digite o nome dela antes de montar a mensagem.</p>';
     return;
   }
   if(!hasAiAccess()){
-    addBotMessage('Pra usar o Copiloto, ative a IA generativa em Configurações (o Gemini é grátis) ou faça login pra usar a IA da empresa.', false);
+    if(resultBox) resultBox.innerHTML = '<p class="vlow-empty">Pra usar o Copiloto, ative a IA generativa em Configurações (o Gemini é grátis) ou faça login pra usar a IA da empresa.</p>';
     return;
   }
 
-  toggleCopiloto();
   const btn = document.getElementById('copilotoGenBtn');
-  showTyping();
+  if(btn){ btn.disabled = true; btn.textContent = 'Montando...'; }
+  if(resultBox) resultBox.innerHTML = '<p class="vlow-empty">Montando mensagem…</p>';
   try{
     const systemPrompt = "Você é a Lumi, assistente do AtlasIA, escrevendo uma mensagem de credenciamento/relacionamento com clínicas parceiras da Vixting, seguindo exatamente o objetivo, canal e tom informados. Use o histórico da clínica (se fornecido) pra deixar a mensagem específica e coerente com o que já foi conversado antes — nunca invente um fato, valor, prazo ou combinado que não esteja no histórico. Adeque o formato ao canal: WhatsApp pede mensagem mais curta e direta (sem cabeçalho de e-mail); e-mail pede saudação, corpo e despedida formais. Responda em português do Brasil, só com o texto pronto da mensagem (sem explicações antes ou depois).";
     let userText = 'Objetivo: ' + objetivoLabel + '\nCliente/destinatário: ' + (cliente || 'não informado') + '\nClínica: ' + nomeClinica + '\nCanal: ' + canalLabel + '\nTom: ' + tomLabel + '\n';
@@ -5115,12 +5208,42 @@ async function generateCopilotoMessage(){
         'Histórico de contato/negociação: ' + (clinicaCadastrada.historico || 'não informado') + '\n';
     }
     const reply = await askAIRaw(systemPrompt, userText);
-    hideTyping();
-    addBotMessage(reply, false);
+    renderCopilotoResult(reply);
   }catch(err){
-    hideTyping();
-    addBotMessage('Não consegui montar a mensagem agora: ' + err.message, false);
+    if(resultBox) resultBox.innerHTML = '<p class="vlow-empty">Não consegui montar a mensagem agora: ' + escapeHtml(err.message) + '</p>';
+  }finally{
+    if(btn){ btn.disabled = false; btn.textContent = '✨ Montar mensagem'; }
   }
+}
+
+function renderCopilotoResult(text){
+  const resultBox = document.getElementById('copilotoResult');
+  if(!resultBox) return;
+  resultBox.innerHTML = '';
+
+  const bubble = document.createElement('div');
+  bubble.className = 'copiloto-result-bubble';
+  bubble.innerHTML = renderMarkdown(text);
+  resultBox.appendChild(bubble);
+
+  const actions = document.createElement('div');
+  actions.className = 'copiloto-result-actions';
+
+  const copyBtn = document.createElement('button');
+  copyBtn.type = 'button';
+  copyBtn.className = 'vlow-share-btn';
+  copyBtn.textContent = '📋 Copiar';
+  copyBtn.onclick = () => copyToClipboard(text);
+  actions.appendChild(copyBtn);
+
+  const waBtn = document.createElement('button');
+  waBtn.type = 'button';
+  waBtn.className = 'vlow-share-btn';
+  waBtn.textContent = '📤 WhatsApp';
+  waBtn.onclick = () => shareViaWhatsApp(text);
+  actions.appendChild(waBtn);
+
+  resultBox.appendChild(actions);
 }
 
 /* =========================================================
@@ -6699,8 +6822,8 @@ function updateAccountUI(){
    login). Sem login nenhum, ninguém tem "papel" — a seção aparece normal
    pra qualquer visitante configurar sua própria chave pessoal. */
 function applyRoleUI(){
-  const badge = document.getElementById('ownerBadge');
-  if(badge) badge.style.display = (cloudUser && userRole === 'owner') ? 'inline-flex' : 'none';
+  const badge = document.getElementById('sidebarOwnerBadge');
+  if(badge) badge.style.display = (cloudUser && userRole === 'owner') ? 'inline-block' : 'none';
 
   const section = document.getElementById('iaGenerativaSection');
   const note = document.getElementById('iaGenerativaOwnerNote');

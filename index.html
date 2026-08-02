@@ -1452,6 +1452,9 @@
   }
   .workspace-status-badge.status-em_andamento{ background:rgba(251,146,60,.18); color:#fb923c; }
   .workspace-status-badge.status-concluido{ background:rgba(52,211,153,.18); color:#34d399; }
+  .workspace-status-badge.status-negociacao{ background:rgba(251,146,60,.18); color:#fb923c; }
+  .workspace-status-badge.status-credenciada{ background:rgba(52,211,153,.18); color:#34d399; }
+  .workspace-status-badge.status-inativa{ background:rgba(148,163,184,.18); color:#94a3b8; }
   .workspace-delete-btn{
     background:none;
     border:none;
@@ -4181,9 +4184,9 @@ let lastDailySummaryDate = '';
 // por dia), esse é "uma vez por sessão", pra avisar sem ser repetitivo.
 let overdueNudgeShownThisSession = false;
 
-let dataCache = { tasks: [], equipes: [], projetos: [], compartilhados: [], loadedAt: 0 };
+let dataCache = { tasks: [], equipes: [], projetos: [], compartilhados: [], clinicas: [], loadedAt: 0 };
 
-/* Busca de uma vez só as tarefas e os 3 tipos de item do Workspace —
+/* Busca de uma vez só as tarefas e os 4 tipos de item do Workspace —
    dado compartilhado por Home Inteligente, IA Proativa e Pesquisa Global,
    pra essas três funcionalidades não ficarem cada uma fazendo sua própria
    leva de chamadas ao Supabase. Sem login, não tem o que buscar (essas
@@ -4191,24 +4194,26 @@ let dataCache = { tasks: [], equipes: [], projetos: [], compartilhados: [], load
    Pesquisa Global, que quer sempre o dado mais atual possível ao abrir). */
 async function refreshDataCache(force){
   if(!cloudUser){
-    dataCache = { tasks: [], equipes: [], projetos: [], compartilhados: [], loadedAt: Date.now() };
+    dataCache = { tasks: [], equipes: [], projetos: [], compartilhados: [], clinicas: [], loadedAt: Date.now() };
     return;
   }
   if(!force && Date.now() - dataCache.loadedAt < 10000) return; // já é recente o bastante
   const client = getSupabaseClient();
   if(!client) return;
   try{
-    const [tasksRes, equipesRes, projetosRes, compRes] = await Promise.all([
+    const [tasksRes, equipesRes, projetosRes, compRes, clinicasRes] = await Promise.all([
       client.from('tasks').select('*'),
       client.from('team_members').select('*'),
       client.from('projects').select('*'),
-      client.from('shared_items').select('*')
+      client.from('shared_items').select('*'),
+      client.from('clinicas').select('*')
     ]);
     dataCache = {
       tasks: (tasksRes && tasksRes.data) || [],
       equipes: (equipesRes && equipesRes.data) || [],
       projetos: (projetosRes && projetosRes.data) || [],
       compartilhados: (compRes && compRes.data) || [],
+      clinicas: (clinicasRes && clinicasRes.data) || [],
       loadedAt: Date.now()
     };
     // Mantém o cache global de tarefas (usado pelo poller/tela de Tarefas)
@@ -4596,8 +4601,8 @@ function copyVlowLink(){
    ========================================================= */
 let reajusteExams = []; // [{id, nome, precoAtual, qtdMensal}]
 let reajustePercent = 5;
-let reajusteClinicaPercent = null; // % pedido pela clínica (negociação)
-let reajusteVixtingPercent = null; // % máximo aceitável pela Vixting
+let reajusteClinicaValor = null; // R$ mensal pedido pela clínica (negociação)
+let reajusteVixtingValor = null; // R$ mensal máximo aceitável pela Vixting
 let reajusteExamCounter = 0;
 
 function formatBRL(v){
@@ -4675,7 +4680,7 @@ function renderReajusteView(){
 
   const negSubtitle = document.createElement('p');
   negSubtitle.className = 'vlow-subtitle';
-  negSubtitle.textContent = 'Preencha o que a clínica pediu e o teto que a Vixting aceita (opcional) — a IA usa os números calculados acima pra sugerir uma contraproposta e argumentos, sem inventar valores.';
+  negSubtitle.textContent = 'Preencha o valor mensal (R$) que a clínica pediu e o teto que a Vixting aceita (opcional) — a IA usa os números calculados acima pra sugerir uma contraproposta e argumentos, sem inventar valores.';
   wrap.appendChild(negSubtitle);
 
   const negForm = document.createElement('div');
@@ -4683,27 +4688,27 @@ function renderReajusteView(){
 
   const clinicaLabel = document.createElement('label');
   clinicaLabel.className = 'reajuste-field-label';
-  clinicaLabel.textContent = '% pedido pela clínica';
+  clinicaLabel.textContent = 'R$ mensal pedido pela clínica';
   const clinicaInput = document.createElement('input');
   clinicaInput.type = 'number';
-  clinicaInput.step = '0.1';
+  clinicaInput.step = '0.01';
   clinicaInput.className = 'workspace-input';
   clinicaInput.id = 'reajusteClinicaInput';
-  clinicaInput.value = reajusteClinicaPercent === null ? '' : reajusteClinicaPercent;
-  clinicaInput.oninput = () => { reajusteClinicaPercent = clinicaInput.value === '' ? null : (parseFloat(clinicaInput.value) || 0); saveState(); };
+  clinicaInput.value = reajusteClinicaValor === null ? '' : reajusteClinicaValor;
+  clinicaInput.oninput = () => { reajusteClinicaValor = clinicaInput.value === '' ? null : (parseFloat(clinicaInput.value) || 0); saveState(); };
   clinicaLabel.appendChild(clinicaInput);
   negForm.appendChild(clinicaLabel);
 
   const vixtingLabel = document.createElement('label');
   vixtingLabel.className = 'reajuste-field-label';
-  vixtingLabel.textContent = '% máximo aceitável (Vixting)';
+  vixtingLabel.textContent = 'R$ mensal máximo aceitável';
   const vixtingInput = document.createElement('input');
   vixtingInput.type = 'number';
-  vixtingInput.step = '0.1';
+  vixtingInput.step = '0.01';
   vixtingInput.className = 'workspace-input';
   vixtingInput.id = 'reajusteVixtingInput';
-  vixtingInput.value = reajusteVixtingPercent === null ? '' : reajusteVixtingPercent;
-  vixtingInput.oninput = () => { reajusteVixtingPercent = vixtingInput.value === '' ? null : (parseFloat(vixtingInput.value) || 0); saveState(); };
+  vixtingInput.value = reajusteVixtingValor === null ? '' : reajusteVixtingValor;
+  vixtingInput.oninput = () => { reajusteVixtingValor = vixtingInput.value === '' ? null : (parseFloat(vixtingInput.value) || 0); saveState(); };
   vixtingLabel.appendChild(vixtingInput);
   negForm.appendChild(vixtingLabel);
 
@@ -4890,15 +4895,19 @@ async function generateReajusteContraproposta(){
   if(btn){ btn.disabled = true; btn.textContent = 'Gerando...'; }
   showTyping();
   try{
-    const systemPrompt = "Você é a Lumi, assistente do AtlasIA, ajudando o time de credenciamento da Vixting a preparar uma contraproposta de reajuste de tabela para uma clínica parceira. Use EXCLUSIVAMENTE os números fornecidos no pedido abaixo — nunca invente nenhum valor, percentual ou dado que não esteja ali. Responda em português do Brasil, tom cordial mas direto e profissional. Estruture a resposta em: 1) um resumo rápido do impacto financeiro; 2) uma contraproposta de percentual (se houver um % pedido pela clínica e um teto aceitável informados, sugira um valor dentro dessa faixa e explique o porquê; se faltar algum desses dois números, diga isso claramente em vez de inventar); 3) de 3 a 4 argumentos de negociação concretos e específicos pra essa situação; 4) uma versão curta, pronta pra copiar e enviar à clínica, com a contraproposta.";
+    const systemPrompt = "Você é a Lumi, assistente do AtlasIA, ajudando o time de credenciamento da Vixting a preparar uma contraproposta de reajuste de tabela para uma clínica parceira. Use EXCLUSIVAMENTE os números fornecidos no pedido abaixo (incluindo os percentuais já calculados) — nunca invente nenhum valor, percentual ou dado que não esteja ali. Responda em português do Brasil, tom cordial mas direto e profissional. Estruture a resposta em: 1) um resumo rápido do impacto financeiro; 2) uma contraproposta em R$ mensal (se houver um valor pedido pela clínica e um teto aceitável informados, sugira um valor dentro dessa faixa, mencionando também o percentual equivalente, e explique o porquê; se faltar algum desses dois números, diga isso claramente em vez de inventar); 3) de 3 a 4 argumentos de negociação concretos e específicos pra essa situação; 4) uma versão curta, pronta pra copiar e enviar à clínica, com a contraproposta.";
+    // % implícito de cada valor em R$ em relação ao total mensal atual —
+    // calculado aqui em JS (nunca pela IA), pra ela poder citar o
+    // percentual equivalente sem ter que estimar nada.
+    const impliedPercent = (valor) => calc.totalAtualMensal > 0 ? (((valor - calc.totalAtualMensal) / calc.totalAtualMensal) * 100).toFixed(1) + '%' : 'não calculável (total atual é zero)';
     const userText =
       'Reajuste simulado pela equipe: ' + (reajustePercent || 0) + '%\n' +
       'Total mensal atual (tabela vigente): ' + formatBRL(calc.totalAtualMensal) + '\n' +
       'Total mensal com esse reajuste: ' + formatBRL(calc.totalNovoMensal) + '\n' +
       'Diferença mensal: ' + formatBRL(calc.diffMensalTotal) + ' (' + calc.diffPercentTotal.toFixed(1) + '%)\n' +
       'Impacto anual: ' + formatBRL(calc.diffAnualTotal) + '\n' +
-      (reajusteClinicaPercent !== null ? 'Percentual de reajuste pedido pela clínica: ' + reajusteClinicaPercent + '%\n' : 'Percentual pedido pela clínica: não informado\n') +
-      (reajusteVixtingPercent !== null ? 'Percentual máximo aceitável pela Vixting: ' + reajusteVixtingPercent + '%\n' : 'Percentual máximo aceitável pela Vixting: não informado\n') +
+      (reajusteClinicaValor !== null ? 'Valor mensal pedido pela clínica: ' + formatBRL(reajusteClinicaValor) + ' (equivalente a ' + impliedPercent(reajusteClinicaValor) + ' de reajuste sobre o total atual)\n' : 'Valor pedido pela clínica: não informado\n') +
+      (reajusteVixtingValor !== null ? 'Valor mensal máximo aceitável pela Vixting: ' + formatBRL(reajusteVixtingValor) + ' (equivalente a ' + impliedPercent(reajusteVixtingValor) + ' de reajuste sobre o total atual)\n' : 'Valor máximo aceitável pela Vixting: não informado\n') +
       'Exames considerados: ' + calc.rows.map(r => r.nome + ' (' + formatBRL(r.precoAtual) + ' → ' + formatBRL(r.precoNovo) + ')').join('; ');
     const reply = await askAIRaw(systemPrompt, userText);
     hideTyping();
@@ -5317,10 +5326,29 @@ const WORKSPACE_TABLES = {
       { key: 'description', label: 'Descrição', type: 'textarea' }
     ],
     allowFileUpload: true
+  },
+  clinicas: {
+    table: 'clinicas',
+    icon: 'heartPulse', color: '#f472b6', emoji: '🏥',
+    heading: 'Clínicas',
+    subtitle: 'Cadastro de clínicas parceiras/em negociação — cidade, preço de tabela, prazo de pagamento e histórico de contato. Visível e editável só por quem está logado, e é a base que a Lumi usa pra responder perguntas sobre clínicas por região.',
+    emptyText: 'Nenhuma clínica cadastrada ainda. Adicione a primeira abaixo.',
+    addLabel: 'Adicionar clínica',
+    setupScript: 'supabase_setup_clinicas.sql',
+    fields: [
+      { key: 'nome', label: 'Nome da clínica', type: 'text', required: true },
+      { key: 'cidade', label: 'Cidade/Região', type: 'text' },
+      { key: 'contato', label: 'Contato (nome, telefone ou e-mail)', type: 'text' },
+      { key: 'status', label: 'Status', type: 'select', options: [['prospeccao', 'Prospecção'], ['negociacao', 'Em negociação'], ['credenciada', 'Credenciada'], ['inativa', 'Inativa']] },
+      { key: 'prazo_pagamento', label: 'Prazo de pagamento (ex: 30 dias)', type: 'text' },
+      { key: 'tabela_precos', label: 'Tabela de preços / observações de valor', type: 'textarea' },
+      { key: 'historico', label: 'Histórico de contato/negociação', type: 'textarea' }
+    ]
   }
 };
 
 const WORKSPACE_STATUS_LABELS = { nao_iniciado: 'Não iniciado', em_andamento: 'Em andamento', concluido: 'Concluído' };
+const CLINICA_STATUS_LABELS = { prospeccao: 'Prospecção', negociacao: 'Em negociação', credenciada: 'Credenciada', inativa: 'Inativa' };
 
 /* Traduz um erro técnico do Supabase (tabela/bucket inexistente, política de
    segurança, rede) numa mensagem que a pessoa realmente consegue agir a
@@ -5604,7 +5632,7 @@ async function handleWorkspaceFileSelect(key){
     clearWorkspaceInlineError(key);
   }catch(e){
     if(statusEl) statusEl.textContent = '';
-    const desc = describeSupabaseSetupError(e);
+    const desc = describeSupabaseSetupError(e, cfg.setupScript);
     showToast('⚠️ Não consegui enviar o arquivo.');
     showWorkspaceInlineError(key, desc);
   }finally{
@@ -5641,7 +5669,7 @@ async function addWorkspaceItem(key){
     await loadWorkspaceItems(key);
     showToast('✓ Adicionado.');
   }catch(e){
-    const desc = describeSupabaseSetupError(e);
+    const desc = describeSupabaseSetupError(e, cfg.setupScript);
     showToast('⚠️ Não consegui salvar.');
     showWorkspaceInlineError(key, desc);
   }
@@ -5658,7 +5686,7 @@ async function deleteWorkspaceItem(key, id){
     clearWorkspaceInlineError(key);
     await loadWorkspaceItems(key);
   }catch(e){
-    const desc = describeSupabaseSetupError(e);
+    const desc = describeSupabaseSetupError(e, cfg.setupScript);
     showToast('⚠️ Não consegui remover.');
     showWorkspaceInlineError(key, desc);
   }
@@ -5688,7 +5716,7 @@ async function loadWorkspaceItems(key){
     p.className = 'vlow-empty';
     p.textContent = 'Não consegui carregar a lista agora.';
     listWrap.appendChild(p);
-    showWorkspaceInlineError(key, describeSupabaseSetupError(e));
+    showWorkspaceInlineError(key, describeSupabaseSetupError(e, cfg.setupScript));
   }
 }
 
@@ -5725,6 +5753,16 @@ function itemShareText(key, item){
     let t = '🔗 ' + (item.title || '');
     if(item.description) t += '\n' + item.description;
     if(item.url) t += '\n' + item.url;
+    return t;
+  }
+  if(key === 'clinicas'){
+    let t = '🏥 ' + (item.nome || '');
+    t += '\nStatus: ' + (CLINICA_STATUS_LABELS[item.status] || 'Prospecção');
+    if(item.cidade) t += '\nCidade/Região: ' + item.cidade;
+    if(item.contato) t += '\nContato: ' + item.contato;
+    if(item.prazo_pagamento) t += '\nPrazo de pagamento: ' + item.prazo_pagamento;
+    if(item.tabela_precos) t += '\n\nTabela de preços:\n' + item.tabela_precos;
+    if(item.historico) t += '\n\nHistórico:\n' + item.historico;
     return t;
   }
   return '';
@@ -5787,6 +5825,19 @@ function renderWorkspaceItems(key, items){
         link.querySelector('span').textContent = item.url;
         info.appendChild(link);
       }
+    } else if(key === 'clinicas'){
+      const name = document.createElement('strong');
+      name.textContent = item.nome || '';
+      info.appendChild(name);
+      const badge = document.createElement('span');
+      badge.className = 'workspace-status-badge status-' + (item.status || 'prospeccao');
+      badge.textContent = CLINICA_STATUS_LABELS[item.status] || 'Prospecção';
+      info.appendChild(badge);
+      if(item.cidade){ const c = document.createElement('span'); c.className = 'workspace-item-sub'; c.textContent = '📍 ' + item.cidade; info.appendChild(c); }
+      if(item.contato){ const c = document.createElement('span'); c.className = 'workspace-item-sub'; c.textContent = item.contato; info.appendChild(c); }
+      if(item.prazo_pagamento){ const p = document.createElement('span'); p.className = 'workspace-item-sub'; p.textContent = 'Prazo: ' + item.prazo_pagamento; info.appendChild(p); }
+      if(item.tabela_precos){ const t = document.createElement('p'); t.className = 'workspace-item-desc'; t.textContent = '💰 ' + item.tabela_precos; info.appendChild(t); }
+      if(item.historico){ const h = document.createElement('p'); h.className = 'workspace-item-desc'; h.textContent = '🕘 ' + item.historico; info.appendChild(h); }
     }
 
     const shareText = itemShareText(key, item);
@@ -6096,7 +6147,7 @@ function buildStateSnapshot(){
     themeMode, accentColor, notifySound,
     responseStyle, chatFontSize, maxConversationsLimit,
     vlowLink,
-    reajusteExams, reajustePercent, reajusteClinicaPercent, reajusteVixtingPercent,
+    reajusteExams, reajustePercent, reajusteClinicaValor, reajusteVixtingValor,
     lastSeenWorkspace, lastDailySummaryDate
   };
 }
@@ -7961,33 +8012,124 @@ const TASK_REMINDER_GUIDE = "Lembretes com hora marcada: se o usuário pedir exp
    vez de um resumo genérico do conteúdo. */
 const SENIOR_ANALYSIS_GUIDE = "Modo de análise sênior: como há um arquivo, planilha ou imagem anexado, estruture sua resposta como faria uma consultora/analista sênior, não como um resumo genérico. Sempre que fizer sentido pra pergunta: (1) contextualize brevemente o que está vendo; (2) traga os achados mais relevantes, com números/percentuais reais quando o conteúdo anexado permitir calculá-los (nunca invente um número que não dê pra deduzir do que foi enviado); (3) aponte riscos, inconsistências ou limitações relevantes dos dados/documento, se houver; (4) termine com uma recomendação prática e objetiva do próximo passo. Não force essa estrutura completa em perguntas simples e pontuais — use o bom senso, mas mantenha sempre o padrão de qualidade e profundidade de uma analista sênior, não respostas superficiais.";
 
+/* =========================================================
+   GERENCIAMENTO DE CONTEXTO/TOKENS — decide, antes de montar o prompt
+   final, quanto de cada fonte de contexto extra (anexos, RAG, dados do
+   Workspace, memória entre conversas) cabe dentro de um orçamento, em vez
+   de simplesmente concatenar tudo sem limite. Sobre o que NÃO precisou
+   entrar aqui: o AtlasIA já é "stateless" por natureza — cada mensagem é
+   uma chamada isolada à IA, sem o histórico da conversa sendo reenviado
+   a cada vez (ver o aviso de "primeira mensagem" logo abaixo, em
+   buildSystemPrompt) — então não existe uma conversa "crescendo sem
+   limite" pra resumir ou podar; esse é um problema comum em outros
+   apps de chat que o AtlasIA já não tem.
+   O que sobra — e cresce de verdade com o uso — são: anexos de arquivo
+   (até 5 por conversa, já truncados individualmente), o contexto
+   recuperado dos documentos indexados (RAG), os dados internos do
+   Workspace (tarefas/projetos/equipe/compartilhados) e a lista de
+   memórias salvas entre conversas (até 40). É isso que este bloco
+   organiza por prioridade e corta quando passa do orçamento. */
+
+// ~4 caracteres por token é uma aproximação padrão pra português/inglês —
+// não é uma contagem exata (isso exigiria a biblioteca de tokenização de
+// cada modelo, pesada demais pra rodar no navegador), mas é o suficiente
+// pra decidir quando cortar contexto antes de mandar pra API.
+function estimateTokens(text){
+  return Math.ceil((text || '').length / 4);
+}
+
+// Orçamento de tokens só pro contexto "extra" (anexos + RAG + dados do
+// Workspace + memória) — não conta a base de conhecimento fixa do modo
+// nem a pergunta atual, que sempre entram inteiras. ~6000 tokens dá
+// bastante folga pra um caso de uso normal e ainda deixa margem de sobra
+// pro restante do prompt + resposta, mesmo em modelos com janela menor.
+const CONTEXT_TOKEN_BUDGET = 6000;
+
+/* Monta o bloco de contexto extra do prompt, cortando pela prioridade
+   abaixo (da mais dispensável pra mais essencial) até caber no orçamento:
+   1) memória entre conversas — a mais genérica; corta as notas mais
+      ANTIGAS primeiro, mantendo as mais recentes (proxy razoável de
+      relevância pra conversa atual — "remover mensagens antigas
+      irrelevantes" aplicado ao que o AtlasIA realmente acumula com o
+      tempo, já que não há histórico de conversa pra podar);
+   2) dados do Workspace (SQL) — úteis, mas mais genéricos que o que a
+      pessoa pediu explicitamente;
+   3) RAG — já filtrado por relevância (RAG_RELEVANCE_THRESHOLD), então
+      só corta se ainda faltar espaço mesmo depois dos dois acima;
+   4) anexos — o que a pessoa colocou de propósito na conversa atual;
+      corta por último, e mesmo assim TRUNCA em vez de remover, pra nunca
+      ficar sem nenhum contexto do arquivo que a pessoa anexou. */
+function buildIntelligentContext(){
+  const attachmentsText = currentAttachments.length
+    ? "\n\nConteúdo extraído do(s) arquivo(s) que o usuário anexou nesta conversa — use como contexto para responder perguntas sobre eles quando fizer sentido. Esses arquivos podem conter dados sensíveis (pessoais, financeiros ou de saúde) — trate com cuidado: use exatamente o que está no texto abaixo (nunca invente ou estime números/valores que não estejam explícitos nele) e não repita dados sensíveis desnecessariamente na resposta além do que a pergunta pedir:\n\n" +
+      currentAttachments.map(a => "--- Arquivo: " + a.name + " ---\n" + a.text).join('\n\n')
+    : '';
+  const ragText = ragContext || '';
+  const workspaceText = buildWorkspaceDataContext();
+  const memoryText = memoryNotes.length
+    ? "\n\nNotas que este usuário pediu para você lembrar entre conversas (use quando forem relevantes, sem precisar citar todas de uma vez):\n" + memoryNotes.map(n => "- " + n).join('\n')
+    : '';
+
+  const sections = [
+    { key: 'memory', text: memoryText },
+    { key: 'workspace', text: workspaceText },
+    { key: 'rag', text: ragText },
+    { key: 'attachments', text: attachmentsText }
+  ];
+
+  let total = sections.reduce((sum, s) => sum + estimateTokens(s.text), 0);
+  if(total <= CONTEXT_TOKEN_BUDGET) return sections.map(s => s.text).join('');
+
+  // 1) Memória: corta as notas mais antigas primeiro, mantendo pelo menos
+  // as 5 mais recentes mesmo sob pressão de espaço.
+  if(total > CONTEXT_TOKEN_BUDGET && memoryNotes.length){
+    let notes = memoryNotes.slice();
+    while(total > CONTEXT_TOKEN_BUDGET && notes.length > 5){
+      notes.shift();
+      const before = estimateTokens(sections[0].text);
+      sections[0].text = "\n\nNotas que este usuário pediu para você lembrar entre conversas (mostrando as " + notes.length + " mais recentes de " + memoryNotes.length + " guardadas, para caber no limite de contexto desta mensagem):\n" + notes.map(n => "- " + n).join('\n');
+      total += estimateTokens(sections[0].text) - before;
+    }
+  }
+  // 2) Dados do Workspace: se ainda faltar espaço, remove a seção inteira
+  // (a pessoa continua vendo os mesmos dados normalmente nas abas do
+  // Workspace — aqui é só o contexto extra pro chat).
+  if(total > CONTEXT_TOKEN_BUDGET && sections[1].text){
+    total -= estimateTokens(sections[1].text);
+    sections[1].text = '';
+  }
+  // 3) RAG: mesma lógica — corta a seção inteira só se ainda for preciso.
+  if(total > CONTEXT_TOKEN_BUDGET && sections[2].text){
+    total -= estimateTokens(sections[2].text);
+    sections[2].text = '';
+  }
+  // 4) Anexos: último recurso, e mesmo assim trunca em vez de remover.
+  if(total > CONTEXT_TOKEN_BUDGET && sections[3].text){
+    const before = estimateTokens(sections[3].text);
+    const maxChars = Math.max(2000, (CONTEXT_TOKEN_BUDGET - (total - before)) * 4);
+    sections[3].text = truncateText(sections[3].text, maxChars) + "\n\n[Aviso interno: parte do conteúdo dos arquivos anexados foi omitida por limite de tamanho de contexto — se a resposta parecer incompleta, avise a pessoa a dividir o arquivo em partes menores.]";
+  }
+
+  return sections.map(s => s.text).join('');
+}
+
 function buildSystemPrompt(){
   const modeInfo = MODES[currentMode];
   let prompt = modeInfo.systemPromptIntro + " " + LUMI_VOICE_GUIDE + " " + RELIABILITY_GUIDE + " " + (RESPONSE_STYLE_GUIDES[responseStyle] || '') + " Base de conhecimento de referência:\n\n" +
     modeInfo.kb.map(e => `- ${e.title}: ${e.answer}`).join('\n');
   prompt += "\n\nMemória entre conversas: se o usuário pedir explicitamente para lembrar de algo (ex: \"lembra que...\", \"guarda essa informação\", \"anota isso\"), OU contar espontaneamente uma preferência/fato estável e claramente útil para conversas futuras (ex: nome, cargo, forma de tratamento, preferência de tom/formato de resposta, um dado fixo sobre o trabalho dela), inclua ao final da sua resposta, em uma linha própria, a tag: [[MEMORIZE: resumo curto e específico, em português, na perspectiva do usuário]]. Use no máximo uma tag por resposta, só quando fizer sentido guardar aquilo de verdade — não use para perguntas, comentários triviais ou informações de uso único. Nunca explique a tag nem mencione que ela existe; ela é removida automaticamente antes do usuário ver a resposta.";
-  if(memoryNotes.length){
-    prompt += "\n\nNotas que este usuário pediu para você lembrar entre conversas (use quando forem relevantes, sem precisar citar todas de uma vez):\n" +
-      memoryNotes.map(n => "- " + n).join('\n');
-  }
   {
     const now = new Date();
     prompt += "\n\nData e hora atual: " + now.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' }) + ", " + now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + " (ISO: " + now.toISOString() + "). Use esta referência para calcular datas/horas relativas mencionadas pelo usuário (ex: \"amanhã\", \"daqui a 2 horas\", \"sexta-feira\") — não repita esse texto literalmente para a pessoa, é só uma referência interna.";
     prompt += "\n\n" + TASK_REMINDER_GUIDE;
   }
-  if(currentAttachments.length){
-    // Suporta mais de um arquivo anexado na mesma conversa (RAG simples,
-    // sem infraestrutura nova): cada um entra separado e identificado pelo
-    // nome, pra a IA conseguir distinguir de qual arquivo cada informação
-    // veio quando houver mais de um.
-    prompt += "\n\nConteúdo extraído do(s) arquivo(s) que o usuário anexou nesta conversa — use como contexto para responder perguntas sobre eles quando fizer sentido. Esses arquivos podem conter dados sensíveis (pessoais, financeiros ou de saúde) — trate com cuidado: use exatamente o que está no texto abaixo (nunca invente ou estime números/valores que não estejam explícitos nele) e não repita dados sensíveis desnecessariamente na resposta além do que a pergunta pedir:\n\n" +
-      currentAttachments.map(a => "--- Arquivo: " + a.name + " ---\n" + a.text).join('\n\n');
-  }
+  // Anexos + RAG + dados do Workspace + memória entre conversas, tudo
+  // dentro do orçamento de tokens de buildIntelligentContext() (definida
+  // logo acima) em vez de concatenado sem limite.
+  prompt += buildIntelligentContext();
   if(currentAttachments.length || pendingImage){
     prompt += "\n\n" + SENIOR_ANALYSIS_GUIDE;
   }
-  prompt += buildWorkspaceDataContext();
-  if(ragContext) prompt += ragContext;
   // Cada chamada à IA é isolada (sem histórico de conversa enviado ao modelo),
   // então sem essa checagem o modelo "acha" que toda mensagem é a primeira e
   // se apresenta de novo toda hora. Avisa explicitamente quando não é.
@@ -8033,8 +8175,18 @@ function buildWorkspaceDataContext(){
     parts.push('\nItens em Compartilhados:');
     dataCache.compartilhados.slice(0, 30).forEach(i => parts.push('- ' + i.title + (i.description ? ': ' + i.description : '')));
   }
+  if(dataCache.clinicas && dataCache.clinicas.length){
+    parts.push('\nClínicas cadastradas (use isso pra responder perguntas sobre clínicas por região/cidade, status de negociação, preço ou prazo — são dados reais desta conta):');
+    dataCache.clinicas.slice(0, 40).forEach(c => {
+      parts.push('- ' + c.nome + (c.cidade ? ' (' + c.cidade + ')' : '') +
+        ' — status: ' + (CLINICA_STATUS_LABELS[c.status] || 'Prospecção') +
+        (c.contato ? ', contato: ' + c.contato : '') +
+        (c.prazo_pagamento ? ', prazo: ' + c.prazo_pagamento : '') +
+        (c.tabela_precos ? ', tabela: ' + c.tabela_precos : ''));
+    });
+  }
   if(!parts.length) return '';
-  return "\n\nDados internos do Workspace do AtlasIA desta empresa (use pra responder perguntas sobre tarefas, projetos, equipe ou itens compartilhados — são dados reais e atuais desta conta; não invente nem complete o que não estiver listado aqui, e não confunda com dados de outra empresa/sistema):\n" + parts.join('\n');
+  return "\n\nDados internos do Workspace do AtlasIA desta empresa (use pra responder perguntas sobre tarefas, projetos, equipe, itens compartilhados ou clínicas cadastradas — são dados reais e atuais desta conta; não invente nem complete o que não estiver listado aqui, e não confunda com dados de outra empresa/sistema):\n" + parts.join('\n');
 }
 
 /* =========================================================
@@ -8961,8 +9113,8 @@ function applyLoadedState(saved){
   // logado) — dado sensível de preço/negociação, sem tabela nova no Supabase.
   reajusteExams = Array.isArray(saved.reajusteExams) ? saved.reajusteExams : [];
   reajustePercent = typeof saved.reajustePercent === 'number' ? saved.reajustePercent : 5;
-  reajusteClinicaPercent = typeof saved.reajusteClinicaPercent === 'number' ? saved.reajusteClinicaPercent : null;
-  reajusteVixtingPercent = typeof saved.reajusteVixtingPercent === 'number' ? saved.reajusteVixtingPercent : null;
+  reajusteClinicaValor = typeof saved.reajusteClinicaValor === 'number' ? saved.reajusteClinicaValor : null;
+  reajusteVixtingValor = typeof saved.reajusteVixtingValor === 'number' ? saved.reajusteVixtingValor : null;
   lastSeenWorkspace = (saved.lastSeenWorkspace && typeof saved.lastSeenWorkspace === 'object') ? saved.lastSeenWorkspace : {};
   lastDailySummaryDate = typeof saved.lastDailySummaryDate === 'string' ? saved.lastDailySummaryDate : '';
 

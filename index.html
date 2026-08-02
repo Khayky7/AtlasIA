@@ -2895,18 +2895,21 @@ Fico à disposição e agradeço desde já pela atenção.`
 let apiKeyByProvider = { gemini: null, openai: null };
 let apiKey = null; // fica só em memória, nunca persistido em disco (espelha apiKeyByProvider[apiProvider])
 // Provedor padrão pra quem ainda não escolheu nenhum (primeira visita, ou
-// login novo sem preferência salva): 'gemini', porque no Gemini a busca na
-// internet fica sempre ligada automaticamente (ver webSearchEnabled) sem
-// custo extra, dentro da cota diária gratuita — evita respostas
-// desatualizadas (ex: "onde um atleta joga hoje") por padrão, sem gerar a
-// cobrança por busca que a OpenAI cobra desde a primeira chamada.
-// IMPORTANTE pra quem administra o Supabase: pra esse padrão funcionar pra
-// quem está logado e SEM chave própria (usa a chave da empresa via
-// ai-proxy), é preciso ter cadastrado GEMINI_API_KEY nos Secrets do projeto
-// (ver supabase_ai_proxy.ts) — sem isso, essas pessoas recebem um aviso
-// claro pedindo pra usar chave própria ou trocar de provedor em
-// Configurações, em vez de travar silenciosamente.
-let apiProvider = 'gemini'; // 'gemini' (grátis, busca sempre ligada) ou 'openai' (pago, busca opt-in)
+// login novo sem preferência salva): voltou a ser 'openai' (era assim
+// originalmente, tentamos o Gemini como padrão por causa da busca grátis,
+// mas o plano gratuito do Gemini tem cota bem baixa compartilhada por toda
+// a equipe — na prática deu erro 429 "quota exceeded" em uso normal — e
+// ativar faturamento no Google significaria cobrar desde a 1ª mensagem, o
+// que não faz sentido pro orçamento daqui). É o provedor cuja chave a
+// empresa já tem configurada no ai-proxy (ver supabase_ai_proxy.ts).
+// A busca na internet na OpenAI continua não sendo automática em TODA
+// mensagem (isso custaria ~$10 a cada mil mensagens) — mas agora liga
+// sozinha quando a PERGUNTA EM SI parece precisar de informação atual (ver
+// looksLikeRealTimeQuery), sem precisar lembrar de clicar no botão 🌐 pra
+// esse tipo de pergunta. É uma detecção por palavras-chave, então não
+// é 100% garantido pegar toda pergunta desse tipo — o botão manual continua
+// existindo como reforço pra quando a detecção não pegar sozinha.
+let apiProvider = 'openai'; // 'gemini' (grátis, busca sempre ligada) ou 'openai' (pago, busca automática só quando parece necessária + opt-in manual)
 
 const PROVIDER_INFO = {
   gemini: {
@@ -6582,15 +6585,20 @@ let ragContext = '';
    ========================================================= */
 let pendingImage = null; // { dataUrl, mimeType }
 
-/* Busca na internet: automática (sempre ligada) no Gemini, e OPT-IN por
-   mensagem na OpenAI — decisão por causa do custo de cada provedor. A busca
-   do Gemini (Grounding with Google Search) tem cota diária gratuita
-   generosa (milhares de buscas/dia), então não faz sentido deixar
-   desligada por padrão lá — é isso que evita respostas desatualizadas tipo
-   "fulano joga no time X" quando na verdade ele mudou de time há semanas.
-   Já a OpenAI cobra ~$10 a cada mil buscas desde a primeira chamada, então
-   continua exigindo ligar manualmente (botão 🌐) mensagem a mensagem — ver
-   updateWebBtnForProvider() e o uso de webSearchEnabled em sendMessage(). */
+/* Busca na internet: automática (sempre ligada) no Gemini, e na OpenAI é
+   ligada automaticamente SÓ quando a pergunta parece precisar de
+   informação atual (ver looksLikeRealTimeQuery), mais o botão 🌐 como
+   reforço manual pra qualquer outra mensagem — decisão por causa do custo
+   de cada provedor. A busca do Gemini (Grounding with Google Search) tem
+   cota diária gratuita, então não faz sentido deixar desligada por padrão
+   lá. Já a OpenAI cobra ~$10 a cada mil buscas desde a primeira chamada —
+   por isso NÃO liga em toda mensagem, só quando a detecção por
+   palavras-chave acha sinal de algo que muda com o tempo (ex: "fulano joga
+   em que time HOJE" — evita a resposta desatualizada tipo "ele joga no
+   time X" quando na verdade mudou de time há semanas, sem pagar busca em
+   toda mensagem de chat comum). webSearchEnabled é só o estado do botão
+   manual — ver updateWebBtnForProvider() e o uso de webSearchEnabled +
+   looksLikeRealTimeQuery() em sendMessage(). */
 let webSearchEnabled = false;
 const MAX_PASTED_IMAGE_DIM = 1600; // px no lado maior, controla o tamanho do payload enviado à API
 
@@ -6839,6 +6847,35 @@ function updateWebBtnForProvider(provider){
     btn.classList.toggle('active', webSearchEnabled);
     btn.title = webSearchEnabled ? 'Busca na internet ATIVADA pra próxima mensagem (clique pra desligar)' : 'Ativar busca na internet pra próxima mensagem';
   }
+}
+
+/* Sinaliza (por palavras-chave, não é IA) se a pergunta parece precisar de
+   informação que muda com o tempo — nomes/cargos/times atuais, notícias,
+   cotações, clima, resultado de jogo, ou um pedido explícito de pesquisa.
+   Usada só na OpenAI (o Gemini já busca sempre, de graça) pra ligar a busca
+   paga automaticamente SÓ nesses casos, em vez de OU sempre ligada (cara)
+   OU sempre exigindo lembrar de clicar no botão 🌐 (o problema original que
+   causou a resposta desatualizada tipo "fulano joga no time X"). É uma
+   detecção simples, então não pega toda pergunta desse tipo com fraseado
+   fora do comum — o botão manual continua disponível como reforço. */
+const REALTIME_QUERY_HINTS = [
+  'hoje', 'agora', 'atualmente', 'neste momento', 'nesse momento',
+  'essa semana', 'esta semana', 'esse mes', 'este mes', 'recentemente',
+  'ultimas noticias', 'ultima noticia', 'noticia', 'noticias', 'manchete',
+  'joga atualmente', 'onde ele joga', 'onde ela joga', 'time atual',
+  'quem e o atual', 'atual presidente', 'presidente atual', 'atual ceo',
+  'ceo atual', 'campeao atual', 'recorde atual', 'contratado por',
+  'transferencia', 'transferiu', 'cotacao', 'preco atual', 'dolar hoje',
+  'bolsa hoje', 'valor atual do', 'preco do bitcoin', 'previsao do tempo',
+  'clima hoje', 'vai chover', 'temperatura hoje', 'resultado do jogo',
+  'placar', 'quem ganhou', 'quem venceu', 'pesquise', 'pesquisa na internet',
+  'busque na internet', 'procure na internet', 'busca na web',
+  'me atualize sobre'
+];
+function looksLikeRealTimeQuery(text){
+  if(!text) return false;
+  const norm = normalize(text);
+  return REALTIME_QUERY_HINTS.some(hint => norm.includes(hint));
 }
 
 function insertImageShortcut(){
@@ -7458,11 +7495,18 @@ async function sendMessage(){
   const image = pendingImage;
   if(!text && !image) return;
   // No Gemini a busca vai sempre junto (grátis, ver comentário perto de
-  // webSearchEnabled); na OpenAI só se o botão 🌐 foi ligado pra esta
-  // mensagem — e nesse caso já reseta o botão, igual a uma imagem colada.
-  const useSearch = apiProvider === 'gemini' ? true : webSearchEnabled;
+  // webSearchEnabled). Na OpenAI, liga se o botão 🌐 foi ligado pra esta
+  // mensagem OU se a pergunta em si parece precisar de informação atual
+  // (looksLikeRealTimeQuery) — nesse caso já reseta o botão manual, igual a
+  // uma imagem colada, e avisa por toast que a busca automática entrou (pra
+  // não ser uma cobrança "surpresa" sem a pessoa entender o motivo).
+  const autoDetectedSearch = apiProvider === 'openai' && !webSearchEnabled && !image && looksLikeRealTimeQuery(text);
+  const useSearch = apiProvider === 'gemini' ? true : (webSearchEnabled || autoDetectedSearch);
   webSearchEnabled = false;
   updateWebBtnForProvider(apiProvider);
+  if(autoDetectedSearch){
+    showToast('🌐 Essa pergunta parece precisar de informação atual — busquei na internet automaticamente (tem um pequeno custo por busca na OpenAI).');
+  }
   await maybeNudgeOverdueTasks();
   await maybeShowDailySummary();
   hapticTap();
@@ -8148,12 +8192,17 @@ async function askOpenAI(userText, image, useSearch){
 // No Gemini, o 1º da lista deixou de ser o "flash-lite" (o mais simples/
 // barato) e passou a ser o "flash" — ele é bem mais forte que o lite por
 // um custo ainda modesto (a busca do Gemini continua grátis do mesmo jeito,
-// isso aqui só afeta o custo por token da resposta em si). O "pro" (o mais
-// caro e mais forte) fica como 2ª opção, puxado automaticamente se o flash
-// falhar; o "flash-lite" original volta como último recurso, só pra manter
-// o app funcionando caso os outros dois estejam com cota estourada.
+// isso aqui só afeta o custo por token da resposta em si). O "flash-lite"
+// original vem em 2º, como fallback (mesma cota gratuita da conta, mas mais
+// barato/mais disponível que o flash em caso de limite de uso). O "pro" (o
+// mais forte) fica por ÚLTIMO de propósito: testado ao vivo, a cota
+// gratuita da Google pro "pro" é ZERO SEMPRE (erro 429 "limit: 0"), mesmo
+// numa conta/projeto sem nenhum uso — só funciona com faturamento ativado
+// no projeto do Google Cloud. Deixá-lo por último evita desperdiçar uma
+// tentativa (e um pouco de latência) nele antes de chegar num modelo que
+// realmente tem chance de funcionar sem faturamento.
 const MODEL_OPTIONS = {
-  gemini: ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.5-flash-lite'],
+  gemini: ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-pro'],
   openai: ['gpt-4o-mini', 'gpt-4o']
 };
 let preferredModel = { gemini: MODEL_OPTIONS.gemini[0], openai: MODEL_OPTIONS.openai[0] };
@@ -8492,7 +8541,7 @@ function applyLoadedState(saved){
       apiKeyByProvider[saved.apiProvider || 'gemini'] = saved.apiKey;
     }
   }
-  apiProvider = saved.apiProvider || 'gemini';
+  apiProvider = saved.apiProvider || 'openai';
   apiKey = apiKeyByProvider[apiProvider] || apiKey || null;
   preferredModel = saved.preferredModel || preferredModel;
   conversations = saved.conversations || [];
@@ -8694,7 +8743,7 @@ window.onload = () => {
     addBotMessage("Bem-vindo de volta! Lembrei da sua última conversa e das suas configurações neste navegador.", false);
   } else {
     // Primeira visita (sem nada salvo neste navegador): parte do provedor
-    // padrão (apiProvider já inicializado como 'gemini' — ver comentário
+    // padrão (apiProvider já inicializado como 'openai' — ver comentário
     // junto da declaração de apiProvider), não hardcoded aqui, pra não
     // voltar a divergir do padrão real do app.
     selectProvider(apiProvider);

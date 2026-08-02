@@ -605,12 +605,40 @@
     font-size:13px;
     gap:16px;
     flex-direction:column;
-    max-height:min(60vh, 480px);
     overflow-y:auto;
     overscroll-behavior:contain;
     -webkit-overflow-scrolling:touch;
   }
-  .settings.open{ display:flex; }
+  /* Configurações agora abre em tela cheia (sobrepondo tudo) em vez de uma
+     caixinha com altura travada em min(60vh, 480px) — com 9 seções (IA
+     generativa, Modelo, Comportamento, Memória, Aparência, Notificações,
+     Conta, Assinatura, Dados salvos), aquela altura fixa cortava o
+     conteúdo e obrigava a rolar dentro de uma janelinha pequena, em vez de
+     usar a tela toda disponível. */
+  .settings.open{
+    display:flex;
+    position:fixed;
+    inset:0;
+    z-index:600;
+    height:100dvh;
+    border-bottom:none;
+  }
+  .settings-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    position:sticky;
+    top:-14px;
+    margin:-14px -22px 4px;
+    padding:calc(14px + env(safe-area-inset-top, 0px)) 22px 12px;
+    background:var(--panel-2);
+    border-bottom:1px solid var(--border);
+    z-index:1;
+  }
+  .settings-header-title{ font-weight:800; font-size:15.5px; }
+  .settings-save-section{ padding-bottom:calc(14px + env(safe-area-inset-bottom, 0px)); }
+  .settings-save-btn{ width:100%; padding:12px; font-size:14px; }
   .settings-section{
     display:flex;
     flex-direction:column;
@@ -2239,6 +2267,10 @@
   <div id="modeBanner" class="mode-banner">⚠️ Modo Financeiro: conteúdo educativo sobre organização financeira e dívidas, gerado por IA. Não é aconselhamento financeiro personalizado nem substitui um profissional licenciado (educador financeiro, Procon, ou os canais oficiais de negociação).</div>
 
   <div id="settingsPanel" class="settings">
+    <div class="settings-header">
+      <div class="settings-header-title">Configurações</div>
+      <button type="button" class="secondary" onclick="toggleSettings()" title="Fechar" aria-label="Fechar Configurações">✕ Fechar</button>
+    </div>
     <div class="settings-section" id="iaGenerativaSection">
       <div class="settings-section-title">IA generativa</div>
       <div class="settings-row">
@@ -2372,6 +2404,10 @@
         </select>
       </div>
       <div class="hint">Quando o limite é atingido, as conversas mais antigas são apagadas automaticamente para não estourar o espaço de armazenamento do navegador.</div>
+    </div>
+
+    <div class="settings-section settings-save-section">
+      <button type="button" class="settings-save-btn" onclick="saveSettingsAndClose()">💾 Salvar configurações</button>
     </div>
   </div>
 
@@ -3107,9 +3143,34 @@ function closeShortcutsHelp(){
 function toggleSettings(){
   hapticTap();
   const panel = document.getElementById('settingsPanel');
-  const willOpen = !!panel && !panel.classList.contains('open');
-  closeOverlayPanels(willOpen ? 'settings' : null);
-  if(panel) panel.classList.toggle('open');
+  if(!panel) return;
+  // Bug real que só apareceu agora que Configurações passou a ter botões
+  // próprios de fechar (✕ / Salvar): a versão antiga chamava
+  // closeOverlayPanels() e DEPOIS .toggle('open') incondicionalmente — ao
+  // fechar, closeOverlayPanels(null) já removia a classe "open", e o
+  // .toggle() seguinte a colocava de volta, cancelando o fechamento (o
+  // painel "reabria sozinho"). Agora abrir e fechar são dois caminhos
+  // separados, sem o duplo toggle.
+  const willOpen = !panel.classList.contains('open');
+  if(willOpen){
+    closeOverlayPanels('settings');
+    panel.classList.add('open');
+  } else {
+    panel.classList.remove('open');
+  }
+}
+
+/* Botão "Salvar configurações" no fim do painel — cada campo já salva
+   sozinho assim que muda (chamadas de saveState() espalhadas pelos
+   setters, ver setTheme/setResponseStyle/toggleNotifySound etc.), então
+   tecnicamente nada fica "pendente" pra salvar. Esse botão existe pelo
+   valor de dar uma confirmação clara e visível de que está tudo salvo
+   (toast) antes de fechar a tela cheia de Configurações, em vez da pessoa
+   simplesmente fechar sem nenhum feedback. */
+function saveSettingsAndClose(){
+  saveState();
+  showToast('✅ Configurações salvas.');
+  toggleSettings();
 }
 
 function toggleTemplates(){

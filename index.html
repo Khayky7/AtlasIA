@@ -9965,7 +9965,19 @@ function applyLoadedState(saved){
   conversations = saved.conversations || [];
   currentConvId = saved.currentConvId;
   convCounter = saved.convCounter || conversations.length;
-  maxConversationsLimit = [50, 100, 200, 500].includes(saved.maxConversationsLimit) ? saved.maxConversationsLimit : 200;
+  // BUG CORRIGIDO: os campos abaixo (maxConversationsLimit, chatFontSize,
+  // vlowLink, Reajuste, lastSeenWorkspace, lastDailySummaryDate) nunca são
+  // salvos na nuvem de propósito (ver syncStateToCloud — o appState de lá
+  // não inclui nenhum deles). O código antigo, ao aplicar o estado vindo
+  // da NUVEM (reconcileCloudState → applyLoadedState(cloudState), depois
+  // do login), resetava esses campos pro valor padrão sempre que
+  // "saved.<campo>" não existia — o que sempre acontece pra estado vindo
+  // da nuvem! Na prática isso apagava o link do Vlow, os dados do
+  // Reajuste etc. toda vez que a pessoa logava, mesmo já estando tudo
+  // certo um instante antes. Agora só atualiza quando o campo realmente
+  // veio em "saved" (ou seja, quando é estado local de verdade) —
+  // aplicar estado da nuvem simplesmente preserva o que já estava.
+  if([50, 100, 200, 500].includes(saved.maxConversationsLimit)) maxConversationsLimit = saved.maxConversationsLimit;
   trimConversations();
   currentMode = MODES[saved.currentMode] ? saved.currentMode : 'credenciamento';
   memoryNotes = Array.isArray(saved.memoryNotes) ? saved.memoryNotes : [];
@@ -9973,16 +9985,16 @@ function applyLoadedState(saved){
   accentColor = ACCENT_PRESETS[saved.accentColor] ? saved.accentColor : 'azul';
   notifySound = !!saved.notifySound;
   responseStyle = RESPONSE_STYLE_GUIDES[saved.responseStyle] ? saved.responseStyle : 'equilibrada';
-  chatFontSize = (saved.chatFontSize === 'small' || saved.chatFontSize === 'large') ? saved.chatFontSize : 'medium';
-  vlowLink = typeof saved.vlowLink === 'string' ? saved.vlowLink : '';
+  if(saved.chatFontSize === 'small' || saved.chatFontSize === 'large' || saved.chatFontSize === 'medium') chatFontSize = saved.chatFontSize;
+  if(typeof saved.vlowLink === 'string') vlowLink = saved.vlowLink;
   // Reajuste: fica só neste aparelho (não sincroniza com a nuvem, mesmo
   // logado) — dado sensível de preço/negociação, sem tabela nova no Supabase.
-  reajusteExams = Array.isArray(saved.reajusteExams) ? saved.reajusteExams : [];
-  reajustePercent = typeof saved.reajustePercent === 'number' ? saved.reajustePercent : 5;
-  reajusteClinicaValor = typeof saved.reajusteClinicaValor === 'number' ? saved.reajusteClinicaValor : null;
-  reajusteVixtingValor = typeof saved.reajusteVixtingValor === 'number' ? saved.reajusteVixtingValor : null;
-  lastSeenWorkspace = (saved.lastSeenWorkspace && typeof saved.lastSeenWorkspace === 'object') ? saved.lastSeenWorkspace : {};
-  lastDailySummaryDate = typeof saved.lastDailySummaryDate === 'string' ? saved.lastDailySummaryDate : '';
+  if(Array.isArray(saved.reajusteExams)) reajusteExams = saved.reajusteExams;
+  if(typeof saved.reajustePercent === 'number') reajustePercent = saved.reajustePercent;
+  if(typeof saved.reajusteClinicaValor === 'number') reajusteClinicaValor = saved.reajusteClinicaValor;
+  if(typeof saved.reajusteVixtingValor === 'number') reajusteVixtingValor = saved.reajusteVixtingValor;
+  if(saved.lastSeenWorkspace && typeof saved.lastSeenWorkspace === 'object') lastSeenWorkspace = saved.lastSeenWorkspace;
+  if(typeof saved.lastDailySummaryDate === 'string') lastDailySummaryDate = saved.lastDailySummaryDate;
 
   selectProvider(apiProvider);
   document.getElementById('profileNameInput').value = saved.profileName || 'Você';

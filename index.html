@@ -2915,6 +2915,21 @@ const PROVIDER_INFO = {
   }
 };
 
+/* Devolve a chave pessoal guardada (`apiKey`) SÓ se ela realmente bater com
+   o formato esperado do provedor pedido — nunca uma chave "genérica" que
+   pode ter sobrado de uma troca de provedor anterior (ver correção em
+   selectProvider/providerFetch). Sem argumento, valida contra o provedor de
+   chat selecionado agora (apiProvider); passe 'openai' explicitamente nas
+   chamadas que são sempre da OpenAI independentemente do provedor de chat
+   selecionado (embeddings do RAG, ver embedText). Sem isso, uma chave do
+   Gemini deixada no estado podia ser mandada pra OpenAI (ou vice-versa) e
+   gerar um 401 confuso, com um valor que não parecia nem uma coisa nem
+   outra — foi exatamente o que aconteceu no primeiro relato desse bug. */
+function getValidPersonalKey(providerId){
+  const info = PROVIDER_INFO[providerId || apiProvider];
+  return (apiKey && info && info.validate(apiKey)) ? apiKey : null;
+}
+
 function selectProvider(provider){
   apiProvider = provider;
   document.getElementById('providerGeminiBtn').classList.toggle('active', provider === 'gemini');
@@ -2922,6 +2937,20 @@ function selectProvider(provider){
   document.getElementById('apiKeyInput').placeholder = PROVIDER_INFO[provider].placeholder;
   document.getElementById('getKeyLink').href = PROVIDER_INFO[provider].signupUrl;
   document.getElementById('providerHint').textContent = PROVIDER_INFO[provider].hint;
+  // Bug corrigido: antes, trocar de provedor mantinha a chave do provedor
+  // ANTERIOR guardada em `apiKey` e, como callOpenAIModel/callGeminiModel só
+  // checam "if(apiKey)" sem checar se ela é do formato certo pro provedor
+  // atual, uma chave do Gemini (validação solta) acabava sendo mandada pra
+  // OpenAI (que exige "sk-...") e vice-versa — dando 401 com uma mensagem de
+  // erro mostrando um valor que não parece nem uma coisa nem outra. Agora, se
+  // a chave guardada não bate com o formato do provedor recém-selecionado,
+  // ela é limpa (do estado e do campo) em vez de ficar "escondida" causando
+  // erro só na próxima mensagem.
+  if(apiKey && !PROVIDER_INFO[provider].validate(apiKey)){
+    apiKey = null;
+    document.getElementById('apiKeyInput').value = '';
+    addBotMessage('A chave que estava guardada era de outro provedor e foi removida ao trocar pra ' + PROVIDER_INFO[provider].label + '. Cole uma chave válida da ' + PROVIDER_INFO[provider].label + ' em Configurações pra continuar usando IA generativa com chave própria' + (cloudUser ? ', ou deixe em branco pra usar a IA da empresa (já que você está logado).' : '.'));
+  }
   populateModelSelect();
   updateStatusPill();
   saveState();
@@ -7328,7 +7357,8 @@ function isImagensMetaQuestion(text){
 
 async function generateImageOpenAI(prompt){
   const headers = { 'Content-Type': 'application/json' };
-  if(apiKey) headers['Authorization'] = 'Bearer ' + apiKey;
+  const key = getValidPersonalKey('openai');
+  if(key) headers['Authorization'] = 'Bearer ' + key;
   const res = await providerFetch('https://api.openai.com/v1/images/generations', {
     method: 'POST',
     headers: headers,
@@ -7347,7 +7377,8 @@ const GEMINI_IMAGE_MODEL = 'gemini-2.5-flash-image';
 
 async function generateImageGemini(prompt){
   const headers = { 'Content-Type': 'application/json' };
-  if(apiKey) headers['x-goog-api-key'] = apiKey;
+  const key = getValidPersonalKey('gemini');
+  if(key) headers['x-goog-api-key'] = key;
   const res = await providerFetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_IMAGE_MODEL}:generateContent`, {
     method: 'POST',
     headers: headers,
@@ -7794,11 +7825,11 @@ const EMBEDDING_MODEL = 'text-embedding-3-small';
 async function embedText(text){
   if(!text || !text.trim()) return null;
   const canUseCompanyKey = !!cloudUser;
-  const canUsePersonalOpenAiKey = !!apiKey && apiProvider === 'openai';
-  if(!canUseCompanyKey && !canUsePersonalOpenAiKey) return null;
+  const personalOpenAiKey = apiProvider === 'openai' ? getValidPersonalKey('openai') : null;
+  if(!canUseCompanyKey && !personalOpenAiKey) return null;
   try{
     const headers = { 'Content-Type': 'application/json' };
-    if(canUsePersonalOpenAiKey) headers['Authorization'] = 'Bearer ' + apiKey;
+    if(personalOpenAiKey) headers['Authorization'] = 'Bearer ' + personalOpenAiKey;
     const res = await providerFetch('https://api.openai.com/v1/embeddings', {
       method: 'POST',
       headers: headers,
@@ -8023,10 +8054,17 @@ async function callAiProxy(url, options, timeoutMs){
    nenhuma mudança de rota), ou — quando não há chave pessoal mas a pessoa
    está logada — passa pelo ai-proxy. Se não há nem chave nem login, lança
    um erro explicativo (quem chama decide se mostra isso ao usuário ou cai
-   pra base local). */
+   pra base local).
+   Proteção extra: se `apiKey` existir mas não bater com o formato esperado
+   pro provedor ATUAL (ex: sobrou uma chave do Gemini guardada enquanto o
+   provedor selecionado agora é OpenAI — cenário que gerava um 401 confuso
+   antes desta correção), ela é tratada como se não existisse aqui, caindo
+   pro ai-proxy (se logado) em vez de ser mandada errada pra API. */
 async function providerFetch(url, options, timeoutMs){
-  if(apiKey) return await fetchWithTimeout(url, options, timeoutMs);
+  const validKeyForCurrentProvider = apiKey && PROVIDER_INFO[apiProvider] && PROVIDER_INFO[apiProvider].validate(apiKey);
+  if(validKeyForCurrentProvider) return await fetchWithTimeout(url, options, timeoutMs);
   if(cloudUser) return await callAiProxy(url, options, timeoutMs);
+  if(apiKey) throw new Error('A chave guardada não parece ser da ' + (PROVIDER_INFO[apiProvider] ? PROVIDER_INFO[apiProvider].label : apiProvider) + ' (provedor selecionado agora em Configurações). Cole uma chave válida, ou faça login para usar a IA da empresa.');
   throw new Error('Ative a IA generativa em Configurações (com sua própria chave) ou faça login para usar a IA da empresa.');
 }
 
@@ -8061,11 +8099,14 @@ async function callOpenAIModel(model, systemPrompt, userText, image){
         { type: 'image_url', image_url: { url: image.dataUrl } }
       ]
     : userText;
-  // Com chave pessoal, manda a Authorization aqui mesmo (chamada direta, como
-  // sempre). Sem chave pessoal (login via ai-proxy), NÃO manda Authorization
-  // nenhuma pra OpenAI — a Edge Function injeta a chave da empresa no servidor.
+  // Com chave pessoal (válida pra OpenAI), manda a Authorization aqui mesmo
+  // (chamada direta, como sempre). Sem chave pessoal válida (login via
+  // ai-proxy, ou chave guardada que era de outro provedor), NÃO manda
+  // Authorization nenhuma pra OpenAI — a Edge Function injeta a chave da
+  // empresa no servidor.
   const headers = { 'Content-Type': 'application/json' };
-  if(apiKey) headers['Authorization'] = 'Bearer ' + apiKey;
+  const openAiKey = getValidPersonalKey('openai');
+  if(openAiKey) headers['Authorization'] = 'Bearer ' + openAiKey;
   const res = await providerFetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: headers,
@@ -8110,7 +8151,8 @@ async function callOpenAIModel(model, systemPrompt, userText, image){
    suporta imagem (uso de imagem cai direto em callOpenAIModel). */
 async function callOpenAIModelSearch(model, systemPrompt, userText){
   const headers = { 'Content-Type': 'application/json' };
-  if(apiKey) headers['Authorization'] = 'Bearer ' + apiKey;
+  const openAiKey = getValidPersonalKey('openai');
+  if(openAiKey) headers['Authorization'] = 'Bearer ' + openAiKey;
   const res = await providerFetch('https://api.openai.com/v1/responses', {
     method: 'POST',
     headers: headers,
@@ -8298,7 +8340,8 @@ async function callGeminiModel(model, systemPrompt, userText, image, useSearch){
   // chamada direta (chave pessoal) quanto pra quando ela passa pelo
   // ai-proxy (que reaproveita o campo "headers" do pedido).
   const headers = { 'Content-Type': 'application/json' };
-  if(apiKey) headers['x-goog-api-key'] = apiKey;
+  const geminiKey = getValidPersonalKey('gemini');
+  if(geminiKey) headers['x-goog-api-key'] = geminiKey;
   const body = {
     system_instruction: { parts: [{ text: systemPrompt }] },
     contents: [{ role: 'user', parts }],

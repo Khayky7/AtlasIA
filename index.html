@@ -8737,3 +8737,21 @@ window.onload = () => {
 </script>
 </body>
 </html>
+const CACHE_NAME = "atlasia-v1";
+
+const urls = [
+    "/",
+    "/index.html",
+    "/style.css",
+    "/app.js",
+    "/logo.png"
+];
+
+self.addEventListener("install", event => {
+    event.waitUntil(
+        caches.open(CACHE_NAME).then(cache => cache.addAll(urls))
+    );
+});
+if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/service-worker.js");
+}

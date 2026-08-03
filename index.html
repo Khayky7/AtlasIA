@@ -36,7 +36,7 @@
      reescrever todos os handlers pra addEventListener, fora do escopo desta
      passada. O resto (connect/img/font/worker/object/frame/base/form) está
      restrito à lista real de domínios que o app usa. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' https://generativelanguage.googleapis.com https://api.openai.com https://*.supabase.co wss://*.supabase.co; worker-src 'self' blob: https://cdnjs.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' https://generativelanguage.googleapis.com https://api.openai.com https://*.supabase.co wss://*.supabase.co; worker-src 'self' blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; object-src 'none'; base-uri 'self'; form-action 'self';">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -8118,45 +8118,33 @@ function truncateText(text, max){
   return text.length > max ? text.slice(0, max) + '\n\n[...conteúdo truncado por tamanho...]' : text;
 }
 
-// Dois espelhos pra cada arquivo do pdf.js — cdnjs como principal, jsDelivr
-// como alternativa — pra não depender de um único CDN respondendo (ver
-// loadScriptOnce, que já tenta cada um 2x antes de cair pro próximo).
-const PDFJS_MAIN_URLS = [
-  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.js',
-  'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.min.js'
-];
-const PDFJS_WORKER_URLS = [
-  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js',
-  'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.worker.min.js'
-];
+// pdf.js agora é publicado dentro do próprio repositório do AtlasIA (pasta
+// vendor/pdfjs/, ao lado do index.html), em vez de vir de um CDN externo
+// (cdnjs/jsDelivr). Isso resolve de vez o caso de rede corporativa/firewall
+// bloqueando domínios externos — nesse cenário, nem um segundo espelho
+// ajuda, porque os dois ficam fora do alcance da rede. Servindo do mesmo
+// domínio do app (GitHub Pages), não existe mais essa dependência externa
+// pra ler PDF: a mesma rede que já carrega o AtlasIA carrega isso também.
+const PDFJS_MAIN_PATH = './vendor/pdfjs/pdf.min.mjs';
+const PDFJS_WORKER_PATH = './vendor/pdfjs/pdf.worker.min.mjs';
+let pdfjsLibPromise = null;
 
 async function extractPdfText(file){
-  if(typeof pdfjsLib === 'undefined'){
-    try{
-      await loadScriptOnce(PDFJS_MAIN_URLS);
-    }catch(e){
-      throw new Error('A biblioteca de leitura de PDF não carregou mesmo depois de tentar o servidor principal e um espelho alternativo — confira sua conexão e tente de novo em instantes.');
-    }
+  if(!pdfjsLibPromise) pdfjsLibPromise = import(PDFJS_MAIN_PATH);
+  let pdfjsLib;
+  try{
+    pdfjsLib = await pdfjsLibPromise;
+  }catch(e){
+    pdfjsLibPromise = null;
+    throw new Error('A biblioteca de leitura de PDF (publicada dentro do próprio site, na pasta vendor/pdfjs) não carregou. Confirme que essa pasta foi enviada junto com o index.html no GitHub — sem ela, essa função não funciona.');
   }
-  if(typeof pdfjsLib === 'undefined'){
-    throw new Error('A biblioteca de leitura de PDF não carregou mesmo depois de tentar o servidor principal e um espelho alternativo — confira sua conexão e tente de novo em instantes.');
-  }
+  pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_PATH;
   const buf = await file.arrayBuffer();
   let pdf;
   try{
-    pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URLS[0];
     pdf = await pdfjsLib.getDocument({ data: buf }).promise;
   }catch(err){
-    // Se o "worker" específico (peça interna do pdf.js, carregada à parte
-    // do script principal) falhou — comum quando um bloqueador de anúncios
-    // ou firewall corporativo bloqueia só esse domínio — tenta de novo com
-    // o espelho alternativo antes de desistir.
-    try{
-      pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URLS[1];
-      pdf = await pdfjsLib.getDocument({ data: buf }).promise;
-    }catch(err2){
-      throw new Error('A biblioteca de PDF carregou, mas não consegui processar esse arquivo específico. Confirme que ele não está corrompido ou protegido por senha, e tente de novo.');
-    }
+    throw new Error('A biblioteca de PDF carregou, mas não consegui processar esse arquivo específico. Confirme que ele não está corrompido ou protegido por senha, e tente de novo.');
   }
   let text = '';
   const maxPages = Math.min(pdf.numPages, 30);
@@ -8169,16 +8157,72 @@ async function extractPdfText(file){
   return { text: text.trim(), rows: null };
 }
 
+/* Parser de CSV em JS puro, sem nenhuma biblioteca externa — usado como
+   fallback quando XLSX_LIB_URLS não carrega (rede bloqueando cdnjs/
+   jsDelivr) e o arquivo é .csv (não dá pra ler .xlsx/.xls binário sem uma
+   lib de verdade, mas CSV é texto simples, então dá pra ler sozinho).
+   Detecta ";" como separador quando faz mais sentido que "," — comum em
+   exportações de Excel em português (PT-BR usa "," como separador
+   decimal, então o Excel usa ";" pra separar colunas nesse idioma). */
+function parseCsvText(text){
+  const firstLine = (text.split(/\r?\n/, 1)[0] || '');
+  const commaCount = (firstLine.match(/,/g) || []).length;
+  const semicolonCount = (firstLine.match(/;/g) || []).length;
+  const delimiter = semicolonCount > commaCount ? ';' : ',';
+
+  const rows = [];
+  let row = [], field = '', inQuotes = false;
+  for(let i = 0; i < text.length; i++){
+    const c = text[i];
+    if(inQuotes){
+      if(c === '"'){
+        if(text[i + 1] === '"'){ field += '"'; i++; }
+        else inQuotes = false;
+      } else field += c;
+    } else {
+      if(c === '"') inQuotes = true;
+      else if(c === delimiter){ row.push(field); field = ''; }
+      else if(c === '\n'){ row.push(field); rows.push(row); row = []; field = ''; }
+      else if(c === '\r'){ /* ignora — o \n logo depois fecha a linha */ }
+      else field += c;
+    }
+  }
+  if(field !== '' || row.length){ row.push(field); rows.push(row); }
+  if(!rows.length) return [];
+
+  const headers = rows[0].map(h => h.trim());
+  return rows.slice(1)
+    .filter(r => r.some(v => (v || '').trim() !== ''))
+    .map(r => {
+      const obj = {};
+      headers.forEach((h, idx) => { obj[h || ('col' + idx)] = r[idx] !== undefined ? r[idx] : ''; });
+      return obj;
+    });
+}
+
 async function extractSpreadsheetText(file){
+  const ext = (file.name || '').toLowerCase().split('.').pop();
   if(typeof XLSX === 'undefined'){
     try{
       await loadScriptOnce(XLSX_LIB_URLS);
     }catch(e){
-      throw new Error('A biblioteca de leitura de planilha não carregou (verifique sua conexão) — tente recarregar a página.');
+      // .xlsx/.xls são formato binário — só uma lib de verdade sabe ler.
+      // .csv é texto simples, então mesmo sem a lib externa (rede
+      // bloqueando cdnjs/jsDelivr) dá pra ler com o parser embutido acima,
+      // sem depender de nenhum servidor externo.
+      if(ext === 'csv'){
+        const text = await file.text();
+        return { text, rows: parseCsvText(text) };
+      }
+      throw new Error('A biblioteca de leitura de planilha não carregou (verifique sua conexão) — tente recarregar a página. Se possível, exporte esse arquivo como .csv: esse formato continua funcionando mesmo sem essa biblioteca.');
     }
   }
   if(typeof XLSX === 'undefined'){
-    throw new Error('A biblioteca de leitura de planilha não carregou (verifique sua conexão) — tente recarregar a página.');
+    if(ext === 'csv'){
+      const text = await file.text();
+      return { text, rows: parseCsvText(text) };
+    }
+    throw new Error('A biblioteca de leitura de planilha não carregou (verifique sua conexão) — tente recarregar a página. Se possível, exporte esse arquivo como .csv: esse formato continua funcionando mesmo sem essa biblioteca.');
   }
   const buf = await file.arrayBuffer();
   const wb = XLSX.read(buf, { type: 'array' });
@@ -8802,6 +8846,22 @@ async function rowsToXlsxBlob(rows, sheetName){
   return new Blob([out], { type: 'application/octet-stream' });
 }
 
+/* Gera um .csv em JS puro, sem nenhuma lib externa — usado como fallback
+   de rowsToXlsxBlob quando XLSX_LIB_URLS não carrega (rede bloqueando
+   cdnjs/jsDelivr), pra generateSpreadsheetAdjustment nunca ficar sem
+   nenhum jeito de devolver o resultado. */
+function rowsToCsvBlob(rows){
+  if(!rows.length) return new Blob([''], { type: 'text/csv;charset=utf-8' });
+  const headers = Object.keys(rows[0]);
+  const escapeCsvField = (v) => {
+    const s = v === null || v === undefined ? '' : String(v);
+    return /[",;\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  const lines = [headers.map(escapeCsvField).join(',')];
+  rows.forEach(row => lines.push(headers.map(h => escapeCsvField(row[h])).join(',')));
+  return new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+}
+
 /* Mensagem de bot com um link real de download (não markdown — assim
    funciona independente do sanitizador de markdown aceitar ou não URLs
    blob:). Não fica gravada no histórico da conversa (o arquivo em si não
@@ -8887,8 +8947,19 @@ async function generateSpreadsheetAdjustment(instructionText, explicitAttachment
 
   try{
     const baseName = attachment.name.replace(/\.[^.]+$/, '');
-    const blob = await rowsToXlsxBlob(result.rows, baseName);
-    addDownloadableFileMessage('Planilha pronta pra baixar (o arquivo não fica salvo no histórico da conversa — baixe agora):', blob, baseName + '_reajustado.xlsx');
+    let blob, downloadName, fallbackNote = '';
+    try{
+      blob = await rowsToXlsxBlob(result.rows, baseName);
+      downloadName = baseName + '_reajustado.xlsx';
+    }catch(xlsxErr){
+      // A biblioteca de planilha não carregou (ex: rede bloqueando CDN
+      // externo) — ainda dá pra devolver o resultado como .csv puro
+      // (gerado sem nenhuma lib externa), em vez de simplesmente falhar.
+      blob = rowsToCsvBlob(result.rows);
+      downloadName = baseName + '_reajustado.csv';
+      fallbackNote = ' (em .csv, porque a biblioteca de planilha não carregou agora — abre normalmente no Excel também)';
+    }
+    addDownloadableFileMessage('Planilha pronta pra baixar' + fallbackNote + ' (o arquivo não fica salvo no histórico da conversa — baixe agora):', blob, downloadName);
   }catch(err){
     addBotMessage('Calculei os valores certinho, mas não consegui gerar o arquivo pra download agora (' + err.message + '). Tente de novo em instantes.');
   }

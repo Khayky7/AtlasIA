@@ -1832,6 +1832,22 @@
     flex-shrink:0;
   }
   .attachment-chip-remove:hover{ color:var(--danger); background:rgba(224,87,95,.12); }
+  .attachment-chip-action{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    cursor:pointer;
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    font-size:11.5px;
+    font-weight:700;
+    padding:5px 10px;
+    border-radius:999px;
+    flex-shrink:0;
+    white-space:nowrap;
+  }
+  .attachment-chip-action:hover{ filter:brightness(1.08); }
 
   .slash-menu{
     display:none;
@@ -2425,6 +2441,7 @@
     </div>
     <div id="attachmentChip" class="attachment-chip">
       <span class="attachment-chip-label" id="attachmentChipLabel"></span>
+      <button type="button" id="applyAdjustmentBtn" class="attachment-chip-action" style="display:none" onclick="handleApplyAdjustmentClick()" title="Descreva a regra no campo de texto e clique aqui para aplicar na planilha e baixar o arquivo preenchido">🧮 Aplicar na planilha</button>
       <span class="attachment-chip-remove" onclick="removeAttachment()" title="Remover anexo">✕</span>
     </div>
     <div id="pendingImagePreview" class="pending-image-preview">
@@ -3241,7 +3258,7 @@ async function exportTextAsPdf(text){
   const trimmed = (text || '').trim();
   if(!trimmed){ showToast('Nada pra exportar ainda.'); return; }
   try{
-    await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+    await loadScriptOnce(JSPDF_LIB_URLS);
     if(typeof window.jspdf === 'undefined' || !window.jspdf.jsPDF) throw new Error('jsPDF não carregou');
 
     const { jsPDF } = window.jspdf;
@@ -4757,6 +4774,13 @@ let reajusteClinicaValor = null; // R$ mensal pedido pela clínica (negociação
 let reajusteVixtingValor = null; // R$ mensal máximo aceitável pela Vixting
 let reajusteExamCounter = 0;
 
+// Planilha anexada direto na tela do Reajuste, pra reajuste em lote (em
+// vez de digitar exame por exame acima) — mesmo motor determinístico do
+// chat (generateSpreadsheetAdjustment/applyAdjustmentRecipe), só que com
+// uma entrada dedicada aqui dentro. Não persiste (igual currentAttachments
+// do chat): { name, rows, rowCount, profile }.
+let reajusteAttachedSheet = null;
+
 function formatBRL(v){
   const n = Number(v) || 0;
   return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -4802,6 +4826,25 @@ function renderReajusteView(){
   addBtn.textContent = '+ Adicionar exame';
   addBtn.onclick = addReajusteExamRow;
   wrap.appendChild(addBtn);
+
+  const sheetIntro = document.createElement('p');
+  sheetIntro.className = 'vlow-subtitle';
+  sheetIntro.style.cssText = 'margin-top:18px; font-weight:700;';
+  sheetIntro.textContent = 'Ou, em vez de digitar exame por exame: anexe uma planilha, descreva a regra do reajuste e baixe o arquivo já preenchido.';
+  wrap.appendChild(sheetIntro);
+
+  const sheetFileInput = document.createElement('input');
+  sheetFileInput.type = 'file';
+  sheetFileInput.id = 'reajusteSheetFileInput';
+  sheetFileInput.accept = '.xlsx,.xls,.csv';
+  sheetFileInput.style.display = 'none';
+  sheetFileInput.onchange = handleReajusteSheetSelect;
+  wrap.appendChild(sheetFileInput);
+
+  const sheetSection = document.createElement('div');
+  sheetSection.id = 'reajusteSheetSection';
+  sheetSection.style.marginTop = '8px';
+  wrap.appendChild(sheetSection);
 
   const percentRow = document.createElement('div');
   percentRow.className = 'workspace-form';
@@ -4879,6 +4922,126 @@ function renderReajusteView(){
 
   renderReajusteExamsList();
   renderReajusteResults();
+  renderReajusteSheetSection();
+}
+
+/* Desenha o bloco de anexo de planilha do Reajuste — antes de anexar,
+   mostra só o botão de anexar; depois, mostra o nome/linhas do arquivo, o
+   campo pra descrever a regra e o botão de aplicar. Redesenhado sempre que
+   reajusteAttachedSheet muda (anexar/remover), pra não precisar de mais
+   estado espalhado pela função de render principal. */
+function renderReajusteSheetSection(){
+  const container = document.getElementById('reajusteSheetSection');
+  if(!container) return;
+  container.innerHTML = '';
+
+  if(!reajusteAttachedSheet){
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'vlow-share-btn';
+    btn.id = 'reajusteAttachSheetBtn';
+    btn.textContent = '📎 Anexar planilha pra reajuste em lote';
+    btn.onclick = () => document.getElementById('reajusteSheetFileInput').click();
+    container.appendChild(btn);
+    return;
+  }
+
+  const chip = document.createElement('div');
+  chip.className = 'attachment-chip show';
+  chip.style.cssText = 'margin-bottom:10px;';
+  const chipLabel = document.createElement('span');
+  chipLabel.className = 'attachment-chip-label';
+  chipLabel.textContent = '📎 ' + reajusteAttachedSheet.name + ' (' + reajusteAttachedSheet.rowCount + ' linhas)';
+  chip.appendChild(chipLabel);
+  const chipRemove = document.createElement('span');
+  chipRemove.className = 'attachment-chip-remove';
+  chipRemove.textContent = '✕';
+  chipRemove.title = 'Remover planilha';
+  chipRemove.onclick = removeReajusteSheet;
+  chip.appendChild(chipRemove);
+  container.appendChild(chip);
+
+  const instrLabel = document.createElement('label');
+  instrLabel.className = 'reajuste-field-label';
+  instrLabel.textContent = 'Regra do reajuste (ex: "aumenta 8% na coluna Preço Atual, teto de R$500, chama a coluna nova de Novo Preço")';
+  const instrInput = document.createElement('textarea');
+  instrInput.id = 'reajusteAdjustInstructionInput';
+  instrInput.className = 'workspace-input';
+  instrInput.rows = 2;
+  instrInput.style.cssText = 'resize:vertical; font-family:inherit; width:100%;';
+  instrLabel.appendChild(instrInput);
+  container.appendChild(instrLabel);
+
+  const applyBtn = document.createElement('button');
+  applyBtn.type = 'button';
+  applyBtn.className = 'vlow-share-btn';
+  applyBtn.id = 'reajusteApplySheetBtn';
+  applyBtn.style.marginTop = '8px';
+  applyBtn.textContent = '🧮 Aplicar reajuste e baixar planilha';
+  applyBtn.onclick = handleReajusteApplyToSheetClick;
+  container.appendChild(applyBtn);
+}
+
+/* Lê a planilha anexada na tela do Reajuste (mesmos leitores do chat:
+   extractSpreadsheetText/profileColumns) e guarda em reajusteAttachedSheet
+   — não usa currentAttachments do chat, fica isolado nesta tela. */
+async function handleReajusteSheetSelect(event){
+  const file = event.target.files[0];
+  event.target.value = '';
+  if(!file) return;
+
+  const ext = file.name.toLowerCase().split('.').pop();
+  if(ext !== 'xlsx' && ext !== 'xls' && ext !== 'csv'){
+    addBotMessage('Formato não suportado pra reajuste em lote. Use XLSX, XLS ou CSV.', false);
+    return;
+  }
+
+  const btn = document.getElementById('reajusteAttachSheetBtn');
+  if(btn){ btn.disabled = true; btn.textContent = '📎 Lendo ' + file.name + '...'; }
+
+  try{
+    const result = await extractSpreadsheetText(file);
+    if(!result.rows || !result.rows.length){
+      throw new Error('Não consegui ler nenhuma linha dessa planilha.');
+    }
+    reajusteAttachedSheet = { name: file.name, rows: result.rows, rowCount: result.rows.length, profile: profileColumns(result.rows) };
+    renderReajusteSheetSection();
+    addBotMessage('Anexei **' + file.name + '** (' + reajusteAttachedSheet.rowCount + ' linhas) pra reajuste em lote. Descreva a regra no campo abaixo e clique em "🧮 Aplicar reajuste e baixar planilha".', false);
+  }catch(err){
+    reajusteAttachedSheet = null;
+    renderReajusteSheetSection();
+    addBotMessage('Não consegui ler essa planilha: ' + err.message, false);
+  }
+}
+
+function removeReajusteSheet(){
+  reajusteAttachedSheet = null;
+  renderReajusteSheetSection();
+}
+
+/* Wrapper com estado de loading no botão — a lógica de verdade (interpretar
+   a regra com IA, calcular em código, gerar o .xlsx) é a mesma função
+   usada no anexo de chat (generateSpreadsheetAdjustment), só que aqui
+   passamos reajusteAttachedSheet diretamente em vez de currentAttachments. */
+async function handleReajusteApplyToSheetClick(){
+  const instrInput = document.getElementById('reajusteAdjustInstructionInput');
+  const instruction = ((instrInput && instrInput.value) || '').trim();
+  if(!reajusteAttachedSheet){
+    addBotMessage('Anexe uma planilha primeiro (botão "📎 Anexar planilha pra reajuste em lote" acima).', false);
+    return;
+  }
+  if(!instruction){
+    showToast('Descreva a regra do reajuste no campo de texto antes de clicar.');
+    if(instrInput) instrInput.focus();
+    return;
+  }
+  const btn = document.getElementById('reajusteApplySheetBtn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Aplicando...'; }
+  try{
+    await generateSpreadsheetAdjustment(instruction, reajusteAttachedSheet);
+  } finally {
+    if(btn){ btn.disabled = false; btn.textContent = '🧮 Aplicar reajuste e baixar planilha'; }
+  }
 }
 
 function addReajusteExamRow(){
@@ -7819,19 +7982,62 @@ function hideTyping(){
 /* Carregamento sob demanda das bibliotecas pesadas (pdf.js, xlsx, Chart.js)
    — só baixa cada uma na primeira vez que é realmente necessária, em vez de
    travar o carregamento inicial da página (isso pesava bastante,
-   principalmente no celular). Cacheia a Promise pra nunca carregar 2x. */
-const loadedScriptPromises = {};
-function loadScriptOnce(url){
-  if(loadedScriptPromises[url]) return loadedScriptPromises[url];
-  loadedScriptPromises[url] = new Promise((resolve, reject) => {
+   principalmente no celular). Cacheia a Promise pra nunca carregar 2x.
+
+   Aceita uma URL só (jeito antigo) OU uma lista de URLs — nesse caso tenta
+   a primeira até 2 vezes (rede instável costuma se recuperar numa segunda
+   tentativa rápida) e, se ainda assim falhar, cai pro espelho seguinte da
+   lista antes de desistir de vez. Resolve o problema relatado de "a
+   biblioteca não carregou" ficar dependente de um único CDN/tentativa. */
+function loadSingleScriptAttempt(url){
+  return new Promise((resolve, reject) => {
     const script = document.createElement('script');
     script.src = url;
     script.onload = () => resolve();
-    script.onerror = () => { delete loadedScriptPromises[url]; reject(new Error('Falha ao carregar ' + url)); };
+    script.onerror = () => reject(new Error('Falha ao carregar ' + url));
     document.head.appendChild(script);
   });
-  return loadedScriptPromises[url];
 }
+
+const loadedScriptPromises = {};
+function loadScriptOnce(urls){
+  const list = Array.isArray(urls) ? urls : [urls];
+  const cacheKey = list[0];
+  if(loadedScriptPromises[cacheKey]) return loadedScriptPromises[cacheKey];
+  loadedScriptPromises[cacheKey] = (async () => {
+    let lastErr = null;
+    for(const url of list){
+      for(let attempt = 0; attempt < 2; attempt++){
+        try{
+          await loadSingleScriptAttempt(url);
+          return;
+        }catch(err){
+          lastErr = err;
+          if(attempt === 0) await new Promise(r => setTimeout(r, 700));
+        }
+      }
+    }
+    delete loadedScriptPromises[cacheKey];
+    throw lastErr || new Error('Falha ao carregar biblioteca externa.');
+  })();
+  return loadedScriptPromises[cacheKey];
+}
+
+// Espelhos (cdnjs + jsDelivr) das outras bibliotecas carregadas sob
+// demanda — mesma ideia dos PDFJS_*_URLS logo abaixo, pra nenhuma delas
+// ficar refém de um único CDN respondendo na hora.
+const XLSX_LIB_URLS = [
+  'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
+  'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'
+];
+const CHARTJS_LIB_URLS = [
+  'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js',
+  'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js'
+];
+const JSPDF_LIB_URLS = [
+  'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
+  'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js'
+];
 
 let currentAttachments = []; // { name, text }[] — suporta mais de um arquivo anexado na mesma conversa
 
@@ -7912,20 +8118,46 @@ function truncateText(text, max){
   return text.length > max ? text.slice(0, max) + '\n\n[...conteúdo truncado por tamanho...]' : text;
 }
 
+// Dois espelhos pra cada arquivo do pdf.js — cdnjs como principal, jsDelivr
+// como alternativa — pra não depender de um único CDN respondendo (ver
+// loadScriptOnce, que já tenta cada um 2x antes de cair pro próximo).
+const PDFJS_MAIN_URLS = [
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.js',
+  'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.min.js'
+];
+const PDFJS_WORKER_URLS = [
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js',
+  'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.worker.min.js'
+];
+
 async function extractPdfText(file){
   if(typeof pdfjsLib === 'undefined'){
     try{
-      await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.js');
+      await loadScriptOnce(PDFJS_MAIN_URLS);
     }catch(e){
-      throw new Error('A biblioteca de leitura de PDF não carregou (verifique sua conexão) — tente recarregar a página.');
+      throw new Error('A biblioteca de leitura de PDF não carregou mesmo depois de tentar o servidor principal e um espelho alternativo — confira sua conexão e tente de novo em instantes.');
     }
   }
   if(typeof pdfjsLib === 'undefined'){
-    throw new Error('A biblioteca de leitura de PDF não carregou (verifique sua conexão) — tente recarregar a página.');
+    throw new Error('A biblioteca de leitura de PDF não carregou mesmo depois de tentar o servidor principal e um espelho alternativo — confira sua conexão e tente de novo em instantes.');
   }
-  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js';
   const buf = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+  let pdf;
+  try{
+    pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URLS[0];
+    pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+  }catch(err){
+    // Se o "worker" específico (peça interna do pdf.js, carregada à parte
+    // do script principal) falhou — comum quando um bloqueador de anúncios
+    // ou firewall corporativo bloqueia só esse domínio — tenta de novo com
+    // o espelho alternativo antes de desistir.
+    try{
+      pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URLS[1];
+      pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+    }catch(err2){
+      throw new Error('A biblioteca de PDF carregou, mas não consegui processar esse arquivo específico. Confirme que ele não está corrompido ou protegido por senha, e tente de novo.');
+    }
+  }
   let text = '';
   const maxPages = Math.min(pdf.numPages, 30);
   for(let i = 1; i <= maxPages; i++){
@@ -7940,7 +8172,7 @@ async function extractPdfText(file){
 async function extractSpreadsheetText(file){
   if(typeof XLSX === 'undefined'){
     try{
-      await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
+      await loadScriptOnce(XLSX_LIB_URLS);
     }catch(e){
       throw new Error('A biblioteca de leitura de planilha não carregou (verifique sua conexão) — tente recarregar a página.');
     }
@@ -8005,15 +8237,37 @@ async function handleFileSelect(event){
       throw new Error('Não consegui extrair texto desse arquivo (pode ser uma imagem escaneada sem texto, ou um arquivo vazio).');
     }
 
-    currentAttachments.push({ name: file.name, text: truncateText(result.text, 14000) });
+    const attachment = { name: file.name, text: truncateText(result.text, 14000) };
+    // Pra planilha/CSV, guarda também um perfil calculado com TODAS as
+    // linhas do arquivo (não só a amostra que cabe no texto truncado
+    // acima). É isso que garante números certos em perguntas de
+    // acompanhamento sobre planilhas grandes, onde o texto bruto anexado
+    // pode ter sido cortado bem antes do fim do arquivo — ver uso em
+    // buildIntelligentContext().
+    if((ext === 'xlsx' || ext === 'xls' || ext === 'csv') && result.rows && result.rows.length){
+      attachment.rowCount = result.rows.length;
+      attachment.profile = profileColumns(result.rows);
+      // Guarda as linhas de verdade (não só o texto truncado) — é o que
+      // permite aplicar um reajuste/fórmula linha a linha depois, com
+      // generateSpreadsheetAdjustment(), sem depender de o texto bruto
+      // conter o arquivo inteiro.
+      attachment.rows = result.rows;
+    }
+    currentAttachments.push(attachment);
     label.textContent = currentAttachments.length === 1
       ? '📎 ' + file.name
       : '📎 ' + currentAttachments.length + ' arquivos anexados';
+    updateAttachmentChipActions();
 
     if(hasAiAccess()){
-      addBotMessage('Anexei o arquivo **' + file.name + '**. Pode perguntar sobre o conteúdo dele.');
+      const rowsNote = attachment.rowCount ? ' (' + attachment.rowCount + ' linhas)' : '';
+      addBotMessage('Anexei o arquivo **' + file.name + '**' + rowsNote + '. Pode perguntar sobre o conteúdo dele.');
     } else {
       addBotMessage('Anexei o arquivo **' + file.name + '**, mas pra eu conseguir ler e responder sobre o conteúdo, ative a IA generativa em Configurações (o Gemini é grátis) ou faça login pra usar a IA da empresa.');
+    }
+
+    if(attachment.rows && attachment.rows.length){
+      addBotMessage('💡 Dica: pra aplicar um reajuste/fórmula nessa planilha e baixar o arquivo preenchido, descreva a regra no campo de texto (ex: "aumenta 8% na coluna Preço Atual, teto de R$500") e clique em "🧮 Aplicar na planilha".');
     }
 
     if(result.rows && result.rows.length){
@@ -8034,6 +8288,36 @@ async function handleFileSelect(event){
 function removeAttachment(){
   currentAttachments = [];
   document.getElementById('attachmentChip').classList.remove('show');
+  updateAttachmentChipActions();
+}
+
+/* Mostra/esconde o botão "🧮 Aplicar na planilha" no chip de anexo — só
+   faz sentido quando pelo menos um anexo atual é uma planilha/CSV (tem
+   .rows carregadas), não pra PDF ou imagem. */
+function updateAttachmentChipActions(){
+  const btn = document.getElementById('applyAdjustmentBtn');
+  if(!btn) return;
+  const hasSheet = currentAttachments.some(a => a.rows && a.rows.length);
+  btn.style.display = hasSheet ? 'inline-flex' : 'none';
+}
+
+/* Usa o texto já digitado no campo de mensagem como a instrução do
+   reajuste (em vez de mandar pro chat normal) — assim a pessoa escreve a
+   regra do jeito que já escreveria uma pergunta normal, só que clica num
+   botão diferente pra dizer "aplique isso na planilha e me devolva o
+   arquivo", em vez de só conversar sobre os dados. */
+function handleApplyAdjustmentClick(){
+  const input = document.getElementById('userInput');
+  const instruction = ((input && input.value) || '').trim();
+  if(!instruction){
+    showToast('Descreva a regra do reajuste no campo de texto antes de clicar (ex: "aumenta 8% na coluna Preço Atual, teto de R$500, chama a coluna nova de Novo Preço").');
+    if(input) input.focus();
+    return;
+  }
+  input.value = '';
+  autoResizeInput();
+  addUserMessage(instruction);
+  generateSpreadsheetAdjustment(instruction);
 }
 
 /* =========================================================
@@ -8278,7 +8562,7 @@ function aggregateForChart(rows, spec){
    o resto do app. */
 async function ensureChartJsLoaded(){
   if(typeof Chart !== 'undefined') return true;
-  try{ await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js'); }
+  try{ await loadScriptOnce(CHARTJS_LIB_URLS); }
   catch(e){ return false; }
   return typeof Chart !== 'undefined';
 }
@@ -8389,6 +8673,224 @@ async function generateAiDashboard(rows, fileName){
 
   if(plan.summary && typeof plan.summary === 'string'){
     addBotMessage(plan.summary);
+  }
+}
+
+/* =========================================================
+   REAJUSTE EM LOTE NUMA PLANILHA ANEXADA — pega a planilha/CSV anexada no
+   chat (qualquer modo), a instrução em português que a pessoa descreveu
+   (ex: "aumenta 8% na coluna Preço Atual, teto de R$500") e devolve a
+   MESMA planilha com uma coluna nova calculada, pronta pra baixar em
+   .xlsx.
+
+   Mesma decisão de arquitetura do dashboard (ver profileColumns/
+   aggregateForChart acima): a IA nunca faz a conta linha a linha. Ela só
+   traduz a instrução em texto livre pra uma "receita" estruturada (JSON:
+   qual coluna usar, qual fórmula, condições, teto/piso, arredondamento) —
+   quem aplica essa receita em cada linha de verdade é o código
+   (applyAdjustmentRecipe), de forma determinística. Isso evita o erro
+   clássico de IA "quase acertando" uma conta em massa, que numa planilha
+   de preços/contrato tem impacto financeiro real.
+   ========================================================= */
+
+const ADJUSTMENT_ANALYST_SYSTEM_PROMPT = "Você é um serviço de interpretação de regras de reajuste de planilha extremamente preciso. Sua única tarefa é converter a instrução da pessoa numa regra estruturada e devolver um JSON válido — sem nenhum texto, comentário, explicação ou marcação markdown antes ou depois. Comece a resposta direto em '{' e termine em '}'. Você NUNCA calcula os valores finais das linhas — só decide a fórmula/condições/teto/arredondamento; o cálculo real linha a linha é feito depois por código determinístico, fora do seu alcance. Nunca invente um nome de coluna que não exista no perfil de dados fornecido.";
+
+function buildAdjustmentRecipePrompt(profile, instructionText, fileName){
+  return 'Planilha "' + fileName + '". Perfil das colunas, calculado a partir dos dados reais (use os nomes EXATOS do campo "name" de cada coluna, nunca invente ou traduza um nome):\n' + JSON.stringify(profile) + '\n\n' +
+    'Instrução da pessoa (português, pode ter condições/exceções por categoria):\n"' + instructionText + '"\n\n' +
+    'Converta essa instrução numa regra estruturada. Responda APENAS com um JSON válido, no formato exato:\n' +
+    '{\n' +
+    '  "sourceColumn": "nome exato da coluna numérica de onde parte o cálculo",\n' +
+    '  "targetColumn": "nome da coluna nova a criar com o resultado (se a pessoa não especificar um nome, sugira algo curto e claro, ex: \\"Novo Preço\\")",\n' +
+    '  "rules": [\n' +
+    '    { "when": { "column": "nome exato de uma coluna pra condicionar, ou null se a regra vale pra todas as linhas", "op": "equals|contains|greater_than|less_than", "value": "valor de comparação" }, "operation": "percent|fixed_amount|set_value", "value": 0 }\n' +
+    '  ],\n' +
+    '  "cap": { "min": null, "max": null },\n' +
+    '  "round": "2decimals",\n' +
+    '  "interpretation": "resumo curto (1-3 frases em português) de como você entendeu a instrução, pra mostrar à pessoa antes de aplicar — inclua qualquer suposição que você teve que fazer"\n' +
+    '}\n\n' +
+    'Regras importantes: "rules" é avaliada em ORDEM — a primeira condição que bater em cada linha é a usada. Inclua por último uma regra com "when": null como padrão pra cobrir o resto das linhas, a menos que a pessoa tenha deixado claro que só quer aplicar em casos específicos (nesse caso, deixe isso explícito em "interpretation"). "percent" aplica sourceColumn * (1 + value/100). "fixed_amount" soma value a sourceColumn. "set_value" ignora sourceColumn e usa value fixo. "round" é "2decimals" ou "integer". Se algo da instrução não ficou claro, escolha a interpretação mais razoável e deixe a suposição explícita em "interpretation" — nunca deixe de responder por falta de clareza.';
+}
+
+/* Converte texto de número em formato livre (incluindo formato brasileiro
+   "R$ 1.234,56") num Number. Usada tanto pela condição "when" quanto pelo
+   cálculo principal — planilhas de preço exportadas de outros sistemas
+   frequentemente vêm com moeda/separador de milhar no texto. */
+function parseNumericValue(v){
+  if(typeof v === 'number') return v;
+  if(v === null || v === undefined) return NaN;
+  let s = String(v).trim();
+  if(!s) return NaN;
+  s = s.replace(/R\$\s*/gi, '').trim();
+  if(/^-?\d{1,3}(\.\d{3})*(,\d+)?$/.test(s)){
+    s = s.replace(/\./g, '').replace(',', '.'); // 1.234,56 -> 1234.56
+  } else {
+    s = s.replace(',', '.'); // fallback: uma vírgula decimal solta
+  }
+  const n = parseFloat(s);
+  return isNaN(n) ? NaN : n;
+}
+
+function evalAdjustmentCondition(row, when){
+  if(!when || !when.column) return true;
+  const raw = row[when.column];
+  const op = when.op || 'equals';
+  if(op === 'contains') return String(raw ?? '').toLowerCase().includes(String(when.value ?? '').toLowerCase());
+  if(op === 'greater_than'){
+    const a = parseNumericValue(raw), b = parseNumericValue(when.value);
+    return !isNaN(a) && !isNaN(b) && a > b;
+  }
+  if(op === 'less_than'){
+    const a = parseNumericValue(raw), b = parseNumericValue(when.value);
+    return !isNaN(a) && !isNaN(b) && a < b;
+  }
+  return String(raw ?? '').trim().toLowerCase() === String(when.value ?? '').trim().toLowerCase();
+}
+
+/* O motor determinístico: aplica a receita decidida pela IA em CADA linha
+   de verdade, sem nenhuma matemática feita pelo modelo. Devolve as linhas
+   novas (com a coluna calculada) mais contadores pra explicar à pessoa o
+   que foi aplicado e o que ficou de fora (e por quê). */
+function applyAdjustmentRecipe(rows, recipe){
+  const sourceCol = recipe.sourceColumn;
+  const targetCol = recipe.targetColumn || 'Novo Valor';
+  const rules = Array.isArray(recipe.rules) && recipe.rules.length ? recipe.rules : [{ when: null, operation: 'percent', value: 0 }];
+  const cap = recipe.cap || {};
+  const roundMode = recipe.round === 'integer' ? 'integer' : '2decimals';
+
+  let applied = 0, skippedNoRule = 0, skippedBadNumber = 0;
+  const newRows = rows.map(row => {
+    const base = parseNumericValue(row[sourceCol]);
+    if(isNaN(base)){
+      skippedBadNumber++;
+      return { ...row, [targetCol]: '' };
+    }
+    const rule = rules.find(r => evalAdjustmentCondition(row, r.when));
+    if(!rule){
+      skippedNoRule++;
+      return { ...row, [targetCol]: '' };
+    }
+    let value;
+    if(rule.operation === 'fixed_amount') value = base + Number(rule.value || 0);
+    else if(rule.operation === 'set_value') value = Number(rule.value || 0);
+    else value = base * (1 + Number(rule.value || 0) / 100); // 'percent' (padrão)
+
+    if(cap && cap.max !== null && cap.max !== undefined && !isNaN(cap.max) && value > cap.max) value = cap.max;
+    if(cap && cap.min !== null && cap.min !== undefined && !isNaN(cap.min) && value < cap.min) value = cap.min;
+
+    value = roundMode === 'integer' ? Math.round(value) : Math.round(value * 100) / 100;
+    applied++;
+    return { ...row, [targetCol]: value };
+  });
+
+  return { rows: newRows, applied, skippedNoRule, skippedBadNumber, targetCol };
+}
+
+async function ensureXlsxLoaded(){
+  if(typeof XLSX !== 'undefined') return true;
+  try{ await loadScriptOnce(XLSX_LIB_URLS); }
+  catch(e){ return false; }
+  return typeof XLSX !== 'undefined';
+}
+
+async function rowsToXlsxBlob(rows, sheetName){
+  if(!(await ensureXlsxLoaded())) throw new Error('A biblioteca de planilha não carregou (verifique sua conexão).');
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, (sheetName || 'Planilha').slice(0, 31));
+  const out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  return new Blob([out], { type: 'application/octet-stream' });
+}
+
+/* Mensagem de bot com um link real de download (não markdown — assim
+   funciona independente do sanitizador de markdown aceitar ou não URLs
+   blob:). Não fica gravada no histórico da conversa (o arquivo em si não
+   dá pra persistir no localStorage), então o aviso deixa isso explícito. */
+function addDownloadableFileMessage(introText, blob, downloadFileName){
+  const chat = document.getElementById('chat');
+  const div = document.createElement('div');
+  div.className = 'msg bot';
+  if(introText){
+    const content = document.createElement('div');
+    content.className = 'md';
+    content.innerHTML = renderMarkdown(introText);
+    div.appendChild(content);
+  }
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = downloadFileName;
+  link.className = 'bot-copy-btn';
+  link.textContent = '⬇️ Baixar ' + downloadFileName;
+  link.style.display = 'inline-block';
+  link.style.marginTop = '8px';
+  div.appendChild(link);
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+  if(notifySound) playNotifySound();
+  setTimeout(() => { try{ URL.revokeObjectURL(url); }catch(e){} }, 5 * 60 * 1000);
+}
+
+/* Orquestra o fluxo completo: acha a planilha anexada, pede à IA a receita
+   estruturada da instrução, aplica de verdade em código (nunca confia no
+   cálculo da IA), explica o que foi feito/ficou de fora, e gera o .xlsx
+   pra download. Usada tanto pelo botão "🧮 Aplicar na planilha" do chat
+   (handleApplyAdjustmentClick, sem 2º argumento — busca em
+   currentAttachments) quanto pelo mesmo botão dentro da tela do Reajuste
+   (handleReajusteApplyToSheetClick, que passa reajusteAttachedSheet direto
+   como explicitAttachment, sem depender do anexo global do chat). */
+async function generateSpreadsheetAdjustment(instructionText, explicitAttachment){
+  const attachment = explicitAttachment || currentAttachments.find(a => a.rows && a.rows.length);
+  if(!attachment){
+    addBotMessage('Pra aplicar um reajuste em planilha, anexe primeiro um arquivo XLSX ou CSV (ícone 📎).');
+    return;
+  }
+  if(!instructionText || !instructionText.trim()){
+    addBotMessage('Descreva a regra do reajuste (ex: "aumenta 8% na coluna Preço Atual, teto de R$500, chama a coluna nova de Novo Preço") e clique em "🧮 Aplicar na planilha" de novo.');
+    return;
+  }
+  if(!hasAiAccess()){
+    addBotMessage('Pra aplicar um reajuste automaticamente, ative a IA generativa em Configurações (o Gemini é grátis) ou faça login pra usar a IA da empresa.');
+    return;
+  }
+
+  addBotMessage('🧮 Aplicando a regra na planilha **' + attachment.name + '** (' + attachment.rowCount + ' linhas)...');
+
+  let recipe;
+  try{
+    const raw = await askAIRaw(ADJUSTMENT_ANALYST_SYSTEM_PROMPT, buildAdjustmentRecipePrompt(attachment.profile, instructionText, attachment.name));
+    recipe = extractJsonFromAiText(raw);
+  }catch(err){
+    addBotMessage('Não consegui interpretar a regra agora (' + (err && err.isTimeout ? 'a IA demorou demais pra responder' : 'erro ao consultar a IA') + '). Tente descrever de novo, de um jeito mais direto.');
+    return;
+  }
+
+  if(!recipe || !recipe.sourceColumn || !(attachment.rows[0] && recipe.sourceColumn in attachment.rows[0])){
+    addBotMessage('Não consegui identificar com segurança qual coluna da planilha usar como base do cálculo. Tente citar o nome exato da coluna na sua instrução (ex: "com base na coluna Preço Atual").');
+    return;
+  }
+
+  const result = applyAdjustmentRecipe(attachment.rows, recipe);
+
+  if(!result.applied){
+    addBotMessage('Nenhuma linha recebeu o cálculo — confira se a coluna base ("' + recipe.sourceColumn + '") realmente tem números na planilha, ou se as condições da regra fazem sentido pros dados anexados.');
+    return;
+  }
+
+  let summary = (recipe.interpretation ? '📋 ' + recipe.interpretation + '\n\n' : '') +
+    '✅ Apliquei em ' + result.applied + ' de ' + attachment.rowCount + ' linha(s), na coluna nova **"' + result.targetCol + '"**.';
+  if(result.skippedBadNumber) summary += '\n⚠️ ' + result.skippedBadNumber + ' linha(s) ficaram sem valor porque a coluna base não tinha um número reconhecível.';
+  if(result.skippedNoRule) summary += '\n⚠️ ' + result.skippedNoRule + ' linha(s) ficaram sem valor porque não bateram com nenhuma condição da regra.';
+  summary += '\n\nOs cálculos são exatos (feitos em código, não pela IA) — mas confira se a regra interpretada acima bate com o que você pediu antes de usar a planilha.';
+
+  addBotMessage(summary);
+
+  try{
+    const baseName = attachment.name.replace(/\.[^.]+$/, '');
+    const blob = await rowsToXlsxBlob(result.rows, baseName);
+    addDownloadableFileMessage('Planilha pronta pra baixar (o arquivo não fica salvo no histórico da conversa — baixe agora):', blob, baseName + '_reajustado.xlsx');
+  }catch(err){
+    addBotMessage('Calculei os valores certinho, mas não consegui gerar o arquivo pra download agora (' + err.message + '). Tente de novo em instantes.');
   }
 }
 
@@ -8893,7 +9395,19 @@ const CONTEXT_TOKEN_BUDGET = 6000;
 function buildIntelligentContext(){
   const attachmentsText = currentAttachments.length
     ? "\n\nConteúdo extraído do(s) arquivo(s) que o usuário anexou nesta conversa — use como contexto para responder perguntas sobre eles quando fizer sentido. Esses arquivos podem conter dados sensíveis (pessoais, financeiros ou de saúde) — trate com cuidado: use exatamente o que está no texto abaixo (nunca invente ou estime números/valores que não estejam explícitos nele) e não repita dados sensíveis desnecessariamente na resposta além do que a pergunta pedir:\n\n" +
-      currentAttachments.map(a => "--- Arquivo: " + a.name + " ---\n" + a.text).join('\n\n')
+      currentAttachments.map(a => {
+        let block = "--- Arquivo: " + a.name + (a.rowCount ? " (" + a.rowCount + " linhas no total)" : "") + " ---\n";
+        if(a.profile){
+          // Perfil determinístico calculado com TODAS as linhas do arquivo
+          // (ver handleFileSelect) — sempre mais confiável que o texto
+          // bruto abaixo, que pode estar truncado em planilhas grandes.
+          block += "Perfil REAL e COMPLETO desta planilha, calculado a partir das " + a.rowCount + " linhas do arquivo inteiro (não é amostra): " + JSON.stringify(a.profile) + "\n" +
+            "Regra obrigatória pra esta planilha: para qualquer pergunta com soma, média, contagem, total, maior/menor valor ou outro número agregado, use SEMPRE os valores deste perfil (min/max/sum/avg/distinctCount/topValues) — nunca some ou conte manualmente a partir do texto bruto abaixo, que pode estar truncado e não representar o arquivo inteiro. Se o agregado pedido não estiver neste perfil (ex: cálculo cruzando duas colunas), diga claramente que precisaria reprocessar o arquivo pra esse cálculo específico, em vez de estimar a partir do texto truncado.\n\n" +
+            "Texto bruto do arquivo (útil pra perguntas sobre linhas específicas; pode estar truncado se o arquivo for grande):\n";
+        }
+        block += a.text;
+        return block;
+      }).join('\n\n')
     : '';
   const ragText = ragContext || '';
   const workspaceText = buildWorkspaceDataContext();
@@ -9965,19 +10479,7 @@ function applyLoadedState(saved){
   conversations = saved.conversations || [];
   currentConvId = saved.currentConvId;
   convCounter = saved.convCounter || conversations.length;
-  // BUG CORRIGIDO: os campos abaixo (maxConversationsLimit, chatFontSize,
-  // vlowLink, Reajuste, lastSeenWorkspace, lastDailySummaryDate) nunca são
-  // salvos na nuvem de propósito (ver syncStateToCloud — o appState de lá
-  // não inclui nenhum deles). O código antigo, ao aplicar o estado vindo
-  // da NUVEM (reconcileCloudState → applyLoadedState(cloudState), depois
-  // do login), resetava esses campos pro valor padrão sempre que
-  // "saved.<campo>" não existia — o que sempre acontece pra estado vindo
-  // da nuvem! Na prática isso apagava o link do Vlow, os dados do
-  // Reajuste etc. toda vez que a pessoa logava, mesmo já estando tudo
-  // certo um instante antes. Agora só atualiza quando o campo realmente
-  // veio em "saved" (ou seja, quando é estado local de verdade) —
-  // aplicar estado da nuvem simplesmente preserva o que já estava.
-  if([50, 100, 200, 500].includes(saved.maxConversationsLimit)) maxConversationsLimit = saved.maxConversationsLimit;
+  maxConversationsLimit = [50, 100, 200, 500].includes(saved.maxConversationsLimit) ? saved.maxConversationsLimit : 200;
   trimConversations();
   currentMode = MODES[saved.currentMode] ? saved.currentMode : 'credenciamento';
   memoryNotes = Array.isArray(saved.memoryNotes) ? saved.memoryNotes : [];
@@ -9985,16 +10487,16 @@ function applyLoadedState(saved){
   accentColor = ACCENT_PRESETS[saved.accentColor] ? saved.accentColor : 'azul';
   notifySound = !!saved.notifySound;
   responseStyle = RESPONSE_STYLE_GUIDES[saved.responseStyle] ? saved.responseStyle : 'equilibrada';
-  if(saved.chatFontSize === 'small' || saved.chatFontSize === 'large' || saved.chatFontSize === 'medium') chatFontSize = saved.chatFontSize;
-  if(typeof saved.vlowLink === 'string') vlowLink = saved.vlowLink;
+  chatFontSize = (saved.chatFontSize === 'small' || saved.chatFontSize === 'large') ? saved.chatFontSize : 'medium';
+  vlowLink = typeof saved.vlowLink === 'string' ? saved.vlowLink : '';
   // Reajuste: fica só neste aparelho (não sincroniza com a nuvem, mesmo
   // logado) — dado sensível de preço/negociação, sem tabela nova no Supabase.
-  if(Array.isArray(saved.reajusteExams)) reajusteExams = saved.reajusteExams;
-  if(typeof saved.reajustePercent === 'number') reajustePercent = saved.reajustePercent;
-  if(typeof saved.reajusteClinicaValor === 'number') reajusteClinicaValor = saved.reajusteClinicaValor;
-  if(typeof saved.reajusteVixtingValor === 'number') reajusteVixtingValor = saved.reajusteVixtingValor;
-  if(saved.lastSeenWorkspace && typeof saved.lastSeenWorkspace === 'object') lastSeenWorkspace = saved.lastSeenWorkspace;
-  if(typeof saved.lastDailySummaryDate === 'string') lastDailySummaryDate = saved.lastDailySummaryDate;
+  reajusteExams = Array.isArray(saved.reajusteExams) ? saved.reajusteExams : [];
+  reajustePercent = typeof saved.reajustePercent === 'number' ? saved.reajustePercent : 5;
+  reajusteClinicaValor = typeof saved.reajusteClinicaValor === 'number' ? saved.reajusteClinicaValor : null;
+  reajusteVixtingValor = typeof saved.reajusteVixtingValor === 'number' ? saved.reajusteVixtingValor : null;
+  lastSeenWorkspace = (saved.lastSeenWorkspace && typeof saved.lastSeenWorkspace === 'object') ? saved.lastSeenWorkspace : {};
+  lastDailySummaryDate = typeof saved.lastDailySummaryDate === 'string' ? saved.lastDailySummaryDate : '';
 
   selectProvider(apiProvider);
   document.getElementById('profileNameInput').value = saved.profileName || 'Você';

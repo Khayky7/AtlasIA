@@ -3254,12 +3254,22 @@ function stripMarkdownForExport(text){
     .replace(/^[-*]\s+/gm, '• ');
 }
 
+/* Garante que a lib jsPDF está disponível (mesmo espelho cdnjs/jsDelivr
+   já usado pelo resto do app), no mesmo padrão de ensureXlsxLoaded /
+   ensureChartJsLoaded — usada tanto pela exportação de texto quanto pelo
+   PDF de resumo executivo do BI. */
+async function ensureJsPdfLoaded(){
+  if(typeof window.jspdf !== 'undefined' && window.jspdf.jsPDF) return true;
+  try{ await loadScriptOnce(JSPDF_LIB_URLS); }
+  catch(e){ return false; }
+  return typeof window.jspdf !== 'undefined' && !!window.jspdf.jsPDF;
+}
+
 async function exportTextAsPdf(text){
   const trimmed = (text || '').trim();
   if(!trimmed){ showToast('Nada pra exportar ainda.'); return; }
   try{
-    await loadScriptOnce(JSPDF_LIB_URLS);
-    if(typeof window.jspdf === 'undefined' || !window.jspdf.jsPDF) throw new Error('jsPDF não carregou');
+    if(!(await ensureJsPdfLoaded())) throw new Error('jsPDF não carregou');
 
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ unit: 'pt', format: 'a4' });
@@ -4380,6 +4390,24 @@ function getUpcomingTasks(hoursAhead){
     return due > now && due <= limit;
   });
 }
+/* Mesma lógica de getOverdueTasks/getUpcomingTasks, mas pra prazos de
+   projeto (WORKSPACE_TABLES.projetos já tem due_date) — extensão da IA
+   Proativa existente, pra o resumo diário também avisar sobre projeto
+   atrasado/perto do prazo, não só lembrete com hora marcada. Projetos já
+   marcados como "concluido" nunca entram aqui, atrasado ou não. */
+function getOverdueProjects(){
+  const now = Date.now();
+  return (dataCache.projetos || []).filter(p => p.due_date && p.status !== 'concluido' && new Date(p.due_date).getTime() < now);
+}
+function getUpcomingProjects(daysAhead){
+  const now = Date.now();
+  const limit = now + (daysAhead || 7) * 86400000;
+  return (dataCache.projetos || []).filter(p => {
+    if(!p.due_date || p.status === 'concluido') return false;
+    const due = new Date(p.due_date).getTime();
+    return due >= now && due <= limit;
+  });
+}
 /* Quantos itens de cada aba do Workspace foram criados depois da última
    vez que a pessoa abriu aquela aba (lastSeenWorkspace) — a base tanto do
    aviso na Home quanto da sugestão proativa ao entrar numa aba do
@@ -4439,6 +4467,8 @@ async function maybeShowDailySummary(){
 function buildDailySummaryText(){
   const overdue = getOverdueTasks();
   const upcoming = getUpcomingTasks(24);
+  const overdueProjects = getOverdueProjects();
+  const upcomingProjects = getUpcomingProjects(7);
   const newCounts = getWorkspaceNewCounts();
   const parts = [];
   if(overdue.length){
@@ -4446,6 +4476,12 @@ function buildDailySummaryText(){
   }
   if(upcoming.length){
     parts.push('📅 ' + upcoming.length + ' pra hoje/próximas 24h: ' + upcoming.slice(0, 3).map(t => t.title).join(', ') + (upcoming.length > 3 ? '...' : ''));
+  }
+  if(overdueProjects.length){
+    parts.push('📁 ' + overdueProjects.length + ' projeto' + (overdueProjects.length > 1 ? 's' : '') + ' com prazo vencido: ' + overdueProjects.slice(0, 3).map(p => p.title).join(', ') + (overdueProjects.length > 3 ? '...' : ''));
+  }
+  if(upcomingProjects.length){
+    parts.push('🗓️ ' + upcomingProjects.length + ' projeto' + (upcomingProjects.length > 1 ? 's' : '') + ' com prazo nos próximos 7 dias: ' + upcomingProjects.slice(0, 3).map(p => p.title).join(', ') + (upcomingProjects.length > 3 ? '...' : ''));
   }
   Object.keys(newCounts).forEach(key => {
     if(newCounts[key] > 0){
@@ -8518,9 +8554,16 @@ function buildDashboardPrompt(profile, rows, fileName){
     '      "topN": 8,\n' +
     '      "insight": "1 frase objetiva de insight específico sobre esse gráfico"\n' +
     '    }\n' +
+    '  ],\n' +
+    '  "kpis": [\n' +
+    '    {\n' +
+    '      "label": "Nome curto do indicador de alto nível, pra aparecer num resumo executivo (ex: \\"Ticket médio\\", \\"Total de exames\\")",\n' +
+    '      "metric": "sum" | "avg" | "min" | "max" | "distinctCount" | "count" | "totalRows",\n' +
+    '      "column": "nome exato de uma coluna numérica ou categórica do perfil acima (obrigatório pra toda metric, exceto \\"totalRows\\")"\n' +
+    '    }\n' +
     '  ]\n' +
     '}\n\n' +
-    'Regras: proponha entre 2 e 4 gráficos, cada um respondendo uma pergunta de negócio diferente (ex: quem são os maiores/menores, como evolui no tempo, qual a composição/distribuição). Use "line" só se houver coluna do tipo "date" no perfil. Use nomes de coluna EXATAMENTE como aparecem no campo "name" do perfil.';
+    'Regras: proponha entre 2 e 4 gráficos, cada um respondendo uma pergunta de negócio diferente (ex: quem são os maiores/menores, como evolui no tempo, qual a composição/distribuição). Use "line" só se houver coluna do tipo "date" no perfil. Use nomes de coluna EXATAMENTE como aparecem no campo "name" do perfil. Proponha também entre 3 e 6 "kpis" de alto nível (os indicadores mais importantes pra um resumo executivo de uma página) — sempre com "metric"/"column" existentes no perfil, nunca invente um valor: o cálculo real é feito depois por código determinístico, você só escolhe qual coluna e métrica vira indicador.';
 }
 
 /* Extrai o objeto JSON da resposta da IA, tolerando cercas de código
@@ -8595,6 +8638,50 @@ function aggregateForChart(rows, spec){
     labels: limited.map(e => e.label),
     values: limited.map(e => Math.round(e.value * 100) / 100)
   };
+}
+
+/* Formata um número no padrão pt-BR pra exibição em KPI (2 casas quando
+   não é inteiro, sem casas quando é) — usado tanto no card do resumo
+   quanto no PDF exportado. */
+function formatKpiValue(value){
+  if(value === null || value === undefined || (typeof value === 'number' && isNaN(value))) return '—';
+  if(typeof value !== 'number') return String(value);
+  const isInt = Number.isInteger(value);
+  return value.toLocaleString('pt-BR', { minimumFractionDigits: isInt ? 0 : 2, maximumFractionDigits: 2 });
+}
+
+/* Calcula o valor real de cada KPI proposto pela IA — mesma arquitetura
+   determinística do resto do app (ver profileColumns/aggregateForChart
+   acima): a IA só escolhe QUAL coluna e métrica vira indicador de alto
+   nível; o número em si vem sempre do profile, já calculado a partir de
+   TODAS as linhas (nunca uma amostra) ou, quando necessário, das linhas
+   reais. Ignora silenciosamente qualquer KPI que referencie uma
+   coluna/métrica inexistente, em vez de exibir um valor inventado. */
+function computeKpiValues(profile, rows, kpis){
+  if(!Array.isArray(kpis) || !rows || !rows.length) return [];
+  const byName = {};
+  (profile || []).forEach(p => { byName[p.name] = p; });
+  const results = [];
+  for(const kpi of kpis){
+    if(!kpi || !kpi.label) continue;
+    const metric = kpi.metric;
+    let value = null;
+    if(metric === 'totalRows'){
+      value = rows.length;
+    } else if(metric === 'count'){
+      value = (kpi.column && kpi.column in rows[0])
+        ? rows.filter(r => r[kpi.column] !== '' && r[kpi.column] !== null && r[kpi.column] !== undefined).length
+        : rows.length;
+    } else {
+      const col = kpi.column ? byName[kpi.column] : null;
+      if(!col) continue;
+      if(metric === 'distinctCount') value = typeof col.distinctCount === 'number' ? col.distinctCount : null;
+      else if(metric === 'sum' || metric === 'avg' || metric === 'min' || metric === 'max') value = typeof col[metric] === 'number' ? col[metric] : null;
+    }
+    if(value === null || value === undefined || (typeof value === 'number' && isNaN(value))) continue;
+    results.push({ label: kpi.label, value, formatted: formatKpiValue(value) });
+  }
+  return results;
 }
 
 /* Desenha um card de gráfico do dashboard (bar/line/pie), no mesmo
@@ -8678,11 +8765,123 @@ async function renderDashboardChart(spec, data){
   }catch(e){ /* falha ao desenhar: ignora silenciosamente, resto do app continua */ }
 }
 
+/* Gera um PDF de uma página com o resumo executivo + KPIs de alto nível
+   em texto/tabela (não imagens de gráfico — mais leve, mais rápido de ler
+   e sem depender do Chart.js) — mesmo padrão visual de cabeçalho/
+   rodapé/paginação do exportTextAsPdf, mas devolvendo um Blob (em vez de
+   chamar doc.save direto) pra poder sair pelo mesmo link de download
+   usado no resto do app (addDownloadableFileMessage). */
+async function generateDashboardPdf(fileName, kpiValues, summary){
+  if(!(await ensureJsPdfLoaded())) throw new Error('jsPDF não carregou.');
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+  const marginX = 48, marginTop = 78, marginBottom = 56;
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const usableWidth = pageWidth - marginX * 2;
+
+  const drawHeader = () => {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(40, 40, 40);
+    doc.text('AtlasIA — Resumo Executivo (BI)', marginX, 38);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(140, 140, 140);
+    doc.text(new Date().toLocaleString('pt-BR'), pageWidth - marginX, 38, { align: 'right' });
+    doc.setDrawColor(220, 220, 220);
+    doc.line(marginX, 48, pageWidth - marginX, 48);
+  };
+  const drawFooter = () => {
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(8);
+    doc.setTextColor(175, 175, 175);
+    doc.text('Gerado pelo AtlasIA a partir de ' + fileName, pageWidth / 2, pageHeight - 28, { align: 'center' });
+  };
+
+  drawHeader();
+  let y = marginTop;
+  const ensureSpace = (needed) => {
+    if(y + needed > pageHeight - marginBottom){
+      drawFooter();
+      doc.addPage();
+      drawHeader();
+      y = marginTop;
+    }
+  };
+
+  if(Array.isArray(kpiValues) && kpiValues.length){
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(25, 25, 25);
+    ensureSpace(20);
+    doc.text('Indicadores-chave', marginX, y);
+    y += 22;
+
+    kpiValues.forEach(kpi => {
+      ensureSpace(34);
+      doc.setDrawColor(230, 230, 230);
+      doc.setFillColor(247, 249, 252);
+      doc.roundedRect(marginX, y - 14, usableWidth, 30, 4, 4, 'F');
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10.5);
+      doc.setTextColor(90, 100, 120);
+      doc.text(String(kpi.label), marginX + 12, y + 4);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
+      doc.setTextColor(30, 30, 30);
+      doc.text(String(kpi.formatted), pageWidth - marginX - 12, y + 5, { align: 'right' });
+      y += 40;
+    });
+    y += 10;
+  }
+
+  if(summary && typeof summary === 'string'){
+    ensureSpace(20);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(25, 25, 25);
+    doc.text('Resumo executivo', marginX, y);
+    y += 20;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11);
+    doc.setTextColor(40, 40, 40);
+    const lines = doc.splitTextToSize(stripMarkdownForExport(summary), usableWidth);
+    const lineHeight = 15;
+    lines.forEach(line => {
+      ensureSpace(lineHeight);
+      doc.text(line, marginX, y);
+      y += lineHeight;
+    });
+  }
+
+  drawFooter();
+  return doc.output('blob');
+}
+
+/* Depois que o plano da IA foi decidido (com ou sem os gráficos terem
+   conseguido ser desenhados), entrega o PDF de resumo executivo com os
+   KPIs de alto nível — não fatal: se a lib jsPDF não carregar ou algo der
+   errado aqui, o resto do dashboard (gráficos/resumo em texto) já foi
+   entregue antes e a pessoa não fica sem nada por causa disso. */
+async function maybeDeliverDashboardPdf(fileName, profile, rows, plan){
+  if(!plan) return;
+  const kpiValues = computeKpiValues(profile, rows, plan.kpis);
+  if(!kpiValues.length) return;
+  try{
+    const baseName = (fileName || 'dashboard').replace(/\.[^.]+$/, '');
+    const blob = await generateDashboardPdf(fileName, kpiValues, plan.summary);
+    addDownloadableFileMessage('📄 Resumo executivo com os indicadores de alto nível, pronto em PDF (o arquivo não fica salvo no histórico da conversa — baixe agora):', blob, baseName + '_resumo_executivo.pdf');
+  }catch(err){ /* não fatal — dashboard/gráficos/resumo em texto já foram entregues acima */ }
+}
+
 /* Orquestra o fluxo completo: perfila as colunas, pede à IA um plano de
    dashboard, agrega os dados de verdade pra cada gráfico proposto e
-   renderiza tudo, seguido do resumo executivo em texto. Se qualquer etapa
-   falhar (IA fora do ar, JSON inválido, etc.), cai de volta pro gráfico
-   simples de sempre, pra nunca deixar o usuário sem nenhuma prévia. */
+   renderiza tudo, seguido do resumo executivo em texto e do PDF de
+   indicadores de alto nível. Se qualquer etapa falhar (IA fora do ar,
+   JSON inválido, etc.), cai de volta pro gráfico simples de sempre, pra
+   nunca deixar o usuário sem nenhuma prévia. */
 async function generateAiDashboard(rows, fileName){
   const profile = profileColumns(rows);
   addBotMessage('🧠 Analisando **' + fileName + '** como uma analista de BI sênior, montando o dashboard...');
@@ -8699,6 +8898,7 @@ async function generateAiDashboard(rows, fileName){
 
   if(!plan || !Array.isArray(plan.charts) || !plan.charts.length){
     await renderQuickChart(rows, fileName);
+    await maybeDeliverDashboardPdf(fileName, profile, rows, plan);
     return;
   }
 
@@ -8712,12 +8912,15 @@ async function generateAiDashboard(rows, fileName){
 
   if(!renderedAny){
     await renderQuickChart(rows, fileName);
+    await maybeDeliverDashboardPdf(fileName, profile, rows, plan);
     return;
   }
 
   if(plan.summary && typeof plan.summary === 'string'){
     addBotMessage(plan.summary);
   }
+
+  await maybeDeliverDashboardPdf(fileName, profile, rows, plan);
 }
 
 /* =========================================================
@@ -9335,7 +9538,8 @@ async function sendMessage(){
         const rawReply = apiProvider === 'gemini' ? await askGemini(questionText, image) : await askOpenAI(questionText, image);
         hideTyping();
         const { clean: cleanMem, found } = extractMemoryTags(rawReply);
-        const { clean, found: taskFound } = extractTaskTags(cleanMem);
+        const { clean: cleanTask, found: taskFound } = extractTaskTags(cleanMem);
+        const { clean, found: actionFound } = extractWorkspaceActionTags(cleanTask);
         addBotMessage(clean || rawReply);
         if(found.length){
           found.forEach(note => addMemoryNote(note));
@@ -9346,6 +9550,25 @@ async function sendMessage(){
             showToast('⚠️ Faça login pra eu conseguir salvar lembretes.');
           } else {
             for(const tf of taskFound){ await createTaskFromChat(tf.title, tf.due); }
+          }
+        }
+        if(actionFound.length){
+          if(!cloudUser){
+            showToast('⚠️ Faça login pra eu conseguir criar registros no Workspace.');
+          } else {
+            for(const action of actionFound){
+              const result = await createWorkspaceRecordFromChat(action.tableKey, action.fields);
+              if(result.ok){
+                showToast('✓ ' + result.heading + ' criado no Workspace.');
+                if(typeof loadWorkspaceItems === 'function') loadWorkspaceItems(action.tableKey);
+              } else if(result.reason === 'campo_obrigatorio_faltando'){
+                showToast('⚠️ Não consegui criar o registro: faltou um campo obrigatório.');
+              } else if(result.reason === 'tabela_invalida'){
+                // Tag mal formada (tabela que a IA não deveria ter usado) — ignora silenciosamente, sem expor erro técnico.
+              } else {
+                showToast('⚠️ Não consegui criar o registro no Workspace agora.');
+              }
+            }
           }
         }
       } else {
@@ -9400,6 +9623,76 @@ function extractTaskTags(text){
     return '';
   }).replace(/\n{3,}/g, '\n\n').trim();
   return { clean, found };
+}
+
+/* =========================================================
+   IA & AUTOMAÇÃO — a IA cria (nunca edita ou apaga) um registro novo
+   direto numa das telas de Workspace da pessoa, a partir de um pedido
+   explícito no chat (ex: "cria uma clínica nova: Clínica Vida, em
+   Salvador, em negociação"). Escopo deliberadamente restrito, pensado pra
+   um contexto de dados de saúde: só executa AÇÕES DENTRO DO PRÓPRIO
+   ATLASIA (nada de webhooks/APIs externas), só nas 4 tabelas que já
+   existem no Workspace (WORKSPACE_TABLES) e só com os campos que cada
+   tabela já declara — qualquer campo fora dessa lista é descartado antes
+   de chegar perto do banco (ver createWorkspaceRecordFromChat). Só entra
+   no prompt quando o modo ativo é "IA & Automação" (ver buildSystemPrompt),
+   pra não disparar criação de registro numa conversa comum sobre outro
+   assunto. */
+const WORKSPACE_ACTION_TAG_REGEX = /\[\[CRIAR_REGISTRO:\s*([a-zA-Z]+)\s*\|\s*(\{[\s\S]*?\})\s*\]\]/g;
+
+function buildWorkspaceActionGuide(){
+  const tablesDesc = Object.keys(WORKSPACE_TABLES).map(key => {
+    const cfg = WORKSPACE_TABLES[key];
+    const fieldsDesc = cfg.fields.map(f => f.key + (f.required ? ' (obrigatório)' : '')).join(', ');
+    return '- "' + key + '" (' + cfg.heading + '): campos permitidos — ' + fieldsDesc;
+  }).join('\n');
+  return "\n\nAção autônoma disponível neste modo: você pode CRIAR (nunca editar nem apagar) um registro novo em uma das telas de Workspace da pessoa, quando ela pedir isso claramente (ex: \"cria uma clínica nova: ...\", \"adiciona um projeto ...\", \"cadastra esse contato na equipe\"). Pra isso, termine sua resposta com uma tag nesse formato exato, numa linha própria:\n[[CRIAR_REGISTRO: chave_da_tabela|{\"campo\":\"valor\"}]]\n\nTabelas e campos permitidos (use só esses nomes de campo, exatamente como estão escritos — nunca invente um campo novo nem uma tabela nova):\n" + tablesDesc + "\n\nRegras importantes: só use essa tag quando a pessoa pedir explicitamente pra criar/adicionar/cadastrar algo — nunca crie um registro por conta própria só porque o assunto foi mencionado de passagem. Use no máximo 1 tag por resposta. O valor depois de \"chave_da_tabela|\" precisa ser um JSON válido de uma linha só, com aspas duplas. Antes da tag, sempre explique em texto normal o que você vai cadastrar, pra pessoa confirmar visualmente o que aconteceu — a tag em si é removida automaticamente e nunca aparece pra ela.";
+}
+
+function extractWorkspaceActionTags(text){
+  const found = [];
+  const clean = (text || '').replace(WORKSPACE_ACTION_TAG_REGEX, (_, tableKey, jsonStr) => {
+    try{
+      const fields = JSON.parse(jsonStr);
+      if(fields && typeof fields === 'object') found.push({ tableKey: tableKey.toLowerCase(), fields });
+    }catch(e){ /* JSON malformado: ignora essa tag silenciosamente, sem travar o resto da resposta */ }
+    return '';
+  }).replace(/\n{3,}/g, '\n\n').trim();
+  return { clean, found };
+}
+
+/* Motor determinístico de gravação — nunca confia cegamente no que a IA
+   mandou: valida que a tabela existe, filtra os campos recebidos pra só
+   os que a tabela realmente declara (evita a IA gravar uma coluna
+   inventada), confere os campos obrigatórios e só então insere — mesmo
+   caminho (client.from(cfg.table).insert) já usado pelo formulário manual
+   em addWorkspaceItem, então qualquer registro criado assim aparece
+   normalmente na tela do Workspace depois. */
+async function createWorkspaceRecordFromChat(tableKey, fieldsObj){
+  const cfg = WORKSPACE_TABLES[tableKey];
+  if(!cfg) return { ok: false, reason: 'tabela_invalida' };
+  if(!cloudUser) return { ok: false, reason: 'login_necessario' };
+  const client = getSupabaseClient();
+  if(!client) return { ok: false, reason: 'sem_conexao' };
+
+  const row = {};
+  let missingRequired = false;
+  cfg.fields.forEach(f => {
+    const raw = fieldsObj && typeof fieldsObj === 'object' ? fieldsObj[f.key] : undefined;
+    const value = (raw === undefined || raw === null) ? '' : String(raw).trim();
+    if(f.required && !value) missingRequired = true;
+    row[f.key] = value || null;
+  });
+  if(missingRequired) return { ok: false, reason: 'campo_obrigatorio_faltando' };
+  row.user_id = cloudUser.id;
+
+  try{
+    const { error } = await client.from(cfg.table).insert(row);
+    if(error) throw error;
+    return { ok: true, tableKey, heading: cfg.heading };
+  }catch(e){
+    return { ok: false, reason: 'erro_supabase', error: e };
+  }
 }
 
 /* Instrui o modelo a criar lembretes com hora marcada quando a pessoa pedir
@@ -9538,6 +9831,13 @@ function buildSystemPrompt(){
     const now = new Date();
     prompt += "\n\nData e hora atual: " + now.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' }) + ", " + now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + " (ISO: " + now.toISOString() + "). Use esta referência para calcular datas/horas relativas mencionadas pelo usuário (ex: \"amanhã\", \"daqui a 2 horas\", \"sexta-feira\") — não repita esse texto literalmente para a pessoa, é só uma referência interna.";
     prompt += "\n\n" + TASK_REMINDER_GUIDE;
+  }
+  // Ação autônoma de criar registro no Workspace: só oferecida dentro do
+  // modo "IA & Automação" (ver buildWorkspaceActionGuide acima), pra não
+  // criar risco de a IA disparar isso numa conversa comum sobre outro
+  // assunto.
+  if(currentMode === 'automacao'){
+    prompt += buildWorkspaceActionGuide();
   }
   // Anexos + RAG + dados do Workspace + memória entre conversas, tudo
   // dentro do orçamento de tokens de buildIntelligentContext() (definida

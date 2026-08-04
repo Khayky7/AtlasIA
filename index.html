@@ -3859,6 +3859,24 @@ function escapeHtml(str){
   return div.innerHTML;
 }
 
+/* Faz todo link dentro de uma resposta em markdown abrir em nova aba, em
+   vez de navegar por cima do próprio AtlasIA (que é um PWA/app instalado —
+   sem isso, clicar no link de uma clínica, por exemplo, "saía" do app em
+   vez de só abrir o site ao lado). target="_blank" sozinho seria um risco
+   de segurança (a aba nova ganha acesso a window.opener e poderia
+   redirecionar a aba original) — por isso sempre junto com
+   rel="noopener noreferrer". Roda depois do DOMPurify, manipulando o DOM
+   já sanitizado (não a string), pra não reabrir brecha nenhuma. */
+function openLinksInNewTab(html){
+  const container = document.createElement('div');
+  container.innerHTML = html;
+  container.querySelectorAll('a[href]').forEach(a => {
+    a.setAttribute('target', '_blank');
+    a.setAttribute('rel', 'noopener noreferrer');
+  });
+  return container.innerHTML;
+}
+
 function renderMarkdown(text){
   let html;
   if(typeof marked !== 'undefined'){
@@ -3870,6 +3888,7 @@ function renderMarkdown(text){
   if(typeof DOMPurify !== 'undefined'){
     try{ html = DOMPurify.sanitize(html); }catch(e){ /* segue sem sanitizar se falhar */ }
   }
+  try{ html = openLinksInNewTab(html); }catch(e){ /* não fatal — pior caso, link abre na mesma aba */ }
   return html;
 }
 
@@ -5357,6 +5376,24 @@ async function renderCopilotoForm(){
   clienteLabel.appendChild(clienteInput);
   form.appendChild(clienteLabel);
 
+  const remetenteLabel = document.createElement('label');
+  remetenteLabel.className = 'reajuste-field-label';
+  remetenteLabel.textContent = 'Remetente (seu nome, quem está enviando)';
+  const remetenteInput = document.createElement('input');
+  remetenteInput.type = 'text';
+  remetenteInput.className = 'workspace-input';
+  remetenteInput.id = 'copilotoRemetente';
+  remetenteInput.placeholder = 'Ex: Seu nome completo';
+  // Pré-preenche com o nome do perfil, se a pessoa já personalizou (deixou
+  // de ser o padrão "Você") — só como conveniência, continua editável.
+  {
+    const profileNameEl = document.getElementById('profileNameInput');
+    const profileName = profileNameEl ? profileNameEl.value.trim() : '';
+    if(profileName && profileName !== 'Você') remetenteInput.value = profileName;
+  }
+  remetenteLabel.appendChild(remetenteInput);
+  form.appendChild(remetenteLabel);
+
   const clinicaSelectLabel = document.createElement('label');
   clinicaSelectLabel.className = 'reajuste-field-label';
   clinicaSelectLabel.textContent = 'Clínica cadastrada (opcional — puxa o histórico dela)';
@@ -5428,6 +5465,8 @@ async function generateCopilotoMessage(){
   const objetivo = document.getElementById('copilotoObjetivo').value;
   const objetivoLabel = (COPILOTO_OBJETIVOS.find(o => o[0] === objetivo) || [,'Outro'])[1];
   const cliente = document.getElementById('copilotoCliente').value.trim();
+  const remetenteEl = document.getElementById('copilotoRemetente');
+  const remetente = remetenteEl ? remetenteEl.value.trim() : '';
   const clinicaId = document.getElementById('copilotoClinicaSelect').value;
   const clinicaTexto = document.getElementById('copilotoClinicaTexto').value.trim();
   const canal = document.getElementById('copilotoCanal').value;
@@ -5454,8 +5493,8 @@ async function generateCopilotoMessage(){
   if(btn){ btn.disabled = true; btn.textContent = 'Montando...'; }
   if(resultBox) resultBox.innerHTML = '<p class="vlow-empty">Montando mensagem…</p>';
   try{
-    const systemPrompt = "Você é a Lumi, assistente do AtlasIA, escrevendo uma mensagem de credenciamento/relacionamento com clínicas parceiras da Vixting, seguindo exatamente o objetivo, canal e tom informados. Use o histórico da clínica (se fornecido) pra deixar a mensagem específica e coerente com o que já foi conversado antes — nunca invente um fato, valor, prazo ou combinado que não esteja no histórico. Adeque o formato ao canal: WhatsApp pede mensagem mais curta e direta (sem cabeçalho de e-mail); e-mail pede saudação, corpo e despedida formais. Responda em português do Brasil, só com o texto pronto da mensagem (sem explicações antes ou depois).";
-    let userText = 'Objetivo: ' + objetivoLabel + '\nCliente/destinatário: ' + (cliente || 'não informado') + '\nClínica: ' + nomeClinica + '\nCanal: ' + canalLabel + '\nTom: ' + tomLabel + '\n';
+    const systemPrompt = "Você é a Lumi, assistente do AtlasIA, escrevendo uma mensagem de credenciamento/relacionamento com clínicas parceiras da Vixting, seguindo exatamente o objetivo, canal e tom informados. Use o histórico da clínica (se fornecido) pra deixar a mensagem específica e coerente com o que já foi conversado antes — nunca invente um fato, valor, prazo ou combinado que não esteja no histórico. Adeque o formato ao canal: WhatsApp pede mensagem mais curta e direta (sem cabeçalho de e-mail); e-mail pede saudação, corpo e despedida formais, terminando com uma despedida assinada pelo nome do remetente informado (se houver). Se o remetente foi informado, assine a mensagem com esse nome ao final (no WhatsApp isso pode ser bem mais discreto, tipo só o primeiro nome no fim; no e-mail, uma despedida formal com o nome completo). Quando o canal for e-mail, a resposta DEVE começar com uma linha 'Assunto: ' seguida de um assunto curto e claro pro e-mail (baseado no objetivo), depois uma linha em branco, e só então o corpo da mensagem; quando o canal for WhatsApp, nunca inclua essa linha de assunto. Responda em português do Brasil, só com o texto pronto da mensagem (sem explicações antes ou depois).";
+    let userText = 'Objetivo: ' + objetivoLabel + '\nCliente/destinatário: ' + (cliente || 'não informado') + '\nRemetente/quem está enviando: ' + (remetente || 'não informado') + '\nClínica: ' + nomeClinica + '\nCanal: ' + canalLabel + '\nTom: ' + tomLabel + '\n';
     if(clinicaCadastrada){
       userText += '\nDados cadastrados desta clínica (use como contexto real, não invente além disso):\n' +
         'Cidade: ' + (clinicaCadastrada.cidade || 'não informado') + '\n' +

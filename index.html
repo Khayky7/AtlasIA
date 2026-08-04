@@ -825,20 +825,6 @@
   }
   .offline-banner.show{ display:block; }
 
-  .templates{
-    display:none;
-    padding:14px 22px;
-    border-bottom:1px solid var(--border);
-    background:var(--panel-2);
-    font-size:13px;
-    flex-direction:column;
-    gap:10px;
-    max-height:280px;
-    overflow-y:auto;
-    overscroll-behavior:contain;
-    -webkit-overflow-scrolling:touch;
-  }
-  .templates.open{ display:flex; }
   .copiloto-result-bubble{
     background:var(--panel-2);
     border:1px solid var(--border);
@@ -856,7 +842,6 @@
     margin-top:8px;
     flex-wrap:wrap;
   }
-  .templates .hint{ color:var(--text-dim); font-size:11.5px; line-height:1.5; }
   .templates-grid{
     display:grid;
     grid-template-columns:repeat(auto-fill, minmax(210px, 1fr));
@@ -873,6 +858,19 @@
     cursor:pointer;
   }
   .templates-grid button:hover{ border-color:var(--accent); color:var(--accent); }
+  /* Rótulo "Modelo: X" acima do texto completo na tela cheia de Atalhos
+     (renderAtalhosResult) — mesmo visual do rótulo usado dentro de
+     mensagens de modelo no chat (.msg.template .template-label), só que
+     sem depender daquele ancestral, já que aqui não é mais dentro do chat. */
+  .atalhos-result-label{
+    display:block;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.3px;
+    text-transform:uppercase;
+    color:var(--accent);
+    margin-bottom:6px;
+  }
 
   .msg.template{
     border:1px solid rgba(47,125,255,.4);
@@ -1371,6 +1369,53 @@
   }
   .vlow-drive-card .vlow-drive-icon svg{ width:28px;height:28px; }
   .vlow-drive-card p{ margin:0; color:var(--text-dim); font-size:13.5px; max-width:320px; }
+  /* Cartão usado no lugar do <iframe> pra links do YouTube — mesmo
+     raciocínio do .vlow-drive-card (nunca arriscar a tela de erro nativa
+     dentro do embed), mas com a identidade visual do YouTube: miniatura
+     real do vídeo de fundo (em vez do ícone genérico do Drive) + botão de
+     play vermelho no centro. O cartão inteiro é um link, clicável em
+     qualquer ponto. */
+  .vlow-youtube-card{
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:flex-end;
+    gap:10px;
+    aspect-ratio:16/9;
+    border-radius:14px;
+    border:1px solid var(--border);
+    overflow:hidden;
+    background:#000;
+    text-decoration:none;
+    padding-bottom:16px;
+  }
+  .vlow-youtube-thumb{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    opacity:.85;
+  }
+  .vlow-youtube-play{
+    position:absolute;
+    top:50%; left:50%;
+    transform:translate(-50%, -50%);
+    filter:drop-shadow(0 2px 8px rgba(0,0,0,.55));
+    transition:transform .15s ease;
+  }
+  .vlow-youtube-card:hover .vlow-youtube-play{ transform:translate(-50%, -50%) scale(1.08); }
+  .vlow-youtube-label{
+    position:relative;
+    z-index:1;
+    background:rgba(0,0,0,.65);
+    color:#fff;
+    font-size:12.5px;
+    font-weight:600;
+    padding:6px 14px;
+    border-radius:20px;
+  }
   .vlow-link-card{
     display:flex;
     align-items:center;
@@ -2256,7 +2301,7 @@
         <span id="modelPillText">Modo FAQ (local)</span>
         <span class="pill-caret">▾</span>
       </div>
-      <div id="templatesPill" class="status-pill" onclick="toggleTemplates()">
+      <div id="templatesPill" class="status-pill" onclick="showAtalhosView()">
         <span class="dot"></span>
         <span>Atalhos</span>
       </div>
@@ -2455,11 +2500,6 @@
     <div class="settings-section settings-save-section">
       <button type="button" class="settings-save-btn" onclick="saveSettingsAndClose()">💾 Salvar configurações</button>
     </div>
-  </div>
-
-  <div id="templatesPanel" class="templates">
-    <div class="hint">Clique em um atalho para inserir o modelo pronto na conversa (e copiar automaticamente para a área de transferência).</div>
-    <div id="templatesGrid" class="templates-grid"></div>
   </div>
 
   <div class="chat" id="chat"></div>
@@ -3036,8 +3076,11 @@ function hapticTap(){
 
 /* ===================== NAVEGAÇÃO / OVERLAYS (central) =====================
    Ponto único que sabe fechar qualquer painel flutuante do app: Configurações,
-   Atalhos, busca de conversas, menu de "/" e popover de sugestões — e, no
-   celular, a gaveta lateral. Todo lugar que ABRE um desses overlays chama
+   busca de conversas, menu de "/" e popover de sugestões — e, no
+   celular, a gaveta lateral. (Atalhos deixou de ser um painel flutuante:
+   agora é tela cheia própria, aberta por showAtalhosView(), que já chama
+   closeOverlayPanels() sem exceção pra fechar tudo o mais antes de entrar.)
+   Todo lugar que ABRE um desses overlays chama
    isso primeiro (passando o nome do que está abrindo em `except`, pra não
    fechar ele mesmo), garantindo que só um fique visível por vez. E todo
    lugar que precisa fechar tudo de uma vez (Esc, clique fora, trocar de
@@ -3049,10 +3092,6 @@ function closeOverlayPanels(except){
   if(except !== 'settings'){
     const settingsPanel = document.getElementById('settingsPanel');
     if(settingsPanel) settingsPanel.classList.remove('open');
-  }
-  if(except !== 'templates'){
-    const templatesPanel = document.getElementById('templatesPanel');
-    if(templatesPanel) templatesPanel.classList.remove('open');
   }
   if(except !== 'slash') closeSlashMenu();
   if(except !== 'suggest'){
@@ -3116,23 +3155,104 @@ function saveSettingsAndClose(){
   toggleSettings();
 }
 
-function toggleTemplates(){
-  hapticTap();
-  const panel = document.getElementById('templatesPanel');
-  const willOpen = !!panel && !panel.classList.contains('open');
-  closeOverlayPanels(willOpen ? 'templates' : null);
-  if(panel) panel.classList.toggle('open');
+/* Atalhos ganhou tela cheia própria (igual Copiloto/Reajuste/Contratos/etc)
+   — antes era um painelzinho suspenso (dropdown), acessível de qualquer
+   lugar do app sem trocar de tela, e por isso um modelo escolhido enquanto
+   a pessoa estava em Início ou noutra aba acabava sendo registrado na
+   conversa que por acaso estivesse ativa (geralmente a do modo Trabalho,
+   o padrão do app) — problema real relatado: "registros de outras abas
+   ficam salvos na aba trabalho". A tela cheia de Atalhos abaixo é 100%
+   independente de conversa/modo (não chama recordMessage nem mexe em
+   currentConvId), então nada aqui fica preso à aba errada — só copia o
+   texto pra área de transferência e mostra pra copiar/compartilhar. O
+   menu "/" dentro do chat (chooseSlashItem → insertTemplate) continua
+   funcionando do jeito antigo, de propósito: ali a pessoa já está
+   escrevendo dentro de uma conversa específica, então faz sentido o
+   modelo entrar nela mesmo. */
+function showAtalhosView(){
+  closeOverlayPanels();
+  currentView = 'atalhos';
+  currentConvId = null;
+  renderModeSwitch();
+  updateNavActiveStates();
+  document.getElementById('modeBanner').classList.remove('show');
+  renderConversationList();
+  renderAtalhosView();
+  closeSidebarIfMobile();
 }
 
-function renderTemplatesGrid(){
-  const grid = document.getElementById('templatesGrid');
-  grid.innerHTML = '';
+function renderAtalhosView(){
+  const chat = document.getElementById('chat');
+  chat.innerHTML = '';
+
+  const wrap = document.createElement('div');
+  wrap.className = 'vlow-view';
+
+  const heading = document.createElement('h2');
+  heading.className = 'vlow-heading';
+  heading.textContent = 'Atalhos';
+  wrap.appendChild(heading);
+
+  const subtitle = document.createElement('p');
+  subtitle.className = 'vlow-subtitle';
+  subtitle.textContent = 'Modelos de mensagem prontos. Clique em um para ver o texto completo, copiar ou mandar por WhatsApp — não fica salvo em nenhuma conversa/aba específica.';
+  wrap.appendChild(subtitle);
+
+  const grid = document.createElement('div');
+  grid.className = 'templates-grid';
+  grid.id = 'atalhosGrid';
   SHORTCUTS.forEach(s => {
     const btn = document.createElement('button');
+    btn.type = 'button';
     btn.textContent = s.label;
-    btn.onclick = () => insertTemplate(s);
+    btn.onclick = () => renderAtalhosResult(s);
     grid.appendChild(btn);
   });
+  wrap.appendChild(grid);
+
+  const resultBox = document.createElement('div');
+  resultBox.id = 'atalhosResult';
+  wrap.appendChild(resultBox);
+
+  chat.appendChild(wrap);
+}
+
+function renderAtalhosResult(shortcut){
+  copyToClipboard(shortcut.message);
+  const resultBox = document.getElementById('atalhosResult');
+  if(!resultBox) return;
+  resultBox.innerHTML = '';
+
+  const label = document.createElement('div');
+  label.className = 'atalhos-result-label';
+  label.textContent = 'Modelo: ' + shortcut.label;
+  resultBox.appendChild(label);
+
+  const bubble = document.createElement('div');
+  bubble.className = 'copiloto-result-bubble';
+  bubble.textContent = shortcut.message;
+  resultBox.appendChild(bubble);
+
+  const actions = document.createElement('div');
+  actions.className = 'copiloto-result-actions';
+
+  const copyBtn = document.createElement('button');
+  copyBtn.type = 'button';
+  copyBtn.className = 'vlow-share-btn';
+  copyBtn.textContent = '📋 Copiar';
+  copyBtn.onclick = () => { copyToClipboard(shortcut.message); showToast('✓ Copiado.'); };
+  actions.appendChild(copyBtn);
+
+  const waBtn = document.createElement('button');
+  waBtn.type = 'button';
+  waBtn.className = 'vlow-share-btn';
+  waBtn.textContent = '📤 WhatsApp';
+  waBtn.onclick = () => shareViaWhatsApp(shortcut.message);
+  actions.appendChild(waBtn);
+
+  resultBox.appendChild(actions);
+
+  showToast('✓ Copiado para a área de transferência.');
 }
 
 function insertTemplate(shortcut){
@@ -4585,6 +4705,31 @@ function getEmbeddableVideoUrl(url){
   return null;
 }
 
+/* Extrai só o ID do vídeo do YouTube (sem montar a URL de embed) — usado
+   pelo cartão de prévia do YouTube (renderVlowPreview) tanto pra montar a
+   miniatura real do vídeo (img.youtube.com/vi/ID/...) quanto pra saber se
+   deve mostrar esse cartão em vez de tentar um <iframe>. Mesma lógica de
+   reconhecimento de URL que getEmbeddableVideoUrl já tinha pro YouTube,
+   só que devolvendo o ID puro. */
+function getYoutubeVideoId(url){
+  if(!url) return null;
+  try{
+    const u = new URL(url);
+    const host = u.hostname.replace(/^www\./, '');
+    if(host === 'youtube.com' || host === 'm.youtube.com'){
+      const id = u.searchParams.get('v');
+      if(id) return id;
+      const shortMatch = u.pathname.match(/^\/(shorts|embed)\/([^/]+)/);
+      if(shortMatch) return shortMatch[2];
+    }
+    if(host === 'youtu.be'){
+      const id = u.pathname.replace('/', '');
+      if(id) return id;
+    }
+  }catch(e){ /* URL inválida */ }
+  return null;
+}
+
 function showVlowView(){
   closeOverlayPanels();
   currentView = 'vlow';
@@ -4725,6 +4870,7 @@ function renderVlowPreview(){
 
   const embedUrl = getEmbeddableVideoUrl(link);
   const isDriveLink = /^https?:\/\/drive\.google\.com\//i.test(link);
+  const youtubeId = getYoutubeVideoId(link);
   if(isDriveLink){
     // Nunca embuti direto — o Drive só libera o iframe se o arquivo
     // estiver compartilhado como "qualquer pessoa com o link", e quando
@@ -4747,6 +4893,39 @@ function renderVlowPreview(){
     openBtn.className = 'vlow-share-btn';
     openBtn.textContent = 'Abrir no Google Drive ↗';
     card.appendChild(openBtn);
+    preview.appendChild(card);
+  } else if(youtubeId){
+    // Mesmo raciocínio do cartão do Drive acima (nunca arriscar a tela de
+    // erro nativa dentro de um <iframe> — no YouTube isso acontece quando
+    // o vídeo tem restrição de idade/região ou o dono desativou o embed em
+    // sites externos, e não dá pra detectar isso via JS igual o Drive):
+    // em vez de <iframe>, mostra um cartão com a miniatura real do vídeo
+    // (endpoint público do YouTube, sem precisar de chave de API) e um
+    // botão pra abrir direto no YouTube, com a identidade visual de lá
+    // (vermelho + ícone de play), em vez do cartão genérico do Drive.
+    const card = document.createElement('a');
+    card.href = link;
+    card.target = '_blank';
+    card.rel = 'noopener noreferrer';
+    card.className = 'vlow-youtube-card';
+    const thumb = document.createElement('img');
+    thumb.className = 'vlow-youtube-thumb';
+    thumb.src = 'https://img.youtube.com/vi/' + youtubeId + '/hqdefault.jpg';
+    thumb.alt = 'Miniatura do vídeo do YouTube';
+    thumb.loading = 'lazy';
+    // Miniatura pode falhar (sem internet, vídeo removido etc.) — some
+    // com a imagem quebrada em vez de mostrar o ícone padrão do navegador,
+    // o botão de play e o resto do cartão continuam normais.
+    thumb.onerror = () => { thumb.style.display = 'none'; };
+    card.appendChild(thumb);
+    const play = document.createElement('div');
+    play.className = 'vlow-youtube-play';
+    play.innerHTML = '<svg viewBox="0 0 68 48" width="68" height="48" aria-hidden="true"><path d="M66.52 7.74c-.78-2.93-2.49-5.41-5.42-6.19C55.79.13 34 0 34 0S12.21.13 6.9 1.55c-2.93.78-4.63 3.26-5.42 6.19C.06 13.05 0 24 0 24s.06 10.95 1.48 16.26c.78 2.93 2.49 5.41 5.42 6.19C12.21 47.87 34 48 34 48s21.79-.13 27.1-1.55c2.93-.78 4.64-3.26 5.42-6.19C67.94 34.95 68 24 68 24s-.06-10.95-1.48-16.26z" fill="#f00"/><path d="M45 24 27 14v20" fill="#fff"/></svg>';
+    card.appendChild(play);
+    const label = document.createElement('span');
+    label.className = 'vlow-youtube-label';
+    label.textContent = 'Assistir no YouTube ↗';
+    card.appendChild(label);
     preview.appendChild(card);
   } else if(embedUrl){
     if(/\.(mp4|webm|ogg)$/i.test(embedUrl)){
@@ -11429,8 +11608,6 @@ function showUpdateBanner(worker){
 }
 
 window.onload = () => {
-  renderTemplatesGrid();
-
   // No celular a gaveta lateral começa fechada, pra tela toda ficar livre
   // pro chat e pro campo de digitar assim que o app abre.
   if(window.innerWidth <= MOBILE_BREAKPOINT){
@@ -11513,19 +11690,16 @@ window.onload = () => {
       pop.style.display = 'none';
     }
 
-    // Painel de Configurações/Modelos prontos: fecha sozinho ao clicar fora
-    // dele (inclusive pra poder digitar direto no campo de mensagem sem
-    // precisar fechar manualmente antes). Os próprios botões que abrem/fecham
-    // os painéis ficam de fora dessa checagem pra não abrir-e-fechar no mesmo clique.
-    const isPanelToggleTrigger = e.target.closest('[onclick*="toggleSettings()"], [onclick*="toggleTemplates()"]');
+    // Painel de Configurações: fecha sozinho ao clicar fora dele (inclusive
+    // pra poder digitar direto no campo de mensagem sem precisar fechar
+    // manualmente antes). O próprio botão que abre/fecha o painel fica de
+    // fora dessa checagem pra não abrir-e-fechar no mesmo clique. (Atalhos
+    // não entra mais aqui: virou tela cheia própria, não um painel flutuante.)
+    const isPanelToggleTrigger = e.target.closest('[onclick*="toggleSettings()"]');
     if(!isPanelToggleTrigger){
       const settingsPanel = document.getElementById('settingsPanel');
       if(settingsPanel && settingsPanel.classList.contains('open') && !settingsPanel.contains(e.target)){
         settingsPanel.classList.remove('open');
-      }
-      const templatesPanel = document.getElementById('templatesPanel');
-      if(templatesPanel && templatesPanel.classList.contains('open') && !templatesPanel.contains(e.target)){
-        templatesPanel.classList.remove('open');
       }
     }
 

@@ -2282,7 +2282,7 @@
     <button type="button" class="nav-btn" id="navReajusteBtn" onclick="showReajusteView()"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="12" y1="6.5" x2="12" y2="17.5"/><path d="M15 9.2c0-1.3-1.3-2.4-3-2.4s-3 1-3 2.2c0 3.2 6 1.6 6 4.8 0 1.3-1.3 2.4-3 2.4s-3-1-3-2.4"/></svg> Reajuste</button>
     <button type="button" class="nav-btn" id="navContratosBtn" onclick="showContratosView()"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg> Contratos</button>
     <button type="button" class="nav-btn" id="navFavoritosBtn" onclick="showFavoritosView()"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.6 6.1.7-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6-4.5-4.2 6.1-.7z"/></svg> Favoritos</button>
-    <button type="button" class="nav-btn" id="navBuscaBtn" onclick="showGlobalSearchView()"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6.5"/><line x1="20.5" y1="20.5" x2="15" y2="15"/></svg> Buscar tudo</button>
+    <button type="button" class="nav-btn" id="navBuscaBtn" onclick="showGlobalSearchView()"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6.5"/><line x1="20.5" y1="20.5" x2="15" y2="15"/></svg> Buscar mensagens</button>
     <div class="sidebar-section-label">Especialistas</div>
     <div class="mode-switch" id="modeSwitch"></div>
     <div class="sidebar-section-label">Criatividade</div>
@@ -2697,9 +2697,9 @@ const TRABALHO_KB = [
   },
   {
     id: "encontrar-clinica-regiao",
-    keywords: ["clinica na regiao", "clínica na região", "clinica perto", "clinica na cidade", "qual clinica indicar", "clinica proxima", "clinica próxima"],
-    title: "Encontrar uma clínica parceira por região",
-    answer: "Eu posso cruzar isso com as clínicas já cadastradas no seu Workspace (campo Cidade/Região) — me diga a cidade ou região e eu listo as que já estão na base, com status de negociação e contato. Se não houver nenhuma cadastrada ali, o próximo passo natural é prospecção — posso ajudar a redigir a mensagem de primeiro contato."
+    keywords: ["clinica na regiao", "clínica na região", "clinica perto", "clinica na cidade", "qual clinica indicar", "clinica proxima", "clinica próxima", "buscar clinica", "encontrar clinica em qualquer lugar", "clinica em qualquer lugar do brasil"],
+    title: "Encontrar clínicas por região — cadastradas ou novas, em qualquer lugar do Brasil",
+    answer: "Primeiro eu cruzo com as clínicas já cadastradas no seu Workspace (campo Cidade/Região) — se já houver alguma na base daquela cidade/região, listo com status de negociação e contato. Se não houver nenhuma cadastrada ali, ou se o pedido for por opções novas numa cidade/região de qualquer lugar do Brasil, eu busco na internet e trago nomes reais de clínicas/prestadores encontrados (com cidade e contato, quando disponível) — só digo que não encontrei nada se a busca de verdade não retornar nenhuma opção relevante. A partir daí, o próximo passo natural é prospecção — posso ajudar a redigir a mensagem de primeiro contato."
   },
   {
     id: "pcmso-pgr",
@@ -2782,7 +2782,7 @@ const MODES = {
     greeting: TRABALHO_GREETING,
     quickReplies: TRABALHO_QUICK_REPLIES,
     kb: TRABALHO_KB,
-    systemPromptIntro: "Você é a Lumi, a assistente de IA (feminino) do sistema AtlasIA, atuando agora no modo Trabalho, em português do Brasil. Sempre que falar de si mesma, use o nome Lumi e a primeira pessoa no feminino. Este modo cobre três frentes: (1) apoio geral ao dia a dia profissional — redigir e revisar e-mails, organizar atas/resumos de reunião, estruturar relatórios e documentar processos internos; (2) credenciamento de prestadores de saúde (médicos, clínicas, hospitais, laboratórios) junto a convênios/planos de saúde — dúvidas sobre o processo, documentação exigida, prazos, recredenciamento, tabela de procedimentos e faturamento, além de ajudar a redigir ou ajustar mensagens e e-mails de contato/negociação com clínicas e prestadores; e (3) quando a pessoa pedir explicitamente, cadastrar uma clínica/projeto/contato novo direto no Workspace dela (ver a instrução de tag mais abaixo, quando disponível), em vez de só explicar como cadastrar manualmente. Se o usuário pedir um modelo de mensagem pronto sobre credenciamento (cronograma de pagamento, e-mails, dados de contrato etc.), lembre que eles já estão disponíveis automaticamente no botão Atalhos ou digitando \"/\" na caixa de mensagem, sem precisar reescrevê-los do zero. Seja objetiva e prática — quando a pessoa colar um texto pra revisar, aponte melhorias concretas (não só reescreva sem explicar o que mudou). Pedidos curtos são normais aqui (ex: \"manda um email pra clínica cobrando retorno\", \"cadastra essa clínica\") — use o nome da empresa (Vixting), o histórico da conversa e os dados de clínicas/projetos já cadastrados no Workspace (quando existirem) pra preencher os detalhes você mesma antes de perguntar; só pergunte pelo dado pontual que realmente falta (ex: nome da clínica, se não foi dito em nenhum lugar), nunca uma lista de perguntas antes de começar. Dúvidas frequentes sobre exames ocupacionais (tipos de exame, exames complementares, ASO) e sobre clínicas específicas (quais exames uma clínica faz, onde tem clínica parceira numa região, status/protocolo de uma clínica) são muito comuns neste modo — responda primeiro com a base de conhecimento geral sobre exames ocupacionais e, sempre que a pergunta for sobre uma clínica específica ou \"quem faz tal exame na região X\", cheque os dados reais de clínicas já cadastrados no Workspace (tabela de preços/exames e histórico) antes de responder; se a clínica ou exame perguntado não estiver nesses dados, diga isso claramente em vez de supor ou inventar. Para dados específicos de credenciamento (número de protocolo, prazo exato de um caso, valores de tabela) que você não tem certeza e que também não estão nos dados cadastrados, não invente — oriente a pessoa a confirmar no portal do credenciado ou com a central de credenciamento. A exigência exata de exames ocupacionais depende do PCMSO e do PGR de cada empresa contratante e do grau de risco da função — trate isso sempre como regra geral, nunca como uma lista única válida pra qualquer empresa. Você não substitui aconselhamento médico, jurídico ou de compliance: para exigência legal específica (normas regulamentadoras, prazo contratual exato, interpretação de cláusula), oriente a pessoa a confirmar com o responsável técnico/jurídico ou com a central de credenciamento/operadora envolvida, em vez de responder como se fosse uma garantia. Dados de clínicas, prestadores e colaboradores frequentemente envolvem informação sensível (inclusive de saúde, no caso de exames) — trate com discrição, e nunca peça nem repita dado de saúde de uma pessoa física identificável além do estritamente necessário pra responder o que foi pedido."
+    systemPromptIntro: "Você é a Lumi, a assistente de IA (feminino) do sistema AtlasIA, atuando agora no modo Trabalho, em português do Brasil. Sempre que falar de si mesma, use o nome Lumi e a primeira pessoa no feminino. Este modo cobre três frentes: (1) apoio geral ao dia a dia profissional — redigir e revisar e-mails, organizar atas/resumos de reunião, estruturar relatórios e documentar processos internos; (2) credenciamento de prestadores de saúde (médicos, clínicas, hospitais, laboratórios) junto a convênios/planos de saúde — dúvidas sobre o processo, documentação exigida, prazos, recredenciamento, tabela de procedimentos e faturamento, além de ajudar a redigir ou ajustar mensagens e e-mails de contato/negociação com clínicas e prestadores; e (3) quando a pessoa pedir explicitamente, cadastrar uma clínica/projeto/contato novo direto no Workspace dela (ver a instrução de tag mais abaixo, quando disponível), em vez de só explicar como cadastrar manualmente. Se o usuário pedir um modelo de mensagem pronto sobre credenciamento (cronograma de pagamento, e-mails, dados de contrato etc.), lembre que eles já estão disponíveis automaticamente no botão Atalhos ou digitando \"/\" na caixa de mensagem, sem precisar reescrevê-los do zero. Seja objetiva e prática — quando a pessoa colar um texto pra revisar, aponte melhorias concretas (não só reescreva sem explicar o que mudou). Pedidos curtos são normais aqui (ex: \"manda um email pra clínica cobrando retorno\", \"cadastra essa clínica\") — use o nome da empresa (Vixting), o histórico da conversa e os dados de clínicas/projetos já cadastrados no Workspace (quando existirem) pra preencher os detalhes você mesma antes de perguntar; só pergunte pelo dado pontual que realmente falta (ex: nome da clínica, se não foi dito em nenhum lugar), nunca uma lista de perguntas antes de começar. Dúvidas frequentes sobre exames ocupacionais (tipos de exame, exames complementares, ASO) e sobre clínicas específicas (quais exames uma clínica faz, onde tem clínica parceira numa região, status/protocolo de uma clínica) são muito comuns neste modo — responda primeiro com a base de conhecimento geral sobre exames ocupacionais e, sempre que a pergunta for sobre uma clínica específica ou \"quem faz tal exame na região X\", cheque os dados reais de clínicas já cadastrados no Workspace (tabela de preços/exames e histórico) antes de responder; se a clínica ou exame perguntado não estiver nesses dados, diga isso claramente em vez de supor ou inventar. Quando, em vez disso, a pessoa pedir pra ENCONTRAR/buscar novas opções de clínica numa cidade, estado ou região do Brasil (prospecção — não uma clínica específica já cadastrada), isso não é uma pergunta sobre o Workspace: você tem busca na internet disponível pra esse tipo de pedido, então use o resultado real dessa busca — cite nomes de clínicas/prestadores, cidade e, quando disponível, contato encontrados de verdade — em vez de responder só com base no que já sabia ou dizer que não tem esse dado; isso só vale como resposta quando a busca de verdade não retornar nenhuma opção relevante, e mesmo assim é ok dar essa negativa nesse caso, em vez de inventar um nome de clínica que não foi encontrado. Para dados específicos de credenciamento (número de protocolo, prazo exato de um caso, valores de tabela) que você não tem certeza e que também não estão nos dados cadastrados, não invente — oriente a pessoa a confirmar no portal do credenciado ou com a central de credenciamento. A exigência exata de exames ocupacionais depende do PCMSO e do PGR de cada empresa contratante e do grau de risco da função — trate isso sempre como regra geral, nunca como uma lista única válida pra qualquer empresa. Você não substitui aconselhamento médico, jurídico ou de compliance: para exigência legal específica (normas regulamentadoras, prazo contratual exato, interpretação de cláusula), oriente a pessoa a confirmar com o responsável técnico/jurídico ou com a central de credenciamento/operadora envolvida, em vez de responder como se fosse uma garantia. Dados de clínicas, prestadores e colaboradores frequentemente envolvem informação sensível (inclusive de saúde, no caso de exames) — trate com discrição, e nunca peça nem repita dado de saúde de uma pessoa física identificável além do estritamente necessário pra responder o que foi pedido."
   },
   imagens: {
     label: "Imagens",
@@ -3687,7 +3687,7 @@ function renderGlobalSearchResults(){
 
   const compMatches = dataCache.compartilhados.filter(i => normalize(i.title || '').includes(query) || normalize(i.description || '').includes(query));
   if(compMatches.length){
-    groups.push({ label: '🔗 Anotações', items: compMatches.map(i => ({
+    groups.push({ label: '🔗 Anexos', items: compMatches.map(i => ({
       title: i.title || '',
       desc: i.description || '',
       onClick: () => showWorkspaceView('compartilhados')
@@ -6300,7 +6300,7 @@ function renderEmptyState(){
 }
 
 /* =========================================================
-   WORKSPACE (Equipes / Projetos / Anotações / Clínicas) — dados reais,
+   WORKSPACE (Equipes / Projetos / Anexos / Clínicas) — dados reais,
    guardados em tabelas do Supabase, mas PESSOAIS: cada login só vê e edita
    os próprios registros (RLS por user_id — ver supabase_setup_workspace_
    pessoal.sql), mesmo estando na mesma conta/projeto Supabase que outros
@@ -6342,8 +6342,8 @@ const WORKSPACE_TABLES = {
   compartilhados: {
     table: 'shared_items',
     icon: 'globe', color: '#34d399', emoji: '🔗',
-    heading: 'Anotações',
-    subtitle: 'Seus links, arquivos e anotações — pessoal: só você vê e edita, mesmo com outras pessoas logadas na mesma empresa.',
+    heading: 'Anexos',
+    subtitle: 'Seus arquivos, links e anotações — pessoal: só você vê e edita, mesmo com outras pessoas logadas na mesma empresa.',
     emptyText: 'Nada guardado ainda. Adicione o primeiro abaixo.',
     addLabel: 'Adicionar item',
     fields: [
@@ -9619,9 +9619,10 @@ function speakText(text, btn){
 }
 
 /* =========================================================
-   GERAÇÃO DE IMAGEM — funciona tanto com OpenAI (DALL-E 3) quanto com
-   Gemini (gemini-2.5-flash-image), usando o mesmo provedor/chave já
-   configurado em Configurações → IA generativa (não precisa de nada extra).
+   GERAÇÃO DE IMAGEM — funciona tanto com OpenAI (gpt-image-1, sucessor do
+   DALL-E 3, desligado em 12/05/2026) quanto com Gemini
+   (gemini-2.5-flash-image), usando o mesmo provedor/chave já configurado em
+   Configurações → IA generativa (não precisa de nada extra).
    ========================================================= */
 // Frases-gatilho explícitas — funciona em QUALQUER modo (ex: digitar
 // "/imagem um gato" enquanto está no modo Trabalho). Cobre tanto o imperativo
@@ -9658,6 +9659,14 @@ function isImagensMetaQuestion(text){
   return text.trim().endsWith('?') || IMAGENS_META_PHRASES.includes(norm);
 }
 
+// A OpenAI aposentou o DALL-E 2 e o DALL-E 3 (desligamento em 12/05/2026),
+// substituídos pelos modelos "GPT Image" (gpt-image-1 e sucessores). O
+// endpoint /v1/images/generations passou a rejeitar o parâmetro
+// "response_format" pra esses modelos novos (erro "Unknown parameter:
+// 'response_format'") — a API já devolve base64 em data[0].b64_json por
+// padrão, sem precisar (nem poder) pedir isso explicitamente. Se um dia
+// isso mudar de novo, o sintoma é o mesmo tipo de erro "Unknown parameter"
+// ou "model not found" nessa chamada.
 async function generateImageOpenAI(prompt){
   const headers = { 'Content-Type': 'application/json' };
   const key = getValidPersonalKey('openai');
@@ -9665,7 +9674,7 @@ async function generateImageOpenAI(prompt){
   const res = await providerFetch('https://api.openai.com/v1/images/generations', {
     method: 'POST',
     headers: headers,
-    body: JSON.stringify({ model: 'dall-e-3', prompt: prompt, n: 1, size: '1024x1024', response_format: 'b64_json' })
+    body: JSON.stringify({ model: 'gpt-image-1', prompt: prompt, n: 1, size: '1024x1024', quality: 'high' })
   }, AI_CALL_TIMEOUT_MS);
   if(!res.ok) throw await buildApiError(res);
   const data = await res.json();
@@ -10228,7 +10237,7 @@ function buildWorkspaceDataContext(){
     dataCache.equipes.slice(0, 30).forEach(m => parts.push('- ' + m.name + (m.role ? ' (' + m.role + ')' : '')));
   }
   if(dataCache.compartilhados && dataCache.compartilhados.length){
-    parts.push('\nAnotações/links salvos por este usuário:');
+    parts.push('\nAnexos/links salvos por este usuário:');
     dataCache.compartilhados.slice(0, 30).forEach(i => parts.push('- ' + i.title + (i.description ? ': ' + i.description : '')));
   }
   if(dataCache.clinicas && dataCache.clinicas.length){
@@ -10466,7 +10475,7 @@ async function refreshRagContext(queryText){
       .sort((a, b) => b.score - a.score)
       .slice(0, RAG_MAX_CHUNKS);
     if(!scored.length) return;
-    ragContext = "\n\nTrechos relevantes encontrados nos documentos que este usuário indexou na aba Anotações (busca por significado, não por palavra exata) — use pra responder se ajudarem na pergunta, e deixe claro na resposta que a informação veio de um documento salvo pelo próprio usuário quando usar algum destes trechos:\n\n" +
+    ragContext = "\n\nTrechos relevantes encontrados nos documentos que este usuário indexou na aba Anexos (busca por significado, não por palavra exata) — use pra responder se ajudarem na pergunta, e deixe claro na resposta que a informação veio de um documento salvo pelo próprio usuário quando usar algum destes trechos:\n\n" +
       scored.map((s, i) => '[Trecho ' + (i + 1) + ']\n' + s.content).join('\n\n');
   }catch(e){ /* tabela ainda não criada, sem conexão, etc. — segue a mensagem sem RAG */ }
 }

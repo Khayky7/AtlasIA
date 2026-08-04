@@ -1457,6 +1457,24 @@
   .workspace-file-btn:hover{ border-color:var(--accent); }
   .workspace-file-status{ font-size:12px; color:var(--text-dim); align-self:center; }
   .workspace-add-btn{ height:38px; margin-left:auto; }
+  .workspace-cancel-edit-btn{
+    height:38px;
+    background:none;
+    border:1px solid var(--border);
+    color:var(--text-dim);
+    border-radius:10px;
+    padding:0 14px;
+    font-size:12.5px;
+    cursor:pointer;
+  }
+  .workspace-cancel-edit-btn:hover{ border-color:var(--text-dim); color:var(--text); }
+  .workspace-form.editing{ border-color:var(--accent); }
+  .workspace-editing-badge{
+    flex-basis:100%;
+    font-size:12px;
+    font-weight:600;
+    color:var(--accent);
+  }
   .workspace-error{
     font-size:12.5px;
     line-height:1.5;
@@ -1552,6 +1570,18 @@
     flex-shrink:0;
   }
   .workspace-delete-btn:hover{ color:#f87171; }
+  .workspace-edit-btn{
+    background:none;
+    border:none;
+    color:var(--text-dim);
+    font-size:14px;
+    line-height:1;
+    cursor:pointer;
+    padding:2px 4px;
+    flex-shrink:0;
+  }
+  .workspace-edit-btn:hover{ color:var(--accent); }
+  .workspace-item-btns{ display:flex; flex-direction:column; gap:2px; flex-shrink:0; }
 
   .task-due-badge{
     align-self:flex-start;
@@ -2280,7 +2310,7 @@
   </aside>
   <div class="app">
   <div id="offlineBanner" class="offline-banner">📡 Você está offline. A página abriu normalmente e o que já estava salvo continua disponível, mas busca na internet e IA generativa (que dependem de conexão) ficam fora do ar até a internet voltar — dá pra usar a base de perguntas frequentes (modo FAQ local) enquanto isso.</div>
-  <div id="modeBanner" class="mode-banner">⚠️ Modo Financeiro: conteúdo educativo sobre organização financeira e dívidas, gerado por IA. Não é aconselhamento financeiro personalizado nem substitui um profissional licenciado (educador financeiro, Procon, ou os canais oficiais de negociação).</div>
+  <div id="modeBanner" class="mode-banner">ℹ️ Trabalho: e-mails, documentos, reuniões, relatórios, processos do dia a dia e credenciamento de prestadores de saúde.</div>
 
   <div id="settingsPanel" class="settings">
     <div class="settings-header">
@@ -2472,131 +2502,11 @@
    Ajuste os textos abaixo para refletir as regras reais
    do seu convênio/plano de saúde.
    ========================================================= */
-/* =========================================================
-   GERAL — modo de propósito geral (sem restrição de assunto). O
-   credenciamento de prestadores de saúde tem um modo próprio, o Trabalho
-   (que reúne apoio ao dia a dia profissional + credenciamento) — este modo
-   aqui é o "coringa": qualquer pergunta, qualquer assunto.
-   ========================================================= */
-const GERAL_KB = [
-  {
-    id: "o-que-este-modo-faz",
-    keywords: ["o que voce faz", "pra que serve esse modo", "no que voce ajuda", "o que voce sabe fazer"],
-    title: "No que a Lumi pode ajudar no modo Geral",
-    answer: "Este modo não tem um assunto fixo — pode perguntar sobre qualquer coisa: dúvidas do dia a dia, redação e revisão de textos, programação, estudos, planejamento de tarefas, ideias, explicações de conceitos, e muito mais. Se o assunto for especificamente credenciamento de prestadores de saúde, o modo Trabalho tem um conhecimento mais aprofundado sobre esse processo específico."
-  },
-  {
-    id: "escrever-textos",
-    keywords: ["escrever texto", "revisar texto", "redigir", "melhorar um texto", "corrigir texto"],
-    title: "Escrever ou revisar um texto",
-    answer: "Cole o texto aqui e diga o objetivo (ex: deixar mais formal, mais curto, corrigir erros, adaptar pra outro público) que a Lumi ajuda a revisar ou reescrever. Pra e-mails e relatórios de trabalho especificamente, o modo Trabalho tem dicas mais direcionadas."
-  },
-  {
-    id: "programacao",
-    keywords: ["programar", "codigo", "código", "bug", "erro no codigo", "linguagem de programacao"],
-    title: "Ajuda com programação",
-    answer: "Pode colar um trecho de código, descrever o erro que está aparecendo, ou explicar o que você quer construir que a Lumi ajuda a escrever, revisar ou depurar — em qualquer linguagem."
-  },
-  {
-    id: "estudos",
-    keywords: ["estudar", "explicar conceito", "duvida sobre materia", "resumo de estudo", "preparar prova"],
-    title: "Estudos e explicações",
-    answer: "A Lumi pode explicar um conceito de um jeito mais simples, montar um resumo de estudo, ou ajudar a organizar um plano de revisão pra uma prova ou apresentação."
-  },
-  {
-    id: "organizar-tarefas",
-    keywords: ["organizar tarefas", "priorizar", "planejar o dia", "lista de tarefas", "produtividade"],
-    title: "Organizar tarefas e prioridades",
-    answer: "Descreva o que você precisa fazer (mesmo que seja uma lista bagunçada) que a Lumi ajuda a organizar por prioridade, sugerir prazos realistas, ou quebrar uma tarefa grande em passos menores."
-  }
-];
-
-const GERAL_GREETING = "Olá! Sou a Lumi, a assistente de IA do AtlasIA. Este é o modo Geral: pode me perguntar sobre qualquer assunto — escrever ou revisar um texto, programar, estudar, organizar tarefas, resolver um problema, o que precisar. (Se for algo específico sobre credenciamento de prestadores de saúde, o modo Trabalho tem um conhecimento mais aprofundado sobre isso.) Como posso ajudar?";
-
-const GERAL_QUICK_REPLIES = [
-  "Como você pode me ajudar?",
-  "Me ajuda a escrever ou revisar um texto",
-  "Tenho uma dúvida sobre um código",
-  "Me ajuda a organizar minhas tarefas"
-];
-
-/* =========================================================
-   BASE DE CONHECIMENTO — MODO FINANCEIRO (educação financeira)
-   Conteúdo sempre educativo/geral. Nunca é recomendação
-   personalizada nem substitui um profissional licenciado.
-   ========================================================= */
-const FINANCEIRO_KB = [
-  {
-    id: "orcamento",
-    keywords: ["orcamento", "organizar as contas", "planilha de gastos", "controle financeiro", "para onde vai meu dinheiro"],
-    title: "Como organizar um orçamento pessoal",
-    answer: "Um jeito simples de começar: liste toda a renda do mês e todos os gastos fixos (moradia, contas, transporte) e variáveis (lazer, compras). Uma referência bastante usada é a regra 50-30-20: 50% da renda para necessidades essenciais, 30% para desejos e 20% para dívidas/poupança — mas ajuste conforme sua realidade. Anotar tudo por 30 dias (num app, planilha ou caderno) costuma revelar gastos que passam despercebidos. Isso é orientação educativa geral, não uma recomendação para o seu caso específico."
-  },
-  {
-    id: "bola-de-neve-avalanche",
-    keywords: ["bola de neve", "avalanche", "metodo de quitacao", "por onde comecar a pagar", "quitar dividas", "quitar as dividas", "priorizar dividas"],
-    title: "Métodos para organizar a quitação de dívidas",
-    answer: "Dois métodos conhecidos: 'bola de neve' (quita primeiro a menor dívida, ganhando motivação com vitórias rápidas, depois parte para a próxima) e 'avalanche' (quita primeiro a dívida com maior taxa de juros, economizando mais dinheiro no total). Nenhum dos dois é 'o certo' — depende do que funciona melhor pra sua disciplina financeira e pro seu momento. Antes de escolher, vale simular os números com calma."
-  },
-  {
-    id: "negociacao-dividas",
-    keywords: ["negociar divida", "negociar com credor", "como negociar", "renegociar", "acordo com o banco", "desconto na divida"],
-    title: "Como costuma funcionar a negociação de dívidas",
-    answer: "Em geral: 1) reúna todos os boletos/contratos e veja o valor atualizado (com juros); 2) contate o credor diretamente (banco, loja, financeira) ou use plataformas oficiais como Serasa Limpa Nome e Consumidor.gov.br; 3) negocie por escrito e guarde o comprovante do acordo; 4) desconfie de quem promete 'apagar' a dívida ou pede pagamento antecipado por fora para 'liberar desconto' — isso é sinal comum de golpe. Cada negociação é diferente; para casos mais complexos, vale conversar com um educador financeiro, o Procon ou um advogado."
-  },
-  {
-    id: "serasa-spc",
-    keywords: ["serasa", "spc", "nome sujo", "nome negativado", "score de credito", "limpar nome"],
-    title: "Serasa, SPC e 'nome sujo'",
-    answer: "Serasa e SPC são birôs que registram dívidas em atraso reportadas por credores, o que pode dificultar a obtenção de crédito. Você tem direito a consultar seu CPF gratuitamente nesses birôs. Assim que uma dívida negativada é paga, o credor tem prazo legal para atualizar o registro. Cuidado com golpes que prometem 'limpar o nome' cobrando adiantado sem negociar de fato a dívida original."
-  },
-  {
-    id: "juros-rotativo",
-    keywords: ["juros do cartao", "rotativo do cartao", "cheque especial", "juros altos", "parcelamento da fatura"],
-    title: "Juros do rotativo do cartão e cheque especial",
-    answer: "O crédito rotativo do cartão de crédito e o cheque especial estão historicamente entre as modalidades de crédito mais caras do mercado brasileiro, por isso costumam ser indicados apenas para emergências de curtíssimo prazo, nunca como fonte de crédito contínua. Se a fatura não couber no orçamento, muitas instituições oferecem o parcelamento do saldo devedor com juros bem menores que o rotativo — vale comparar as taxas antes de decidir."
-  },
-  {
-    id: "lei-superendividamento",
-    keywords: ["lei do superendividamento", "superendividado", "lei 14181", "renegociacao judicial de dividas"],
-    title: "Lei do Superendividamento (Lei 14.181/2021)",
-    answer: "A Lei 14.181/2021 alterou o Código de Defesa do Consumidor para proteger consumidores em situação de superendividamento (quando os pagamentos mínimos das dívidas comprometem o mínimo existencial). Ela prevê, entre outros pontos, um processo de repactuação de dívidas com todos os credores ao mesmo tempo, mediado pelo Judiciário ou Procons conveniados. Se essa for sua situação, o ideal é buscar orientação de um Procon, Defensoria Pública ou advogado para avaliar o caso concreto."
-  },
-  {
-    id: "reserva-emergencia",
-    keywords: ["reserva de emergencia", "poupanca de emergencia", "quanto guardar", "fundo de emergencia"],
-    title: "Reserva de emergência",
-    answer: "É comum recomendar, como referência geral de educação financeira, guardar de 3 a 6 meses de despesas essenciais em uma aplicação de liquidez imediata (como conta digital ou fundo DI simples), como colchão para imprevistos antes de focar em outros objetivos. Se você ainda está com dívidas caras (rotativo, cheque especial), muitos educadores financeiros sugerem equilibrar entre quitar essas dívidas e formar uma reserva mínima ao mesmo tempo. Não é indicação de produto financeiro específico."
-  },
-  {
-    id: "tipos-credito",
-    keywords: ["tipos de credito", "emprestimo consignado", "credito pessoal", "qual credito e mais barato", "comparar emprestimos"],
-    title: "Tipos comuns de crédito e custo aproximado",
-    answer: "De forma geral (as taxas reais variam por instituição e perfil): crédito consignado costuma ter as menores taxas por ter o desconto garantido em folha/benefício; empréstimo pessoal com garantia (ex: veículo, imóvel) tende a ser mais barato que sem garantia; crédito pessoal sem garantia e cartão parcelado ficam no meio; cheque especial e rotativo do cartão são normalmente os mais caros. Sempre compare o CET (Custo Efetivo Total) entre instituições antes de contratar."
-  },
-  {
-    id: "golpes-financeiros",
-    keywords: ["golpe financeiro", "golpe de renegociacao", "fgts golpe", "promessa de limpar nome", "desconfiar"],
-    title: "Cuidado com golpes envolvendo dívidas e renegociação",
-    answer: "Sinais de alerta comuns: pedir pagamento antecipado 'por fora' para liberar um desconto, prometer 'apagar' a dívida sem negociar com o credor real, contato não solicitado por WhatsApp/redes sociais se passando por banco ou órgão público, e pressa excessiva para você decidir. Negocie sempre pelos canais oficiais do próprio credor ou plataformas reconhecidas (Serasa Limpa Nome, Consumidor.gov.br)."
-  },
-  {
-    id: "quando-buscar-ajuda",
-    keywords: ["quando procurar profissional", "preciso de ajuda profissional", "procon", "defensoria publica", "educador financeiro"],
-    title: "Quando buscar ajuda profissional",
-    answer: "Vale procurar um profissional (educador financeiro certificado, advogado, contador ou o Procon/Defensoria Pública) quando: as dívidas envolvem múltiplos credores e ficou difícil calcular o total; há risco de perder um bem essencial (casa, veículo usado no trabalho); há suspeita de cobrança abusiva ou golpe; ou a situação está afetando significativamente sua saúde mental. Este assistente oferece apenas informação educativa geral — não substitui esse acompanhamento profissional."
-  }
-];
-
-const FINANCEIRO_GREETING = "Olá! Sou a Lumi, aqui no modo Consultor Financeiro do AtlasIA. Posso ajudar com educação financeira geral: organizar orçamento, entender e priorizar dívidas, negociação, Serasa/SPC, juros do rotativo e mais. ⚠️ Importante: eu ofereço informação educativa geral, não sou uma profissional licenciada e isso não substitui orientação individualizada. Sobre o que você quer conversar?";
-
-const FINANCEIRO_QUICK_REPLIES = [
-  "Como monto um orçamento?",
-  "Bola de neve ou avalanche, qual escolher?",
-  "Como negociar minhas dívidas?",
-  "Quando devo procurar ajuda profissional?"
-];
-
+/* Os modos Geral e Financeiro existiram nesta base de código, mas foram
+   removidos a pedido (fora do escopo do negócio da empresa) — os modos
+   restantes (Trabalho, BI & Dados, IA & Automação, Imagens) cobrem o que
+   a operação realmente usa. Trabalho virou o modo padrão no lugar de
+   Geral. */
 const BI_KB = [
   {
     id: "o-que-e-bi",
@@ -2633,6 +2543,12 @@ const BI_KB = [
     keywords: ["storytelling com dados", "apresentar dados", "como apresentar um relatorio", "contar historia com dados"],
     title: "Como apresentar dados de um jeito que convence",
     answer: "Dados sozinhos raramente convencem — o que funciona é contextualizar: comece pela pergunta de negócio que você está respondendo, mostre o número, compare com uma referência (mês anterior, meta, concorrência) e termine com uma recomendação clara de ação. Evite jogar uma tabela cheia de números sem explicar o que ela significa."
+  },
+  {
+    id: "relatorio-produtividade-lideranca",
+    keywords: ["relatorio de produtividade", "relatório de produtividade", "relatorio para lideranca", "relatório para liderança", "relatorio automatico", "relatório automático", "bi de alto nivel", "bi de alto nível"],
+    title: "Relatório de produtividade automático pra liderança",
+    answer: "Basta anexar a planilha aqui no chat: eu importo os dados, removo linhas totalmente vazias, padronizo o formato das colunas de data, calculo os indicadores, monto os gráficos e o dashboard, gero o resumo executivo e entrego tanto o PDF de indicadores de alto nível quanto uma nova versão da planilha já limpa — tudo automático, sem precisar pedir passo a passo. Se quiser um recorte específico (por período, por pessoa/equipe, comparado à meta), é só pedir depois que o dashboard aparecer."
   }
 ];
 
@@ -2642,6 +2558,7 @@ const BI_QUICK_REPLIES = [
   "Como monto um dashboard executivo?",
   "Quais KPIs faz sentido acompanhar?",
   "Anexei uma planilha, me ajuda a analisar",
+  "Quero um relatório de produtividade pra minha liderança",
   "Como conto uma boa história com meus dados?"
 ];
 
@@ -2759,6 +2676,36 @@ const TRABALHO_KB = [
     keywords: ["contato", "suporte", "duvida credenciamento", "dúvida credenciamento", "falar com alguem", "atendimento", "telefone", "email credenciamento"],
     title: "Contato e suporte sobre credenciamento",
     answer: "Para dúvidas específicas do seu processo, procure a central de credenciamento do seu convênio/plano (e-mail ou telefone informado no formulário de solicitação), sempre citando o número de protocolo, quando existir."
+  },
+  {
+    id: "tipos-exame-ocupacional",
+    keywords: ["tipos de exame", "exame ocupacional", "exame admissional", "exame periodico", "exame periódico", "exame demissional", "aso", "mudanca de funcao", "mudança de função", "retorno ao trabalho", "quais exames existem"],
+    title: "Tipos de exame ocupacional (ASO)",
+    answer: "Os exames ocupacionais mais comuns são: admissional (antes de o colaborador começar), periódico (repetido em intervalos definidos pela função/risco), demissional (no desligamento), de mudança de função (quando o risco ocupacional muda) e de retorno ao trabalho (após afastamento por doença/acidente com mais de 30 dias). Todos geram o ASO (Atestado de Saúde Ocupacional), que registra se o colaborador está apto ou inapto pra função."
+  },
+  {
+    id: "exames-complementares",
+    keywords: ["exame complementar", "audiometria", "espirometria", "acuidade visual", "exame de sangue", "eletrocardiograma", "exame toxicologico", "exame toxicológico", "quais exames complementares"],
+    title: "Exames complementares mais pedidos",
+    answer: "Além da avaliação clínica, dependendo do risco da função a empresa costuma pedir exames complementares como audiometria (exposição a ruído), espirometria (exposição a poeira/produtos químicos), acuidade visual, hemograma e outros exames laboratoriais, eletrocardiograma, e exame toxicológico (obrigatório para motoristas profissionais, entre outras categorias). A exigência exata depende do PCMSO/PGR da empresa contratante, não de uma regra única."
+  },
+  {
+    id: "clinica-faz-exame",
+    keywords: ["clinica faz", "clínica faz", "quais exames a clinica faz", "clinica realiza", "onde encontro clinica que faz", "clinica atende"],
+    title: "Saber quais exames uma clínica cadastrada realiza",
+    answer: "Isso depende do que já está registrado no cadastro daquela clínica aqui no Workspace (campos de tabela de preços e histórico) — se a clínica já foi cadastrada com essa informação, eu consigo responder com o dado real dela. Se não estiver lá, o caminho é confirmar direto com a clínica e, se quiser, atualizar o cadastro depois (agora dá pra editar o registro existente, sem precisar recriar do zero)."
+  },
+  {
+    id: "encontrar-clinica-regiao",
+    keywords: ["clinica na regiao", "clínica na região", "clinica perto", "clinica na cidade", "qual clinica indicar", "clinica proxima", "clinica próxima"],
+    title: "Encontrar uma clínica parceira por região",
+    answer: "Eu posso cruzar isso com as clínicas já cadastradas no seu Workspace (campo Cidade/Região) — me diga a cidade ou região e eu listo as que já estão na base, com status de negociação e contato. Se não houver nenhuma cadastrada ali, o próximo passo natural é prospecção — posso ajudar a redigir a mensagem de primeiro contato."
+  },
+  {
+    id: "pcmso-pgr",
+    keywords: ["pcmso", "pgr", "programa de gerenciamento de risco", "programa de controle medico", "quais exames a empresa deve pedir", "quais exames sao obrigatorios"],
+    title: "PCMSO e PGR — por que a lista de exames muda de empresa pra empresa",
+    answer: "O PCMSO (Programa de Controle Médico de Saúde Ocupacional) e o PGR (Programa de Gerenciamento de Riscos) são documentos próprios de cada empresa contratante que definem, com base no risco real de cada função, quais exames são obrigatórios e com que frequência. Por isso não existe uma lista única de exames válida pra qualquer empresa — a exigência exata sempre depende do PCMSO/PGR da empresa específica, elaborado pelo médico/engenheiro do trabalho responsável por ela. Se precisar confirmar a lista de uma empresa em particular, o caminho é checar o PCMSO dela, não aplicar uma regra genérica."
   }
 ];
 
@@ -2767,6 +2714,7 @@ const TRABALHO_GREETING = "Olá! Sou a Lumi, aqui no modo Trabalho do AtlasIA. P
 const TRABALHO_QUICK_REPLIES = [
   "Me ajuda a escrever um e-mail",
   "Tenho uma dúvida sobre credenciamento",
+  "Quais exames uma clínica cadastrada faz?",
   "Preciso de um modelo de mensagem pronto",
   "Preciso estruturar um relatório"
 ];
@@ -2806,16 +2754,6 @@ const IMAGENS_QUICK_REPLIES = [
 ];
 
 const MODES = {
-  credenciamento: {
-    label: "Geral",
-    icon: "message",
-    color: "#a78bfa",
-    emptyHeading: "Olá. Como posso ajudar hoje?",
-    greeting: GERAL_GREETING,
-    quickReplies: GERAL_QUICK_REPLIES,
-    kb: GERAL_KB,
-    systemPromptIntro: "Você é a Lumi, a assistente de IA (feminino) do sistema AtlasIA, atuando agora no modo Geral, em português do Brasil. Sempre que falar de si mesma, use o nome Lumi e a primeira pessoa no feminino. Este é o modo de propósito geral do AtlasIA: ajude com qualquer assunto que a pessoa trouxer — responder perguntas, escrever e revisar textos, resolver problemas, programar, estudar, organizar tarefas, dar ideias, e o que mais for pedido. Nunca recuse ou redirecione um pedido só porque o assunto foge de um tema específico — isso não existe neste modo, esse é justamente o seu papel: ajudar em qualquer coisa. Se a pergunta for sobre credenciamento de prestadores de saúde, responda normalmente também — apenas saiba que o modo Trabalho tem uma base de conhecimento mais aprofundada sobre esse processo específico, e pode mencionar essa opção quando fizer sentido, sem nunca deixar de responder aqui primeiro. Os outros modos especializados do app (BI & Dados, Financeiro, IA & Automação, Trabalho, Imagens) só devem ser sugeridos como um complemento útil, nunca como forma de recusar ou adiar uma resposta. Responda sempre em português do Brasil, de forma objetiva e cordial."
-  },
   bi: {
     label: "BI & Dados",
     icon: "barChart",
@@ -2824,17 +2762,7 @@ const MODES = {
     greeting: BI_GREETING,
     quickReplies: BI_QUICK_REPLIES,
     kb: BI_KB,
-    systemPromptIntro: "Você é a Lumi, a assistente de IA (feminino) do sistema AtlasIA, atuando agora no modo BI & Dados, em português do Brasil. Sempre que falar de si mesma, use o nome Lumi e a primeira pessoa no feminino. Você atua como uma analista de BI sênior: definição de KPIs, estruturação de dashboards, análise exploratória de dados, dicas de planilhas/Excel e como apresentar dados de forma clara e visual. Quando o usuário anexar uma planilha ou CSV, o AtlasIA já monta automaticamente um dashboard com gráficos reais (calculados a partir dos dados, nunca inventados) e um resumo executivo — nessas conversas, aprofunde e explique esse dashboard, sugira recortes adicionais (outros agrupamentos, comparações, filtros) e conecte sempre os números a uma recomendação prática, como faria uma consultoria sênior de verdade, não uma resposta genérica."
-  },
-  financeiro: {
-    label: "Financeiro",
-    icon: "dollar",
-    color: "#fbbf24",
-    emptyHeading: "Qual é o seu objetivo financeiro hoje?",
-    greeting: FINANCEIRO_GREETING,
-    quickReplies: FINANCEIRO_QUICK_REPLIES,
-    kb: FINANCEIRO_KB,
-    systemPromptIntro: "Você é a Lumi, a assistente de IA (feminino) do sistema AtlasIA, atuando agora no modo Consultor Financeiro / Reestruturação de Dívidas, em português do Brasil. Sempre que falar de si mesma, use o nome Lumi e a primeira pessoa no feminino. Você fornece educação financeira geral: orçamento pessoal, organização e priorização de dívidas (métodos bola de neve e avalanche), negociação com credores, Serasa/SPC, juros do rotativo/cheque especial, a Lei do Superendividamento (Lei 14.181/2021), reserva de emergência e tipos de crédito. REGRAS IMPORTANTES: você não é um consultor financeiro, advogado ou contador licenciado; nunca dê recomendações personalizadas de investimento nem prometa resultados específicos (aprovação de crédito, desconto exato numa negociação, melhora de score). Para decisões financeiras significativas e específicas do caso da pessoa, dê informação educativa geral e recomende buscar um profissional licenciado, o Procon, a Defensoria Pública ou os canais oficiais de negociação (Serasa Limpa Nome, Consumidor.gov.br). Alerte sobre golpes comuns quando fizer sentido (pedido de pagamento antecipado 'por fora', promessas de apagar dívida sem negociação real). Seja acolhedor e direto, sem julgar a situação financeira da pessoa."
+    systemPromptIntro: "Você é a Lumi, a assistente de IA (feminino) do sistema AtlasIA, atuando agora no modo BI & Dados, em português do Brasil. Sempre que falar de si mesma, use o nome Lumi e a primeira pessoa no feminino. Você atua como uma analista de BI sênior: definição de KPIs, estruturação de dashboards, análise exploratória de dados, dicas de planilhas/Excel e como apresentar dados de forma clara e visual. Quando o usuário anexar uma planilha ou CSV, o AtlasIA já roda um pipeline automático completo, pensado pra relatório de produtividade de alto nível pra liderança: importa os dados, remove linhas totalmente vazias, padroniza o formato das colunas de data, calcula os indicadores, monta os gráficos e o dashboard, gera o resumo executivo e entrega o PDF com os indicadores de alto nível junto com uma nova versão da planilha já limpa (tudo calculado a partir dos dados reais, nunca inventado) — nessas conversas, aprofunde e explique esse dashboard, sugira recortes adicionais (outros agrupamentos, comparações, filtros, por período ou por pessoa/equipe) e conecte sempre os números a uma recomendação prática, como faria uma consultoria sênior de verdade, não uma resposta genérica. Pedidos curtos são comuns aqui e não precisam de mais detalhe pra você agir: \"faz um gráfico\" ou \"quero um resumo\" sem mais nada, com uma planilha já anexada nesta conversa, significa escolher você mesma o recorte mais óbvio dos dados reais (ex: top categorias, evolução no tempo) em vez de pedir a pessoa especificar tudo antes de começar."
   },
   automacao: {
     label: "IA & Automação",
@@ -2844,7 +2772,7 @@ const MODES = {
     greeting: AUTOMACAO_GREETING,
     quickReplies: AUTOMACAO_QUICK_REPLIES,
     kb: AUTOMACAO_KB,
-    systemPromptIntro: "Você é a Lumi, a assistente de IA (feminino) do sistema AtlasIA, atuando agora no modo IA & Automação, em português do Brasil. Sempre que falar de si mesma, use o nome Lumi e a primeira pessoa no feminino. Seu foco é ajudar a pessoa a criar e melhorar automações, agentes de IA, prompts e integrações entre ferramentas/APIs. Ajude a mapear o processo manual antes de sugerir a automação, seja concreta nos exemplos (nomes de ferramentas comuns, estrutura de prompt, passo a passo) e, ao revisar um prompt que o usuário mandar, aponte especificamente o que está vago ou faltando, não só elogie."
+    systemPromptIntro: "Você é a Lumi, a assistente de IA (feminino) do sistema AtlasIA, atuando agora no modo IA & Automação, em português do Brasil. Sempre que falar de si mesma, use o nome Lumi e a primeira pessoa no feminino. Seu foco é ajudar a pessoa a criar e melhorar automações, agentes de IA, prompts e integrações entre ferramentas/APIs, além de poder criar registros diretamente no Workspace da pessoa quando ela pedir (ver a instrução de tag mais abaixo, quando disponível). Ajude a mapear o processo manual antes de sugerir a automação, seja concreta nos exemplos (nomes de ferramentas comuns, estrutura de prompt, passo a passo) e, ao revisar um prompt que o usuário mandar, aponte especificamente o que está vago ou faltando, não só elogie. Pedido curto do tipo \"automatiza isso\" logo depois de a pessoa descrever um processo na mesma conversa deve ser entendido como referência direta a esse processo recém-descrito, não como pedido genérico — não peça pra ela repetir o que acabou de contar."
   },
   trabalho: {
     label: "Trabalho",
@@ -2854,7 +2782,7 @@ const MODES = {
     greeting: TRABALHO_GREETING,
     quickReplies: TRABALHO_QUICK_REPLIES,
     kb: TRABALHO_KB,
-    systemPromptIntro: "Você é a Lumi, a assistente de IA (feminino) do sistema AtlasIA, atuando agora no modo Trabalho, em português do Brasil. Sempre que falar de si mesma, use o nome Lumi e a primeira pessoa no feminino. Este modo cobre duas frentes: (1) apoio geral ao dia a dia profissional — redigir e revisar e-mails, organizar atas/resumos de reunião, estruturar relatórios e documentar processos internos; e (2) credenciamento de prestadores de saúde (médicos, clínicas, hospitais, laboratórios) junto a convênios/planos de saúde — dúvidas sobre o processo, documentação exigida, prazos, recredenciamento, tabela de procedimentos e faturamento, além de ajudar a redigir ou ajustar mensagens e e-mails de contato/negociação com clínicas e prestadores. Se o usuário pedir um modelo de mensagem pronto sobre credenciamento (cronograma de pagamento, e-mails, dados de contrato etc.), lembre que eles já estão disponíveis automaticamente no botão Atalhos ou digitando \"/\" na caixa de mensagem, sem precisar reescrevê-los do zero. Seja objetiva e prática — quando a pessoa colar um texto pra revisar, aponte melhorias concretas (não só reescreva sem explicar o que mudou), e quando faltar contexto (público do e-mail, objetivo do relatório), pergunte antes de escrever do zero. Para dados específicos de credenciamento (número de protocolo, prazo exato de um caso, valores de tabela) que você não tem certeza, não invente — oriente a pessoa a confirmar no portal do credenciado ou com a central de credenciamento."
+    systemPromptIntro: "Você é a Lumi, a assistente de IA (feminino) do sistema AtlasIA, atuando agora no modo Trabalho, em português do Brasil. Sempre que falar de si mesma, use o nome Lumi e a primeira pessoa no feminino. Este modo cobre três frentes: (1) apoio geral ao dia a dia profissional — redigir e revisar e-mails, organizar atas/resumos de reunião, estruturar relatórios e documentar processos internos; (2) credenciamento de prestadores de saúde (médicos, clínicas, hospitais, laboratórios) junto a convênios/planos de saúde — dúvidas sobre o processo, documentação exigida, prazos, recredenciamento, tabela de procedimentos e faturamento, além de ajudar a redigir ou ajustar mensagens e e-mails de contato/negociação com clínicas e prestadores; e (3) quando a pessoa pedir explicitamente, cadastrar uma clínica/projeto/contato novo direto no Workspace dela (ver a instrução de tag mais abaixo, quando disponível), em vez de só explicar como cadastrar manualmente. Se o usuário pedir um modelo de mensagem pronto sobre credenciamento (cronograma de pagamento, e-mails, dados de contrato etc.), lembre que eles já estão disponíveis automaticamente no botão Atalhos ou digitando \"/\" na caixa de mensagem, sem precisar reescrevê-los do zero. Seja objetiva e prática — quando a pessoa colar um texto pra revisar, aponte melhorias concretas (não só reescreva sem explicar o que mudou). Pedidos curtos são normais aqui (ex: \"manda um email pra clínica cobrando retorno\", \"cadastra essa clínica\") — use o nome da empresa (Vixting), o histórico da conversa e os dados de clínicas/projetos já cadastrados no Workspace (quando existirem) pra preencher os detalhes você mesma antes de perguntar; só pergunte pelo dado pontual que realmente falta (ex: nome da clínica, se não foi dito em nenhum lugar), nunca uma lista de perguntas antes de começar. Dúvidas frequentes sobre exames ocupacionais (tipos de exame, exames complementares, ASO) e sobre clínicas específicas (quais exames uma clínica faz, onde tem clínica parceira numa região, status/protocolo de uma clínica) são muito comuns neste modo — responda primeiro com a base de conhecimento geral sobre exames ocupacionais e, sempre que a pergunta for sobre uma clínica específica ou \"quem faz tal exame na região X\", cheque os dados reais de clínicas já cadastrados no Workspace (tabela de preços/exames e histórico) antes de responder; se a clínica ou exame perguntado não estiver nesses dados, diga isso claramente em vez de supor ou inventar. Para dados específicos de credenciamento (número de protocolo, prazo exato de um caso, valores de tabela) que você não tem certeza e que também não estão nos dados cadastrados, não invente — oriente a pessoa a confirmar no portal do credenciado ou com a central de credenciamento. A exigência exata de exames ocupacionais depende do PCMSO e do PGR de cada empresa contratante e do grau de risco da função — trate isso sempre como regra geral, nunca como uma lista única válida pra qualquer empresa. Você não substitui aconselhamento médico, jurídico ou de compliance: para exigência legal específica (normas regulamentadoras, prazo contratual exato, interpretação de cláusula), oriente a pessoa a confirmar com o responsável técnico/jurídico ou com a central de credenciamento/operadora envolvida, em vez de responder como se fosse uma garantia. Dados de clínicas, prestadores e colaboradores frequentemente envolvem informação sensível (inclusive de saúde, no caso de exames) — trate com discrição, e nunca peça nem repita dado de saúde de uma pessoa física identificável além do estritamente necessário pra responder o que foi pedido."
   },
   imagens: {
     label: "Imagens",
@@ -2864,11 +2792,11 @@ const MODES = {
     greeting: IMAGENS_GREETING,
     quickReplies: IMAGENS_QUICK_REPLIES,
     kb: IMAGENS_KB,
-    systemPromptIntro: "Você é a Lumi, a assistente de IA (feminino) do sistema AtlasIA, atuando agora no modo Imagens, em português do Brasil. Sempre que falar de si mesma, use o nome Lumi e a primeira pessoa no feminino. Seu foco é geração de imagens por IA a partir da descrição da pessoa, e análise de fotos anexadas. Ao gerar, ajude a refinar o pedido (estilo, clima, enquadramento, cores) se a descrição inicial for vaga, seguindo o mesmo fluxo de geração de imagem que já existe no app (ícone de imagem no campo de mensagem, ou pedir diretamente na conversa)."
+    systemPromptIntro: "Você é a Lumi, a assistente de IA (feminino) do sistema AtlasIA, atuando agora no modo Imagens, em português do Brasil. Sempre que falar de si mesma, use o nome Lumi e a primeira pessoa no feminino. Seu foco é geração de imagens por IA a partir da descrição da pessoa, e análise de fotos anexadas. Ao gerar, ajude a refinar o pedido (estilo, clima, enquadramento, cores) se a descrição inicial for vaga, seguindo o mesmo fluxo de geração de imagem que já existe no app (ícone de imagem no campo de mensagem, ou pedir diretamente na conversa) — mas não trave esperando todos esses detalhes antes de gerar algo: pra um pedido curto (ex: \"um gato astronauta\"), gere já com escolhas razoáveis de estilo/enquadramento e ofereça ajustar depois, em vez de responder só com perguntas."
   }
 };
 
-let currentMode = 'credenciamento';
+let currentMode = 'trabalho';
 let currentView = 'mode'; // 'home' (tela Início) ou 'mode' (conversa de um especialista)
 
 /* Aviso curto no topo de cada aba, explicando pra que ela serve — pensado
@@ -2876,9 +2804,7 @@ let currentView = 'mode'; // 'home' (tela Início) ou 'mode' (conversa de um esp
    As 3 primeiras (⚠️) já existiam e são avisos de responsabilidade (a IA não
    substitui um profissional); as demais (ℹ️) são só explicativas mesmo. */
 const MODE_BANNERS = {
-  credenciamento: 'ℹ️ Modo Geral: responda perguntas sobre qualquer assunto, gere textos, resolva problemas, programe, estude e organize tarefas.',
   bi: 'ℹ️ Modo BI & Dados: especializado em Excel, Power BI, SQL, indicadores, dashboards e análise de dados para empresas. Anexe uma planilha ou CSV pra gerar um dashboard automático.',
-  financeiro: '⚠️ Modo Financeiro: conteúdo educativo sobre organização financeira e dívidas, gerado por IA. Não é aconselhamento financeiro personalizado nem substitui um profissional licenciado (educador financeiro, Procon, ou os canais oficiais de negociação).',
   automacao: 'ℹ️ IA & Automação: criação de agentes, automações, prompts e integrações com APIs.',
   trabalho: 'ℹ️ Trabalho: e-mails, documentos, reuniões, relatórios, processos do dia a dia e credenciamento de prestadores de saúde.',
   imagens: 'ℹ️ Imagens: gere imagens com IA a partir de uma descrição, ou anexe uma foto pra eu analisar.'
@@ -4055,7 +3981,7 @@ const HOME_FEATURE_CARDS = [
   {
     icon: 'fileText', color: '#63a6ff', title: 'Criar documento', desc: 'Gere documentos, relatórios e apresentações.',
     action: () => {
-      switchMode('credenciamento');
+      switchMode('trabalho');
       document.getElementById('userInput').value = 'Preciso criar um documento. Pode me ajudar a estruturar o conteúdo?';
       autoResizeInput();
       document.getElementById('userInput').focus();
@@ -4072,7 +3998,7 @@ const HOME_FEATURE_CARDS = [
   {
     icon: 'gear', color: '#63a6ff', title: 'Automatizar processo', desc: 'Crie automações e fluxos inteligentes sem código.',
     action: () => {
-      switchMode('credenciamento');
+      switchMode('automacao');
       document.getElementById('userInput').value = 'Quero automatizar um processo repetitivo do meu dia a dia. Pode me ajudar a pensar em como fazer isso?';
       autoResizeInput();
       document.getElementById('userInput').focus();
@@ -4081,7 +4007,7 @@ const HOME_FEATURE_CARDS = [
   {
     icon: 'lightbulb', color: '#fbbf24', title: 'Gerar ideias', desc: 'Brainstorm, estratégias e soluções criativas.',
     action: () => {
-      switchMode('credenciamento');
+      switchMode('trabalho');
       document.getElementById('userInput').value = 'Me ajude a gerar ideias sobre: ';
       autoResizeInput();
       document.getElementById('userInput').focus();
@@ -4329,6 +4255,12 @@ let vlowCloudSyncTimer = null;
 // dado em si, então guarda no mesmo "pacote" de estado de sempre (local +
 // nuvem), sem precisar de tabela própria no Supabase.
 let lastSeenWorkspace = {};
+// Controla o modo "edição manual" de um item de Workspace: quando
+// workspaceEditingId[key] tem um id, o formulário daquela aba está editando
+// aquele item (não criando um novo) — ver startEditWorkspaceItem/
+// cancelWorkspaceEdit/addWorkspaceItem. Fica vazio por padrão (nenhuma aba
+// em edição).
+let workspaceEditingId = {};
 // 'AAAA-MM-DD' do último dia em que o resumo diário proativo já apareceu
 // no chat — evita repetir o mesmo resumo em toda mensagem enviada no
 // mesmo dia (só uma vez, na primeira interação daquele dia).
@@ -4408,6 +4340,48 @@ function getUpcomingProjects(daysAhead){
     return due >= now && due <= limit;
   });
 }
+/* Mesmo padrão de getOverdueProjects/getUpcomingProjects, agora pro campo
+   proxima_acao das clínicas (pedido do usuário: "mais automação e
+   independência" na aba Clínicas — a primeira peça é a Lumi conseguir
+   avisar sozinha quando uma ação prevista pra uma clínica venceu, em vez de
+   a pessoa ter que lembrar de checar cada card manualmente). Clínicas
+   'inativa' não entram — não faz sentido cobrar prazo de algo já encerrado. */
+function getOverdueClinicas(){
+  const now = Date.now();
+  return (dataCache.clinicas || []).filter(c => c.proxima_acao && c.status !== 'inativa' && new Date(c.proxima_acao).getTime() < now);
+}
+function getUpcomingClinicas(daysAhead){
+  const now = Date.now();
+  const limit = now + (daysAhead || 7) * 86400000;
+  return (dataCache.clinicas || []).filter(c => {
+    if(!c.proxima_acao || c.status === 'inativa') return false;
+    const due = new Date(c.proxima_acao).getTime();
+    return due >= now && due <= limit;
+  });
+}
+/* Detecta clínicas "paradas" — sinal de negociação estagnada que merece um
+   retorno (aponta pro Copiloto, objetivo "Retorno", em vez de criar um novo
+   jeito de mandar mensagem). Duas situações contam como "precisando de
+   atenção": (1) proxima_acao já vencida (dado concreto, sempre confiável) e
+   (2) clínica em prospecção/negociação, sem proxima_acao definida, cadastrada
+   há mais de STALLED_DAYS dias — aqui usamos created_at como aproximação
+   honesta de "faz tempo que não é atualizada", já que o app não guarda um
+   timestamp de "último contato" separado. */
+const CLINICA_STALLED_DAYS = 20;
+function getClinicasNeedingAttention(){
+  const now = Date.now();
+  const overdue = getOverdueClinicas();
+  const overdueIds = new Set(overdue.map(c => c.id));
+  const stalledLimit = now - CLINICA_STALLED_DAYS * 86400000;
+  const stalled = (dataCache.clinicas || []).filter(c => {
+    if(overdueIds.has(c.id)) return false; // já contado como atrasada, não duplica
+    if(c.proxima_acao) return false; // tem próxima ação definida, não é "esquecida"
+    if(!['prospeccao', 'negociacao'].includes(c.status)) return false;
+    if(!c.created_at) return false;
+    return new Date(c.created_at).getTime() < stalledLimit;
+  });
+  return overdue.concat(stalled);
+}
 /* Quantos itens de cada aba do Workspace foram criados depois da última
    vez que a pessoa abriu aquela aba (lastSeenWorkspace) — a base tanto do
    aviso na Home quanto da sugestão proativa ao entrar numa aba do
@@ -4482,6 +4456,10 @@ function buildDailySummaryText(){
   }
   if(upcomingProjects.length){
     parts.push('🗓️ ' + upcomingProjects.length + ' projeto' + (upcomingProjects.length > 1 ? 's' : '') + ' com prazo nos próximos 7 dias: ' + upcomingProjects.slice(0, 3).map(p => p.title).join(', ') + (upcomingProjects.length > 3 ? '...' : ''));
+  }
+  const clinicasAttention = getClinicasNeedingAttention();
+  if(clinicasAttention.length){
+    parts.push('🏥 ' + clinicasAttention.length + ' clínica' + (clinicasAttention.length > 1 ? 's' : '') + ' pedindo atenção (ação vencida ou negociação parada há tempo): ' + clinicasAttention.slice(0, 3).map(c => c.nome).join(', ') + (clinicasAttention.length > 3 ? '...' : '') + '. Uma opção é usar o Copiloto (objetivo "Retorno") pra retomar contato.');
   }
   Object.keys(newCounts).forEach(key => {
     if(newCounts[key] > 0){
@@ -5526,6 +5504,67 @@ function renderCopilotoResult(text){
 }
 
 /* =========================================================
+   RELATÓRIO DO FUNIL DE CREDENCIAMENTO (Clínicas) — reaproveita o mesmo
+   gerador de PDF de "Resumo Executivo" já usado no BI (generateDashboardPdf:
+   lista de KPIs + resumo em texto), mas com números calculados 100% em
+   JavaScript puro a partir de dataCache.clinicas (nunca pela IA) — contagem
+   por status, quantas estão pedindo atenção (getClinicasNeedingAttention) e
+   uma estimativa de "dias na etapa atual" usando created_at, já que o app
+   não guarda um histórico de mudança de status. Pedido do usuário: mais
+   automação/independência na aba Clínicas, sem precisar montar isso à mão.
+   ========================================================= */
+async function generateClinicasPipelineReport(){
+  if(!cloudUser){ showToast('⚠️ Faça login para gerar o relatório.'); return; }
+  const btn = document.getElementById('clinicasReportBtn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Gerando relatório...'; }
+  try{
+    await refreshDataCache(true);
+    const clinicas = dataCache.clinicas || [];
+    if(!clinicas.length){ showToast('⚠️ Nenhuma clínica cadastrada ainda.'); return; }
+
+    const statusCount = { prospeccao: 0, negociacao: 0, credenciada: 0, inativa: 0 };
+    clinicas.forEach(c => { const s = c.status || 'prospeccao'; if(statusCount[s] !== undefined) statusCount[s]++; });
+    const attention = getClinicasNeedingAttention();
+
+    const now = Date.now();
+    const emNegociacao = clinicas.filter(c => c.status === 'negociacao' && c.created_at);
+    const avgDaysNegociacao = emNegociacao.length
+      ? Math.round(emNegociacao.reduce((sum, c) => sum + (now - new Date(c.created_at).getTime()) / 86400000, 0) / emNegociacao.length)
+      : null;
+
+    const kpiValues = [
+      { label: 'Total de clínicas cadastradas', formatted: String(clinicas.length) },
+      { label: 'Em prospecção', formatted: String(statusCount.prospeccao) },
+      { label: 'Em negociação', formatted: String(statusCount.negociacao) },
+      { label: 'Credenciadas', formatted: String(statusCount.credenciada) },
+      { label: 'Inativas', formatted: String(statusCount.inativa) },
+      { label: 'Pedindo atenção agora', formatted: String(attention.length) }
+    ];
+    if(avgDaysNegociacao !== null){
+      kpiValues.push({ label: 'Tempo médio em negociação (dias, estimado)', formatted: String(avgDaysNegociacao) });
+    }
+
+    const summaryParts = [];
+    summaryParts.push('Funil de credenciamento com ' + clinicas.length + ' clínica' + (clinicas.length > 1 ? 's' : '') + ' cadastrada' + (clinicas.length > 1 ? 's' : '') + ': ' + statusCount.prospeccao + ' em prospecção, ' + statusCount.negociacao + ' em negociação, ' + statusCount.credenciada + ' credenciada(s) e ' + statusCount.inativa + ' inativa(s).');
+    if(attention.length){
+      summaryParts.push('\n' + attention.length + ' clínica' + (attention.length > 1 ? 's' : '') + ' pedindo atenção agora (ação vencida ou negociação parada há mais de ' + CLINICA_STALLED_DAYS + ' dias sem próxima ação definida):');
+      attention.slice(0, 15).forEach(c => { summaryParts.push('- ' + (c.nome || 'Sem nome') + (c.proxima_acao ? ' (ação prevista: ' + formatProjectDueDate(c.proxima_acao) + ')' : ' (sem próxima ação definida)')); });
+      if(attention.length > 15) summaryParts.push('- ... e mais ' + (attention.length - 15) + '.');
+    } else {
+      summaryParts.push('\nNenhuma clínica pedindo atenção agora — todas com próxima ação em dia ou fora da janela de negociação parada.');
+    }
+    const summary = summaryParts.join('\n');
+
+    const blob = await generateDashboardPdf('clinicas.pdf', kpiValues, summary);
+    addDownloadableFileMessage('📊 Relatório do funil de credenciamento, pronto em PDF (o arquivo não fica salvo no histórico da conversa — baixe agora):', blob, 'funil_credenciamento_clinicas.pdf');
+  }catch(e){
+    showToast('⚠️ Não consegui gerar o relatório agora.');
+  }finally{
+    if(btn){ btn.disabled = false; btn.textContent = '📊 Gerar relatório do funil'; }
+  }
+}
+
+/* =========================================================
    COMPARADOR DE CLÍNICAS — pega duas clínicas já cadastradas (ver
    WORKSPACE_TABLES.clinicas) e compara lado a lado. Como o campo de
    preço do cadastro é texto livre (cada clínica tem uma tabela
@@ -5877,11 +5916,26 @@ async function compareContratos(){
   if(btn){ btn.disabled = true; btn.textContent = 'Comparando...'; }
   showTyping();
   try{
-    const systemPrompt = "Você é a Lumi, assistente do AtlasIA. Vão te passar o texto de dois contratos/documentos (A e B), extraído de PDF (a formatação pode ter ficado bagunçada na extração — ignore isso e foque no conteúdo). Compare os dois e liste APENAS diferenças concretas e verificáveis entre eles — cláusulas que mudaram, valores, prazos, datas, responsabilidades, condições de pagamento/rescisão. Nunca invente uma diferença que não dê pra confirmar comparando os dois textos; se não conseguir ter certeza sobre algum trecho (ex: por causa de bagunça na extração do PDF), diga isso em vez de arriscar. Responda em português do Brasil, em formato de lista organizada por tema. Termine com um resumo de 1-2 frases do que mudou no geral.";
+    // Automação: se a comparação encontrar um prazo/data concreta (ex:
+    // vencimento, renovação), a IA pode sugerir um lembrete pra essa data
+    // — mesma tag [[LEMBRETE: ...]] já usada no chat normal (ver
+    // TASK_REMINDER_GUIDE), só que aqui é opcional e só entra se houver
+    // uma data real nos documentos (nunca inventada). Antes, essa tela
+    // nem passava pela extração de tags, então um lembrete só acontecia
+    // se a pessoa depois copiasse a data manualmente pra aba Tarefas.
+    const reminderInstruction = cloudUser
+      ? " Se, e somente se, a comparação encontrar uma data concreta e específica de vencimento/renovação/prazo em algum dos dois documentos (nunca uma data vaga ou estimada), você pode sugerir UM lembrete pra essa data incluindo, ao final da resposta, a tag: [[LEMBRETE: título curto do prazo|AAAA-MM-DDTHH:MM]] (use 09:00 se não houver horário específico no documento). " + buildCurrentDateTimeContext() + " " + TASK_REMINDER_GUIDE
+      : "";
+    const systemPrompt = "Você é a Lumi, assistente do AtlasIA. Vão te passar o texto de dois contratos/documentos (A e B), extraído de PDF (a formatação pode ter ficado bagunçada na extração — ignore isso e foque no conteúdo). Compare os dois e liste APENAS diferenças concretas e verificáveis entre eles — cláusulas que mudaram, valores, prazos, datas, responsabilidades, condições de pagamento/rescisão. Nunca invente uma diferença que não dê pra confirmar comparando os dois textos; se não conseguir ter certeza sobre algum trecho (ex: por causa de bagunça na extração do PDF), diga isso em vez de arriscar. Responda em português do Brasil, em formato de lista organizada por tema. Termine com um resumo de 1-2 frases do que mudou no geral." + reminderInstruction;
     const userText = '--- Contrato A (' + contratoA.name + ') ---\n' + contratoA.text + '\n\n--- Contrato B (' + contratoB.name + ') ---\n' + contratoB.text;
-    const reply = await askAIRaw(systemPrompt, userText);
+    const rawReply = await askAIRaw(systemPrompt, userText);
     hideTyping();
-    addBotMessage(reply, false);
+    const { clean, found: taskFound } = extractTaskTags(rawReply);
+    addBotMessage(clean || rawReply, false);
+    if(taskFound.length && cloudUser){
+      for(const tf of taskFound){ await createTaskFromChat(tf.title, tf.due); }
+      showToast(taskFound.length === 1 ? '⏰ Lembrete criado: "' + taskFound[0].title + '"' : '⏰ ' + taskFound.length + ' lembretes criados a partir dos prazos encontrados');
+    }
   }catch(err){
     hideTyping();
     addBotMessage('Não consegui comparar os contratos agora: ' + err.message, false);
@@ -6306,13 +6360,16 @@ const WORKSPACE_TABLES = {
     subtitle: 'Seu cadastro de clínicas parceiras/em negociação — cidade, preço de tabela, prazo de pagamento e histórico de contato. Pessoal: só você vê e edita, e é a base que a Lumi usa (só pra você) pra responder perguntas sobre clínicas por região.',
     emptyText: 'Nenhuma clínica cadastrada ainda. Adicione a primeira abaixo.',
     addLabel: 'Adicionar clínica',
-    setupScript: 'supabase_setup_clinicas.sql',
+    setupScript: 'supabase_setup_clinicas_v2.sql',
     fields: [
       { key: 'nome', label: 'Nome da clínica', type: 'text', required: true },
       { key: 'cidade', label: 'Cidade/Região', type: 'text' },
       { key: 'contato', label: 'Contato (nome, telefone ou e-mail)', type: 'text' },
       { key: 'status', label: 'Status', type: 'select', options: [['prospeccao', 'Prospecção'], ['negociacao', 'Em negociação'], ['credenciada', 'Credenciada'], ['inativa', 'Inativa']] },
       { key: 'prazo_pagamento', label: 'Prazo de pagamento (ex: 30 dias)', type: 'text' },
+      { key: 'protocolo', label: 'Nº de protocolo (credenciamento)', type: 'text' },
+      { key: 'proxima_acao', label: 'Próxima ação/vencimento', type: 'date' },
+      { key: 'documentos_pendentes', label: 'Documentos pendentes', type: 'textarea' },
       { key: 'tabela_precos', label: 'Tabela de preços / observações de valor', type: 'textarea' },
       { key: 'historico', label: 'Histórico de contato/negociação', type: 'textarea' }
     ]
@@ -6493,6 +6550,11 @@ async function renderWorkspaceView(key){
   const cfg = WORKSPACE_TABLES[key];
   const chat = document.getElementById('chat');
   chat.innerHTML = '';
+  // Formulário é reconstruído do zero aqui embaixo — qualquer edição em
+  // andamento de uma visita anterior a esta aba não tem mais um formulário
+  // pra "continuar", então limpa o estado pra não confundir um próximo
+  // "Adicionar" com uma edição perdida.
+  delete workspaceEditingId[key];
 
   const wrap = document.createElement('div');
   wrap.className = 'vlow-view workspace-view';
@@ -6509,13 +6571,28 @@ async function renderWorkspaceView(key){
   wrap.appendChild(subtitle);
 
   if(key === 'clinicas'){
+    const btnRow = document.createElement('div');
+    btnRow.style.display = 'flex';
+    btnRow.style.flexWrap = 'wrap';
+    btnRow.style.gap = '8px';
+    btnRow.style.marginBottom = '4px';
+
     const compareBtn = document.createElement('button');
     compareBtn.type = 'button';
     compareBtn.className = 'vlow-share-btn';
-    compareBtn.style.marginBottom = '4px';
     compareBtn.textContent = '⚖️ Comparar clínicas';
     compareBtn.onclick = showComparadorClinicasView;
-    wrap.appendChild(compareBtn);
+    btnRow.appendChild(compareBtn);
+
+    const reportBtn = document.createElement('button');
+    reportBtn.type = 'button';
+    reportBtn.id = 'clinicasReportBtn';
+    reportBtn.className = 'vlow-share-btn';
+    reportBtn.textContent = '📊 Gerar relatório do funil';
+    reportBtn.onclick = generateClinicasPipelineReport;
+    btnRow.appendChild(reportBtn);
+
+    wrap.appendChild(btnRow);
   }
 
   wrap.appendChild(buildWorkspaceForm(key));
@@ -6588,12 +6665,74 @@ function buildWorkspaceForm(key){
 
   const addBtn = document.createElement('button');
   addBtn.type = 'button';
+  addBtn.id = 'wsSubmitBtn_' + key;
   addBtn.className = 'vlow-share-btn workspace-add-btn';
   addBtn.onclick = () => addWorkspaceItem(key);
   addBtn.textContent = cfg.addLabel;
   form.appendChild(addBtn);
 
+  const cancelBtn = document.createElement('button');
+  cancelBtn.type = 'button';
+  cancelBtn.id = 'wsCancelEditBtn_' + key;
+  cancelBtn.className = 'workspace-cancel-edit-btn';
+  cancelBtn.textContent = 'Cancelar edição';
+  cancelBtn.style.display = 'none';
+  cancelBtn.onclick = () => cancelWorkspaceEdit(key);
+  form.appendChild(cancelBtn);
+
   return form;
+}
+
+/* Limpa os campos do formulário de volta ao estado "em branco" (usado tanto
+   depois de criar um item novo quanto ao cancelar uma edição em andamento). */
+function resetWorkspaceFormFields(key){
+  const cfg = WORKSPACE_TABLES[key];
+  cfg.fields.forEach(f => {
+    const el = document.getElementById('wsField_' + key + '_' + f.key);
+    if(el) el.value = f.type === 'select' ? el.options[0].value : '';
+  });
+  const fileStatus = document.getElementById('wsFileStatus_' + key);
+  if(fileStatus) fileStatus.textContent = '';
+}
+
+/* Preenche o formulário de uma aba do Workspace com os valores de um item
+   já existente e marca essa aba como "em edição" (workspaceEditingId) — o
+   próximo clique no botão de salvar (addWorkspaceItem) passa a fazer um
+   UPDATE nesse item em vez de criar um registro novo. É edição 100% manual,
+   feita pela pessoa clicando "Editar" — a IA continua só podendo CRIAR
+   registros novos (ver CRIAR_REGISTRO), nunca editar/apagar. */
+function startEditWorkspaceItem(key, item){
+  const cfg = WORKSPACE_TABLES[key];
+  if(!cfg) return;
+  cfg.fields.forEach(f => {
+    const el = document.getElementById('wsField_' + key + '_' + f.key);
+    if(!el) return;
+    el.value = (item[f.key] !== null && item[f.key] !== undefined) ? item[f.key] : (f.type === 'select' ? el.options[0].value : '');
+  });
+  workspaceEditingId[key] = item.id;
+  const submitBtn = document.getElementById('wsSubmitBtn_' + key);
+  if(submitBtn) submitBtn.textContent = 'Salvar edição';
+  const cancelBtn = document.getElementById('wsCancelEditBtn_' + key);
+  if(cancelBtn) cancelBtn.style.display = '';
+  const form = document.getElementById('wsSubmitBtn_' + key) && document.getElementById('wsSubmitBtn_' + key).closest('.workspace-form');
+  if(form) form.classList.add('editing');
+  if(form && form.scrollIntoView) form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  clearWorkspaceInlineError(key);
+}
+
+/* Sai do modo edição sem salvar nada, voltando o formulário pro estado de
+   "adicionar novo item". */
+function cancelWorkspaceEdit(key){
+  delete workspaceEditingId[key];
+  resetWorkspaceFormFields(key);
+  const cfg = WORKSPACE_TABLES[key];
+  const submitBtn = document.getElementById('wsSubmitBtn_' + key);
+  if(submitBtn && cfg) submitBtn.textContent = cfg.addLabel;
+  const cancelBtn = document.getElementById('wsCancelEditBtn_' + key);
+  if(cancelBtn) cancelBtn.style.display = 'none';
+  const form = submitBtn && submitBtn.closest('.workspace-form');
+  if(form) form.classList.remove('editing');
+  clearWorkspaceInlineError(key);
 }
 
 /* No Compartilhados, anexar um arquivo faz upload pro Storage (bucket
@@ -6628,6 +6767,8 @@ async function addWorkspaceItem(key){
   const client = getSupabaseClient();
   if(!client){ showToast('⚠️ Sem conexão com o serviço da nuvem agora.'); return; }
 
+  const editingId = workspaceEditingId[key];
+
   const row = {};
   let missingRequired = false;
   cfg.fields.forEach(f => {
@@ -6637,23 +6778,36 @@ async function addWorkspaceItem(key){
     row[f.key] = value || null;
   });
   if(missingRequired){ showToast('⚠️ Preencha os campos obrigatórios (*).'); return; }
-  row.user_id = cloudUser.id;
 
   try{
-    const { error } = await client.from(cfg.table).insert(row);
-    if(error) throw error;
-    cfg.fields.forEach(f => {
-      const el = document.getElementById('wsField_' + key + '_' + f.key);
-      if(el) el.value = f.type === 'select' ? el.options[0].value : '';
-    });
-    const fileStatus = document.getElementById('wsFileStatus_' + key);
-    if(fileStatus) fileStatus.textContent = '';
-    clearWorkspaceInlineError(key);
-    await loadWorkspaceItems(key);
-    showToast('✓ Adicionado.');
+    if(editingId){
+      // Edição manual (a pessoa clicou "Editar") — nunca a IA. Não mexe em
+      // user_id: o registro continua sendo do mesmo dono de sempre.
+      const { error } = await client.from(cfg.table).update(row).eq('id', editingId);
+      if(error) throw error;
+      delete workspaceEditingId[key];
+      resetWorkspaceFormFields(key);
+      const submitBtn = document.getElementById('wsSubmitBtn_' + key);
+      if(submitBtn) submitBtn.textContent = cfg.addLabel;
+      const cancelBtn = document.getElementById('wsCancelEditBtn_' + key);
+      if(cancelBtn) cancelBtn.style.display = 'none';
+      const form = submitBtn && submitBtn.closest('.workspace-form');
+      if(form) form.classList.remove('editing');
+      clearWorkspaceInlineError(key);
+      await loadWorkspaceItems(key);
+      showToast('✓ Alterações salvas.');
+    } else {
+      row.user_id = cloudUser.id;
+      const { error } = await client.from(cfg.table).insert(row);
+      if(error) throw error;
+      resetWorkspaceFormFields(key);
+      clearWorkspaceInlineError(key);
+      await loadWorkspaceItems(key);
+      showToast('✓ Adicionado.');
+    }
   }catch(e){
     const desc = describeSupabaseSetupError(e, cfg.setupScript);
-    showToast('⚠️ Não consegui salvar.');
+    showToast(editingId ? '⚠️ Não consegui salvar as alterações.' : '⚠️ Não consegui salvar.');
     showWorkspaceInlineError(key, desc);
   }
 }
@@ -6666,6 +6820,10 @@ async function deleteWorkspaceItem(key, id){
   try{
     const { error } = await client.from(cfg.table).delete().eq('id', id);
     if(error) throw error;
+    // Se o item removido era o que estava sendo editado, sai do modo edição
+    // pra não deixar o formulário tentando salvar um UPDATE num id que não
+    // existe mais.
+    if(workspaceEditingId[key] === id) cancelWorkspaceEdit(key);
     clearWorkspaceInlineError(key);
     await loadWorkspaceItems(key);
   }catch(e){
@@ -6744,6 +6902,9 @@ function itemShareText(key, item){
     if(item.cidade) t += '\nCidade/Região: ' + item.cidade;
     if(item.contato) t += '\nContato: ' + item.contato;
     if(item.prazo_pagamento) t += '\nPrazo de pagamento: ' + item.prazo_pagamento;
+    if(item.protocolo) t += '\nProtocolo: ' + item.protocolo;
+    if(item.proxima_acao) t += '\nPróxima ação: ' + formatProjectDueDate(item.proxima_acao);
+    if(item.documentos_pendentes) t += '\n\nDocumentos pendentes:\n' + item.documentos_pendentes;
     if(item.tabela_precos) t += '\n\nTabela de preços:\n' + item.tabela_precos;
     if(item.historico) t += '\n\nHistórico:\n' + item.historico;
     return t;
@@ -6819,6 +6980,15 @@ function renderWorkspaceItems(key, items){
       if(item.cidade){ const c = document.createElement('span'); c.className = 'workspace-item-sub'; c.textContent = '📍 ' + item.cidade; info.appendChild(c); }
       if(item.contato){ const c = document.createElement('span'); c.className = 'workspace-item-sub'; c.textContent = item.contato; info.appendChild(c); }
       if(item.prazo_pagamento){ const p = document.createElement('span'); p.className = 'workspace-item-sub'; p.textContent = 'Prazo: ' + item.prazo_pagamento; info.appendChild(p); }
+      if(item.protocolo){ const pr = document.createElement('span'); pr.className = 'workspace-item-sub'; pr.textContent = '🔖 Protocolo: ' + item.protocolo; info.appendChild(pr); }
+      if(item.proxima_acao){
+        const acao = document.createElement('span');
+        const overdueClinica = new Date(item.proxima_acao + 'T23:59:59').getTime() < Date.now();
+        acao.className = 'workspace-item-sub' + (overdueClinica ? ' project-due-overdue' : '');
+        acao.textContent = (overdueClinica ? '⏰ próxima ação vencida: ' : '📅 próxima ação: ') + formatProjectDueDate(item.proxima_acao);
+        info.appendChild(acao);
+      }
+      if(item.documentos_pendentes){ const dp = document.createElement('p'); dp.className = 'workspace-item-desc'; dp.textContent = '📋 Pendente: ' + item.documentos_pendentes; info.appendChild(dp); }
       if(item.tabela_precos){ const t = document.createElement('p'); t.className = 'workspace-item-desc'; t.textContent = '💰 ' + item.tabela_precos; info.appendChild(t); }
       if(item.historico){ const h = document.createElement('p'); h.className = 'workspace-item-desc'; h.textContent = '🕘 ' + item.historico; info.appendChild(h); }
     }
@@ -6835,13 +7005,26 @@ function renderWorkspaceItems(key, items){
 
     card.appendChild(info);
 
+    const itemBtns = document.createElement('div');
+    itemBtns.className = 'workspace-item-btns';
+
+    const editBtn = document.createElement('button');
+    editBtn.type = 'button';
+    editBtn.className = 'workspace-edit-btn';
+    editBtn.setAttribute('aria-label', 'Editar');
+    editBtn.textContent = '✎';
+    editBtn.onclick = () => startEditWorkspaceItem(key, item);
+    itemBtns.appendChild(editBtn);
+
     const delBtn = document.createElement('button');
     delBtn.type = 'button';
     delBtn.className = 'workspace-delete-btn';
     delBtn.setAttribute('aria-label', 'Remover');
     delBtn.textContent = '✕';
     delBtn.onclick = () => deleteWorkspaceItem(key, item.id);
-    card.appendChild(delBtn);
+    itemBtns.appendChild(delBtn);
+
+    card.appendChild(itemBtns);
 
     listWrap.appendChild(card);
   });
@@ -7248,11 +7431,13 @@ function setMaxConversationsLimit(){
    MODES — conversas antigas podem ter sido criadas num modo que depois foi
    removido (ex: um especialista que saiu do app), e sem essa checagem o
    app quebraria ao tentar reabrir essa conversa (várias telas leem
-   MODES[currentMode] direto). Nesses casos, cai pro modo Geral em vez de
-   travar — a conversa em si (mensagens) continua intacta. */
+   MODES[currentMode] direto — foi exatamente o caso quando os modos Geral
+   e Financeiro saíram do app). Nesses casos, cai pro modo Trabalho (o
+   padrão atual) em vez de travar — a conversa em si (mensagens) continua
+   intacta. */
 function convMode(conv){
   const mode = conv && conv.mode;
-  return (mode && MODES[mode]) ? mode : 'credenciamento';
+  return (mode && MODES[mode]) ? mode : 'trabalho';
 }
 
 function recordMessage(entry){
@@ -7554,7 +7739,8 @@ function iconSvg(name, extraClass){
 }
 
 /* =========================================================
-   MODOS — Credenciamento / Consultor Financeiro
+   MODOS — botões/seletor da barra lateral, construídos dinamicamente a
+   partir de MODES (ver mais acima) e MODE_GROUPS.
    ========================================================= */
 function buildModeIconBadge(icon, color){
   const badge = document.createElement('span');
@@ -7569,9 +7755,7 @@ function buildModeIconBadge(icon, color){
    pra decidir em qual dos dois grupos (Especialistas / Criatividade) o botão
    aparece, mas centralizado aqui pra não espalhar essa lógica. */
 const MODE_GROUPS = {
-  credenciamento: 'especialistas',
   bi: 'especialistas',
-  financeiro: 'especialistas',
   automacao: 'especialistas',
   trabalho: 'especialistas',
   imagens: 'criatividade'
@@ -7981,7 +8165,7 @@ function forgetAllData(){
   convCounter = 0;
   memoryNotes = [];
   renderMemoryList();
-  currentMode = 'credenciamento';
+  currentMode = 'trabalho';
   applyModeUI(currentMode);
   themeMode = 'dark';
   applyTheme(themeMode);
@@ -8269,6 +8453,86 @@ async function extractSpreadsheetText(file){
   return { text: csvText, rows };
 }
 
+/* =========================================================
+   LIMPEZA DETERMINÍSTICA DE PLANILHA — pedido do usuário: "eu mando a
+   planilha... importa os dados, remove linhas vazias, padroniza datas,
+   calcula os indicadores, atualiza os gráficos, atualiza o dashboard,
+   salva a nova versão", automaticamente. Igual ao resto do app, a limpeza
+   em si (o que conta como linha vazia, o que conta como data, como
+   reformatar) é 100% código puro — nunca a IA — só o plano de
+   KPIs/gráficos em cima dos dados já limpos é que continua vindo da IA
+   (generateAiDashboard, mais abaixo).
+   ========================================================= */
+function isEmptySpreadsheetRow(row){
+  return Object.values(row).every(v => v === null || v === undefined || String(v).trim() === '');
+}
+
+/* Reconhece formatos de data comuns em planilhas (célula já convertida em
+   Date pelo SheetJS, AAAA-MM-DD, DD/MM/AAAA, DD-MM-AAAA, MM/DD/AAAA). */
+function looksLikeSpreadsheetDate(v){
+  if(v === null || v === undefined || String(v).trim() === '') return false;
+  if(v instanceof Date && !isNaN(v.getTime())) return true;
+  const s = String(v).trim();
+  if(/^\d{4}-\d{1,2}-\d{1,2}([T ]\d{1,2}:\d{2}(:\d{2})?)?$/.test(s)) return true;
+  if(/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}$/.test(s)) return true;
+  return false;
+}
+
+function parseFlexibleSpreadsheetDate(v){
+  if(v instanceof Date && !isNaN(v.getTime())) return v;
+  const s = String(v).trim();
+  let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if(m){
+    let day = Number(m[1]), month = Number(m[2]), year = Number(m[3]);
+    if(year < 100) year += 2000;
+    if(month > 12 && day <= 12){ const tmp = day; day = month; month = tmp; } // planilha veio em MM/DD
+    const d = new Date(year, month - 1, day);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function formatSpreadsheetDateBr(d){
+  return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear();
+}
+
+/* Remove linhas 100% vazias e padroniza pro formato DD/MM/AAAA qualquer
+   coluna onde pelo menos 70% dos valores preenchidos parecem data (limiar
+   pra não mexer numa coluna que só por coincidência tem 1-2 valores
+   parecidos com data). Devolve as linhas limpas mais um resumo do que foi
+   alterado, pra poder avisar a pessoa e gerar a nova versão do arquivo. */
+function cleanSpreadsheetRows(rows){
+  if(!Array.isArray(rows) || !rows.length) return { rows: rows || [], removedEmptyRows: 0, standardizedDateColumns: [] };
+
+  const withoutEmpty = rows.filter(r => !isEmptySpreadsheetRow(r));
+  const removedEmptyRows = rows.length - withoutEmpty.length;
+  if(!withoutEmpty.length) return { rows: [], removedEmptyRows, standardizedDateColumns: [] };
+
+  const headers = Object.keys(withoutEmpty[0]);
+  const standardizedDateColumns = [];
+  const cleanedRows = withoutEmpty.map(r => ({ ...r }));
+
+  headers.forEach(h => {
+    const values = cleanedRows.map(r => r[h]).filter(v => v !== null && v !== undefined && String(v).trim() !== '');
+    if(!values.length) return;
+    const dateLikeCount = values.filter(looksLikeSpreadsheetDate).length;
+    if(dateLikeCount / values.length >= 0.7){
+      standardizedDateColumns.push(h);
+      cleanedRows.forEach(r => {
+        const v = r[h];
+        if(v === null || v === undefined || String(v).trim() === '') return;
+        const parsed = parseFlexibleSpreadsheetDate(v);
+        if(parsed) r[h] = formatSpreadsheetDateBr(parsed);
+      });
+    }
+  });
+
+  return { rows: cleanedRows, removedEmptyRows, standardizedDateColumns };
+}
+
 async function handleFileSelect(event){
   const file = event.target.files[0];
   event.target.value = '';
@@ -8317,6 +8581,18 @@ async function handleFileSelect(event){
       throw new Error('Não consegui extrair texto desse arquivo (pode ser uma imagem escaneada sem texto, ou um arquivo vazio).');
     }
 
+    // Limpeza automática (planilha/CSV apenas, nunca PDF/texto livre): tira
+    // linhas 100% vazias e padroniza colunas de data pro mesmo formato —
+    // pedido do usuário pro fluxo de BI ("remove linhas vazias, padroniza
+    // datas... automaticamente"). Os KPIs/gráficos daqui pra frente já usam
+    // as linhas limpas, então indicadores e agrupamento por data ficam
+    // corretos mesmo que a planilha original viesse bagunçada.
+    let spreadsheetCleanup = null;
+    if((ext === 'xlsx' || ext === 'xls' || ext === 'csv') && result.rows && result.rows.length){
+      spreadsheetCleanup = cleanSpreadsheetRows(result.rows);
+      result.rows = spreadsheetCleanup.rows;
+    }
+
     const attachment = { name: file.name, text: truncateText(result.text, 14000) };
     // Pra planilha/CSV, guarda também um perfil calculado com TODAS as
     // linhas do arquivo (não só a amostra que cabe no texto truncado
@@ -8348,6 +8624,22 @@ async function handleFileSelect(event){
 
     if(attachment.rows && attachment.rows.length){
       addBotMessage('💡 Dica: pra aplicar um reajuste/fórmula nessa planilha e baixar o arquivo preenchido, descreva a regra no campo de texto (ex: "aumenta 8% na coluna Preço Atual, teto de R$500") e clique em "🧮 Aplicar na planilha".');
+    }
+
+    // Avisa o que foi limpo automaticamente e entrega a "nova versão" já
+    // tratada da planilha (linhas vazias fora, datas padronizadas) — só
+    // quando alguma limpeza de verdade aconteceu, pra não gerar arquivo
+    // repetido à toa quando a planilha já vinha certinha.
+    if(spreadsheetCleanup && (spreadsheetCleanup.removedEmptyRows > 0 || spreadsheetCleanup.standardizedDateColumns.length > 0)){
+      const cleanupParts = [];
+      if(spreadsheetCleanup.removedEmptyRows > 0) cleanupParts.push(spreadsheetCleanup.removedEmptyRows + ' linha' + (spreadsheetCleanup.removedEmptyRows > 1 ? 's' : '') + ' vazia' + (spreadsheetCleanup.removedEmptyRows > 1 ? 's' : '') + ' removida' + (spreadsheetCleanup.removedEmptyRows > 1 ? 's' : ''));
+      if(spreadsheetCleanup.standardizedDateColumns.length > 0) cleanupParts.push('coluna' + (spreadsheetCleanup.standardizedDateColumns.length > 1 ? 's' : '') + ' de data padronizada' + (spreadsheetCleanup.standardizedDateColumns.length > 1 ? 's' : '') + ' (DD/MM/AAAA): ' + spreadsheetCleanup.standardizedDateColumns.join(', '));
+      addBotMessage('🧹 Limpeza automática antes de calcular os indicadores: ' + cleanupParts.join('; ') + '.');
+      try{
+        const baseName = file.name.replace(/\.[^.]+$/, '');
+        const cleanBlob = await rowsToXlsxBlob(attachment.rows, baseName.slice(0, 31));
+        addDownloadableFileMessage('💾 Nova versão da planilha já limpa (o arquivo não fica salvo no histórico da conversa — baixe agora):', cleanBlob, baseName + '_limpo.xlsx');
+      }catch(e){ /* não fatal — a limpeza já foi aplicada nos dados usados no dashboard mesmo sem esse download */ }
     }
 
     if(result.rows && result.rows.length){
@@ -9332,7 +9624,7 @@ function speakText(text, btn){
    configurado em Configurações → IA generativa (não precisa de nada extra).
    ========================================================= */
 // Frases-gatilho explícitas — funciona em QUALQUER modo (ex: digitar
-// "/imagem um gato" enquanto está no modo Geral). Cobre tanto o imperativo
+// "/imagem um gato" enquanto está no modo Trabalho). Cobre tanto o imperativo
 // ("gere", "crie", "desenhe", "faça") quanto o infinitivo ("gerar", "criar",
 // "desenhar", "fazer" — como em "quero gerar uma imagem de...", ou o texto
 // do próprio botão de atalho "Gerar uma imagem com IA").
@@ -9598,8 +9890,40 @@ async function sendMessage(){
 const LUMI_VOICE_GUIDE = "Guia de tom de voz da Lumi — equilibre sempre estes quatro traços: (1) Executiva: fale com calma, confiança e profissionalismo, sem hesitar nem se desculpar demais; (2) Tecnológica: seja moderna, ágil e objetiva — vá direto ao ponto, sem enrolação nem floreios desnecessários; (3) Amigável: mantenha um tom natural e acolhedor, nunca frio ou robótico; (4) Futurista: seja firme, sofisticada e marcante — tenha personalidade própria, evite respostas genéricas ou clichês.";
 
 /* Regras de confiabilidade — evita respostas "sem sentido"/inventadas.
-   Aplicado em todos os modos, junto com o guia de tom acima. */
-const RELIABILITY_GUIDE = "Regras de confiabilidade: responda só o que você sabe com razoável confiança. Se não tiver certeza de um dado, número, prazo ou norma específica, diga claramente que não tem certeza e sugira como confirmar (ex: portal do credenciado, central de credenciamento, documentação oficial) em vez de inventar um valor plausível. Nunca invente números, datas, nomes, cláusulas de contrato ou dados de documentos que não foram te enviados nesta conversa. Se a pergunta do usuário estiver confusa, incompleta ou puder ser interpretada de mais de um jeito, peça uma rápida confirmação antes de responder, em vez de adivinhar. Mantenha coerência com o assunto da conversa — não mude de tema nem repita informação já dada sem necessidade.";
+   Aplicado em todos os modos, junto com o guia de tom acima. A cláusula de
+   pedido confuso/incompleto trabalha em conjunto com o
+   INTENT_UNDERSTANDING_GUIDE logo abaixo: primeiro tenta entender pelo
+   contexto disponível, só pergunta quando isso realmente não for
+   suficiente (ver o guia abaixo pros critérios exatos). */
+const RELIABILITY_GUIDE = "Regras de confiabilidade: responda só o que você sabe com razoável confiança. Se não tiver certeza de um dado, número, prazo ou norma específica, diga claramente que não tem certeza e sugira como confirmar (ex: portal do credenciado, central de credenciamento, documentação oficial) em vez de inventar um valor plausível. Nunca invente números, datas, nomes, cláusulas de contrato ou dados de documentos que não foram te enviados nesta conversa. Se, mesmo depois de aplicar o INTENT_UNDERSTANDING_GUIDE (usar o contexto disponível pra entender o pedido), a pergunta do usuário continuar genuinamente ambígua de um jeito que mudaria a resposta, peça uma rápida confirmação antes de responder, em vez de adivinhar. Mantenha coerência com o assunto da conversa — não mude de tema nem repita informação já dada sem necessidade.";
+
+/* =========================================================
+   ENTENDIMENTO DE PEDIDOS CURTOS/VAGOS — pedido explícito do usuário:
+   ele sentia que a IA só entendia direito quando o pedido vinha cheio de
+   detalhes, e queria isso melhorado. A causa raiz não era falta de
+   inteligência do modelo, e sim a regra antiga de "se estiver ambíguo,
+   pergunte" disparando cedo demais, mesmo quando o modo atual + anexos +
+   dados do Workspace + a conversa já davam contexto suficiente pra uma
+   resposta útil de primeira. Este guia dá uma ordem clara de prioridade
+   pra fechar essa lacuna sem virar adivinhação às cegas. Aplicado em
+   todos os modos, junto com os guias de tom/confiabilidade acima. */
+const INTENT_UNDERSTANDING_GUIDE = "Como entender pedidos curtos ou vagos: antes de considerar um pedido "
+  + "\"ambíguo demais\" pra responder, use nesta ordem tudo que já está disponível pra você: (1) o modo atual da "
+  + "conversa (ex: um pedido de \"cadastra isso\" dentro do modo Trabalho quase sempre é sobre uma clínica/projeto "
+  + "de credenciamento, não sobre algo genérico); (2) qualquer arquivo anexado ou dado do Workspace já injetado no "
+  + "seu contexto (planilha, PDF, clínicas/projetos cadastrados); (3) o histórico desta conversa (uma pergunta "
+  + "curta como \"e o valor?\" quase sempre se refere ao que acabou de ser discutido); (4) o conhecimento de "
+  + "domínio do próprio modo (ex: em BI & Dados, \"faz um gráfico\" sem mais detalhes = escolher a comparação mais "
+  + "óbvia dos dados já anexados, não pedir a pessoa especificar tudo do zero). Só depois de checar essas quatro "
+  + "fontes e ainda assim não dar pra responder de um jeito útil e correto, aí sim pergunte — e quando perguntar, "
+  + "faça UMA pergunta específica e objetiva (nunca uma lista de perguntas) sobre o único ponto que realmente "
+  + "falta, não sobre tudo que poderia faltar. Quando o pedido permitir uma interpretação razoável (mesmo que não "
+  + "seja a única possível) e o custo de errar for baixo e reversível (ex: rascunho de texto, sugestão, análise), "
+  + "prefira responder já assumindo essa interpretação e deixe isso explícito numa frase curta (ex: \"Entendi que "
+  + "você quer X — se for outra coisa, me diga\") em vez de travar esperando mais detalhes. Só vale a pena parar "
+  + "pra perguntar antes de agir quando o pedido for genuinamente aberto demais (nenhuma interpretação razoável se "
+  + "destaca) ou envolver algo que não dá pra desfazer facilmente (ex: valores de reajuste que viram contraproposta "
+  + "real pra uma clínica, ou criar um registro no Workspace) — nesses casos, sim, confirme antes.";
 
 /* Tag de controle que o modelo pode incluir no final da própria resposta
    quando entender que o usuário quer que algo seja lembrado entre conversas
@@ -9635,9 +9959,11 @@ function extractTaskTags(text){
    existem no Workspace (WORKSPACE_TABLES) e só com os campos que cada
    tabela já declara — qualquer campo fora dessa lista é descartado antes
    de chegar perto do banco (ver createWorkspaceRecordFromChat). Só entra
-   no prompt quando o modo ativo é "IA & Automação" (ver buildSystemPrompt),
-   pra não disparar criação de registro numa conversa comum sobre outro
-   assunto. */
+   no prompt nos modos "IA & Automação" e "Trabalho" (ver buildSystemPrompt)
+   — nos demais modos fica de fora de propósito, pra não disparar criação
+   de registro numa conversa sobre outro assunto. Aceita mais de uma tag
+   por resposta (ex: cadastrar várias clínicas de uma vez), sempre dentro
+   do mesmo limite de só criar, nunca editar/apagar. */
 const WORKSPACE_ACTION_TAG_REGEX = /\[\[CRIAR_REGISTRO:\s*([a-zA-Z]+)\s*\|\s*(\{[\s\S]*?\})\s*\]\]/g;
 
 function buildWorkspaceActionGuide(){
@@ -9646,7 +9972,7 @@ function buildWorkspaceActionGuide(){
     const fieldsDesc = cfg.fields.map(f => f.key + (f.required ? ' (obrigatório)' : '')).join(', ');
     return '- "' + key + '" (' + cfg.heading + '): campos permitidos — ' + fieldsDesc;
   }).join('\n');
-  return "\n\nAção autônoma disponível neste modo: você pode CRIAR (nunca editar nem apagar) um registro novo em uma das telas de Workspace da pessoa, quando ela pedir isso claramente (ex: \"cria uma clínica nova: ...\", \"adiciona um projeto ...\", \"cadastra esse contato na equipe\"). Pra isso, termine sua resposta com uma tag nesse formato exato, numa linha própria:\n[[CRIAR_REGISTRO: chave_da_tabela|{\"campo\":\"valor\"}]]\n\nTabelas e campos permitidos (use só esses nomes de campo, exatamente como estão escritos — nunca invente um campo novo nem uma tabela nova):\n" + tablesDesc + "\n\nRegras importantes: só use essa tag quando a pessoa pedir explicitamente pra criar/adicionar/cadastrar algo — nunca crie um registro por conta própria só porque o assunto foi mencionado de passagem. Use no máximo 1 tag por resposta. O valor depois de \"chave_da_tabela|\" precisa ser um JSON válido de uma linha só, com aspas duplas. Antes da tag, sempre explique em texto normal o que você vai cadastrar, pra pessoa confirmar visualmente o que aconteceu — a tag em si é removida automaticamente e nunca aparece pra ela.";
+  return "\n\nAção autônoma disponível neste modo: você pode CRIAR (nunca editar nem apagar) um ou mais registros novos nas telas de Workspace da pessoa, quando ela pedir isso claramente (ex: \"cria uma clínica nova: ...\", \"adiciona um projeto ...\", \"cadastra esse contato na equipe\", ou até vários de uma vez, como \"cadastra essas 3 clínicas: ...\"). Pra isso, termine sua resposta com uma tag nesse formato exato pra cada registro, cada uma numa linha própria:\n[[CRIAR_REGISTRO: chave_da_tabela|{\"campo\":\"valor\"}]]\n\nTabelas e campos permitidos (use só esses nomes de campo, exatamente como estão escritos — nunca invente um campo novo nem uma tabela nova):\n" + tablesDesc + "\n\nRegras importantes: só use essa tag quando a pessoa pedir explicitamente pra criar/adicionar/cadastrar algo — nunca crie um registro por conta própria só porque o assunto foi mencionado de passagem. Pode incluir mais de uma tag na mesma resposta se a pessoa pedir vários registros de uma vez (ex: várias clínicas, ou uma clínica E um projeto de acompanhamento dela) — cada tag vira um registro separado, sempre dentro do mesmo limite de só criar, nunca editar/apagar o que já existe. O valor depois de \"chave_da_tabela|\" precisa ser um JSON válido de uma linha só, com aspas duplas. Antes das tags, sempre explique em texto normal o que você vai cadastrar (liste cada item se forem vários), pra pessoa confirmar visualmente o que aconteceu — as tags em si são removidas automaticamente e nunca aparecem pra ela. Se houver um documento anexado na conversa (ex: um PDF de proposta, contrato ou ficha cadastral de uma clínica) e a pessoa pedir pra cadastrar/extrair os dados dele, use o texto do anexo já disponível no seu contexto pra preencher os campos automaticamente (nome, cidade, contato, prazo de pagamento, protocolo etc.) em vez de pedir pra ela retypar tudo — só pergunte pelo campo específico que realmente não aparece no documento, nunca peça a lista inteira de novo.";
 }
 
 function extractWorkspaceActionTags(text){
@@ -9702,6 +10028,17 @@ async function createWorkspaceRecordFromChat(tableKey, fieldsObj){
    abaixo) pra calcular corretamente pedidos relativos ("amanhã", "daqui a
    2 horas", "sexta-feira"). */
 const TASK_REMINDER_GUIDE = "Lembretes com hora marcada: se o usuário pedir explicitamente para ser lembrado de algo em um horário ou data específica (ex: \"me lembra às 15h de ligar pro fornecedor\", \"me avisa amanhã de manhã sobre a reunião\", \"lembrete pra sexta às 9h\"), calcule a data e hora exata (formato AAAA-MM-DDTHH:MM, 24h) com base na data e hora atual informada abaixo, e inclua ao final da resposta, em uma linha própria, a tag: [[LEMBRETE: título curto e claro do lembrete|AAAA-MM-DDTHH:MM]]. Pode incluir mais de uma tag se a pessoa pedir vários lembretes de uma vez. Não use essa tag se não houver um horário ou data específica mencionado — nesse caso, pergunte quando a pessoa quer ser lembrada em vez de inventar um horário. Sempre confirme no texto da sua resposta (fora da tag) que o lembrete foi criado, repetindo a data/hora de forma legível para a pessoa conferir. Nunca explique a tag nem mencione sua sintaxe; ela é removida automaticamente antes do usuário ver a resposta.";
+
+/* Bloco de texto com a data/hora atual, no mesmo formato usado dentro de
+   buildSystemPrompt() — extraído pra função reutilizável porque também é
+   necessário em chamadas de IA "avulsas" fora do chat principal (ex:
+   compareContratos, que quer poder sugerir um lembrete de prazo de
+   contrato e precisa da mesma referência de data pra calcular isso
+   certo). */
+function buildCurrentDateTimeContext(){
+  const now = new Date();
+  return "\n\nData e hora atual: " + now.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' }) + ", " + now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + " (ISO: " + now.toISOString() + "). Use esta referência para calcular datas/horas relativas mencionadas pelo usuário (ex: \"amanhã\", \"daqui a 2 horas\", \"sexta-feira\") — não repita esse texto literalmente para a pessoa, é só uma referência interna.";
+}
 
 /* Aplicado sempre que há um arquivo anexado ou uma imagem/foto pra
    analisar, em qualquer modo (não só BI) — eleva o nível da resposta pra
@@ -9824,19 +10161,20 @@ function buildIntelligentContext(){
 
 function buildSystemPrompt(){
   const modeInfo = MODES[currentMode];
-  let prompt = modeInfo.systemPromptIntro + " " + LUMI_VOICE_GUIDE + " " + RELIABILITY_GUIDE + " " + (RESPONSE_STYLE_GUIDES[responseStyle] || '') + " Base de conhecimento de referência:\n\n" +
+  let prompt = modeInfo.systemPromptIntro + " " + LUMI_VOICE_GUIDE + " " + RELIABILITY_GUIDE + " " + INTENT_UNDERSTANDING_GUIDE + " " + (RESPONSE_STYLE_GUIDES[responseStyle] || '') + " Base de conhecimento de referência:\n\n" +
     modeInfo.kb.map(e => `- ${e.title}: ${e.answer}`).join('\n');
   prompt += "\n\nMemória entre conversas: se o usuário pedir explicitamente para lembrar de algo (ex: \"lembra que...\", \"guarda essa informação\", \"anota isso\"), OU contar espontaneamente uma preferência/fato estável e claramente útil para conversas futuras (ex: nome, cargo, forma de tratamento, preferência de tom/formato de resposta, um dado fixo sobre o trabalho dela), inclua ao final da sua resposta, em uma linha própria, a tag: [[MEMORIZE: resumo curto e específico, em português, na perspectiva do usuário]]. Use no máximo uma tag por resposta, só quando fizer sentido guardar aquilo de verdade — não use para perguntas, comentários triviais ou informações de uso único. Nunca explique a tag nem mencione que ela existe; ela é removida automaticamente antes do usuário ver a resposta.";
   {
-    const now = new Date();
-    prompt += "\n\nData e hora atual: " + now.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' }) + ", " + now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + " (ISO: " + now.toISOString() + "). Use esta referência para calcular datas/horas relativas mencionadas pelo usuário (ex: \"amanhã\", \"daqui a 2 horas\", \"sexta-feira\") — não repita esse texto literalmente para a pessoa, é só uma referência interna.";
+    prompt += buildCurrentDateTimeContext();
     prompt += "\n\n" + TASK_REMINDER_GUIDE;
   }
-  // Ação autônoma de criar registro no Workspace: só oferecida dentro do
-  // modo "IA & Automação" (ver buildWorkspaceActionGuide acima), pra não
-  // criar risco de a IA disparar isso numa conversa comum sobre outro
-  // assunto.
-  if(currentMode === 'automacao'){
+  // Ação autônoma de criar registro no Workspace: oferecida em "IA &
+  // Automação" (onde esse é o propósito central do modo) e também em
+  // "Trabalho" (onde cadastrar uma clínica/projeto surge naturalmente no
+  // meio de uma conversa de credenciamento) — nos outros modos (BI &
+  // Dados, Imagens) não faz sentido e fica de fora de propósito, pra não
+  // criar risco de a IA disparar isso numa conversa sobre outro assunto.
+  if(currentMode === 'automacao' || currentMode === 'trabalho'){
     prompt += buildWorkspaceActionGuide();
   }
   // Anexos + RAG + dados do Workspace + memória entre conversas, tudo
@@ -9894,13 +10232,16 @@ function buildWorkspaceDataContext(){
     dataCache.compartilhados.slice(0, 30).forEach(i => parts.push('- ' + i.title + (i.description ? ': ' + i.description : '')));
   }
   if(dataCache.clinicas && dataCache.clinicas.length){
-    parts.push('\nClínicas cadastradas (use isso pra responder perguntas sobre clínicas por região/cidade, status de negociação, preço ou prazo — são dados reais desta conta):');
+    parts.push('\nClínicas cadastradas (use isso pra responder perguntas sobre clínicas por região/cidade, status de negociação, preço, prazo, protocolo ou quais exames cada uma realiza — são dados reais desta conta; se a pergunta for sobre uma clínica ou exame que não aparece aqui, diga isso claramente em vez de supor):');
     dataCache.clinicas.slice(0, 40).forEach(c => {
       parts.push('- ' + c.nome + (c.cidade ? ' (' + c.cidade + ')' : '') +
         ' — status: ' + (CLINICA_STATUS_LABELS[c.status] || 'Prospecção') +
         (c.contato ? ', contato: ' + c.contato : '') +
         (c.prazo_pagamento ? ', prazo: ' + c.prazo_pagamento : '') +
-        (c.tabela_precos ? ', tabela: ' + c.tabela_precos : ''));
+        (c.protocolo ? ', protocolo: ' + c.protocolo : '') +
+        (c.proxima_acao ? ', próxima ação: ' + formatProjectDueDate(c.proxima_acao) : '') +
+        (c.tabela_precos ? ', tabela/exames: ' + c.tabela_precos : '') +
+        (c.historico ? ', histórico: ' + c.historico : ''));
     });
   }
   if(!parts.length) return '';
@@ -10852,7 +11193,7 @@ function applyLoadedState(saved){
   convCounter = saved.convCounter || conversations.length;
   maxConversationsLimit = [50, 100, 200, 500].includes(saved.maxConversationsLimit) ? saved.maxConversationsLimit : 200;
   trimConversations();
-  currentMode = MODES[saved.currentMode] ? saved.currentMode : 'credenciamento';
+  currentMode = MODES[saved.currentMode] ? saved.currentMode : 'trabalho';
   memoryNotes = Array.isArray(saved.memoryNotes) ? saved.memoryNotes : [];
   themeMode = saved.themeMode === 'light' ? 'light' : 'dark';
   accentColor = ACCENT_PRESETS[saved.accentColor] ? saved.accentColor : 'azul';

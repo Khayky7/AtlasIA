@@ -9904,7 +9904,7 @@ const LUMI_VOICE_GUIDE = "Guia de tom de voz da Lumi — equilibre sempre estes 
    INTENT_UNDERSTANDING_GUIDE logo abaixo: primeiro tenta entender pelo
    contexto disponível, só pergunta quando isso realmente não for
    suficiente (ver o guia abaixo pros critérios exatos). */
-const RELIABILITY_GUIDE = "Regras de confiabilidade: responda só o que você sabe com razoável confiança. Se não tiver certeza de um dado, número, prazo ou norma específica, diga claramente que não tem certeza e sugira como confirmar (ex: portal do credenciado, central de credenciamento, documentação oficial) em vez de inventar um valor plausível. Nunca invente números, datas, nomes, cláusulas de contrato ou dados de documentos que não foram te enviados nesta conversa. Se, mesmo depois de aplicar o INTENT_UNDERSTANDING_GUIDE (usar o contexto disponível pra entender o pedido), a pergunta do usuário continuar genuinamente ambígua de um jeito que mudaria a resposta, peça uma rápida confirmação antes de responder, em vez de adivinhar. Mantenha coerência com o assunto da conversa — não mude de tema nem repita informação já dada sem necessidade.";
+const RELIABILITY_GUIDE = "Regras de confiabilidade: responda só o que você sabe com razoável confiança. Se não tiver certeza de um dado, número, prazo ou norma específica, diga claramente que não tem certeza e sugira como confirmar (ex: portal do credenciado, central de credenciamento, documentação oficial) em vez de inventar um valor plausível. Nunca invente números, datas, nomes, cláusulas de contrato ou dados de documentos que não foram te enviados nesta conversa. Regra crítica sobre busca na internet: nunca narre um processo de busca (\"vou buscar\", \"um momento, por favor\", \"após a busca, encontrei...\") a menos que você realmente tenha feito uma busca de verdade e tenha resultados reais dela nesta chamada — se você não tem uma ferramenta de busca disponível ou ela não retornou nada útil, diga isso diretamente (ex: \"não encontrei isso disponível pra busca agora\"), nunca finja ter buscado. Nunca invente nomes de empresas, clínicas, profissionais, endereços, telefones ou outros dados de contato que pareçam reais — mesmo formatados de um jeito plausível (ex: \"Rua XYZ, 123\", \"Clínica A/B/C\") — sem uma fonte de verdade concreta (resultado real de busca, dado do Workspace desta conta, ou documento anexado nesta conversa); dado inventado apresentado como real é pior do que admitir que não encontrou nada. Se, mesmo depois de aplicar o INTENT_UNDERSTANDING_GUIDE (usar o contexto disponível pra entender o pedido), a pergunta do usuário continuar genuinamente ambígua de um jeito que mudaria a resposta, peça uma rápida confirmação antes de responder, em vez de adivinhar. Mantenha coerência com o assunto da conversa — não mude de tema nem repita informação já dada sem necessidade.";
 
 /* =========================================================
    ENTENDIMENTO DE PEDIDOS CURTOS/VAGOS — pedido explícito do usuário:
@@ -10330,10 +10330,12 @@ const WEB_SEARCH_TRIGGER_WORDS = [
 // buscar na internet, já que o conteúdo já está no texto da pergunta).
 const NO_SEARCH_HINT_WORDS = [
   'resuma', 'resumir', 'resumo de', 'resumo do texto',
-  'gere um email', 'gerar email', 'escreva um email', 'redija um email', 'redija uma mensagem',
+  'gere um email', 'gerar email', 'escreva um email', 'escrever um email', 'redija um email', 'redija uma mensagem',
+  'ajuda a escrever', 'ajude a escrever', 'ajuda a redigir', 'ajude a redigir', 'me ajuda a escrever',
   'explique o conceito', 'explique o que é', 'o que é', 'o que significa', 'como funciona',
   'crie um código', 'crie uma função', 'escreva um código', 'código em', 'programação em', 'debug', 'corrija esse código',
-  'corrija esse texto', 'revise este texto', 'revise esse texto', 'traduza', 'reescreva'
+  'corrija esse texto', 'revise este texto', 'revise esse texto', 'traduza', 'reescreva',
+  'cadastra essa clínica', 'cadastra esse projeto', 'cria um projeto', 'anota isso', 'lembra que', 'lembre que'
 ];
 
 // Reforço: perguntas do tipo "em que time/cargo fulano está AGORA" — ex:
@@ -10366,10 +10368,22 @@ const WEB_SEARCH_TRIGGER_PATTERNS = [
    "onde fulano está agora", ver WEB_SEARCH_TRIGGER_PATTERNS), sem gastar
    uma chamada extra de IA só pra "decidir se decide" — suficiente pros
    casos de uso do AtlasIA e sem custo/latência adicional. */
-function needsWebSearch(text){
+function needsWebSearch(text, mode){
   const t = (text || '').toLowerCase();
   if(!t) return false;
   if(NO_SEARCH_HINT_WORDS.some(w => t.includes(w))) return false;
+  // No modo Trabalho, encontrar clínicas/prestadores reais é o uso mais
+  // central do modo (credenciamento) — tentar prever toda frase possível
+  // com uma lista de palavras é frágil (ex: "medicina ocupacional em
+  // Pinheiros" não batia em nenhuma palavra da lista abaixo, e a IA acabou
+  // INVENTANDO clínicas/endereços/telefones falsos pra responder mesmo
+  // assim, em vez de buscar de verdade ou dizer que não achou). Por isso,
+  // nesse modo específico a busca fica ligada por padrão pra qualquer
+  // pedido que não seja claramente autocontido (já filtrado acima por
+  // NO_SEARCH_HINT_WORDS) — os outros modos continuam usando a lista de
+  // palavras/padrões abaixo, mais conservadora.
+  const activeMode = mode || currentMode;
+  if(activeMode === 'trabalho') return true;
   if(WEB_SEARCH_TRIGGER_WORDS.some(w => t.includes(w))) return true;
   return WEB_SEARCH_TRIGGER_PATTERNS.some(re => re.test(t));
 }

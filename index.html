@@ -836,6 +836,10 @@
   }
   .copiloto-result-bubble p{ margin:0 0 8px; }
   .copiloto-result-bubble p:last-child{ margin-bottom:0; }
+  /* Atalhos usa texto puro (não markdown) — precisa preservar quebras de
+     linha e bullets "•" do template, senão tudo colapsa numa única linha
+     visualmente (o texto continua certo por baixo, só não aparece certo). */
+  .copiloto-result-bubble.plain-text{ white-space:pre-wrap; }
   .copiloto-result-actions{
     display:flex;
     gap:8px;
@@ -2861,14 +2865,16 @@ const SHORTCUTS = [
     message:
 `CRONOGRAMA DE PAGAMENTO FATURADO
 
-A clínica deve enviar a nota fiscal original, sem rasuras, acompanhada do detalhamento dos atendimentos e dados bancários.
+Requisito para pagamento:
+• Nota fiscal original, sem rasuras, acompanhada do detalhamento dos atendimentos e dados bancários.
 
-Notas fiscais recebidas entre os dias 1 e 15: pagamento no dia 15 do mês subsequente.
-Notas fiscais recebidas entre os dias 16 e 30/31: pagamento no dia 5 do segundo mês subsequente.
+Prazos:
+• Notas fiscais recebidas entre os dias 1 e 15 → pagamento no dia 15 do mês subsequente.
+• Notas fiscais recebidas entre os dias 16 e 30/31 → pagamento no dia 5 do segundo mês subsequente.
 
 Atendimentos realizados pela plataforma Vlow:
-Faturamento enviado até o dia 10 → pagamento no dia 25 do mesmo mês;
-Faturamento enviado após o dia 10 → segue a regra normal, recebimento no dia 15 do mês subsequente.`
+• Faturamento enviado até o dia 10 → pagamento no dia 25 do mesmo mês.
+• Faturamento enviado após o dia 10 → segue a regra normal, recebimento no dia 15 do mês subsequente.`
   },
   {
     id: "logistica-reversa",
@@ -2886,18 +2892,19 @@ Após o recebimento do código, o envio poderá ser realizado sem custos para a 
     message:
 `Assunto: Solicitação de Aprovação de Valor - [Nome da Região]
 
-Prezadas, bom dia! Tudo bem?
-Gostaria de solicitar a sua análise para aprovação dos valores abaixo.
+Prezadas, bom dia!
+Tudo bem?
+Gostaria de solicitar a sua análise para aprovação dos valores abaixo:
 
-Cliente:
-Cidade/UF:
-Motivo da solicitação:
-Dados da clínica:
-Exame(s) e valor(es): R$ XX,XX
-Forma de atendimento: Ordem de chegada / Agendamento
-Forma de Pagamento: Faturado / Pagamento antecipado
-Deslocamento para clínica mais próxima que atende toda a grade: XX km - nome da clínica
-Negociação: Informar se foi realizada tentativa de negociação com a clínica e o respectivo resultado.
+• Cliente:
+• Cidade/UF:
+• Motivo da solicitação:
+• Dados da clínica:
+• Exame(s) e valor(es): R$ XX,XX
+• Forma de atendimento: Ordem de chegada / Agendamento
+• Forma de Pagamento: Faturado / Pagamento antecipado
+• Deslocamento para clínica mais próxima que atende toda a grade: XX km - nome da clínica
+• Negociação: Informar se foi realizada tentativa de negociação com a clínica e o respectivo resultado.
 
 Agradeço desde já pela análise e fico à disposição caso seja necessário qualquer esclarecimento adicional.`
   },
@@ -2923,13 +2930,15 @@ Fico no aguardo. Muito obrigado!`
     message:
 `DADOS PARA ASSINATURA DO CONTRATO
 
-Nome do representante legal:
-E-mail:
-CPF:
+Representante legal:
+• Nome:
+• E-mail:
+• CPF:
 
-Nome da testemunha (e-mail diferente do representante legal):
-E-mail:
-CPF:`
+Testemunha:
+• Nome:
+• E-mail (e-mail diferente do representante legal):
+• CPF:`
   },
   {
     id: "mudanca-contrato",
@@ -2945,18 +2954,18 @@ Segue modelo para sua análise, após me dizer que deseja seguir nesse modelo, e
     message:
 `DADOS PARA PREENCHIMENTO DO CONTRATO
 
-Nome: Tayna Lehmann Monteiro das Neves
-RG: 50.673.655-7
-CPF: 452.726.048-06
-E-mail: tneves@vixting.com.br
+1) Tayna Lehmann Monteiro das Neves
+• RG: 50.673.655-7
+• CPF: 452.726.048-06
+• E-mail: tneves@vixting.com.br
 
-Nome: Ana Paula Dansiguer Amorim Peixoto Pinto
-CPF: 368.039.888-30
-E-mail: ana.amorim@vixting.com.br
+2) Ana Paula Dansiguer Amorim Peixoto Pinto
+• CPF: 368.039.888-30
+• E-mail: ana.amorim@vixting.com.br
 
-Nome: Giovanna Leonel Pereira
-CPF: 521.432.168-66
-E-mail: giovanna.leonel@vixting.com.br`
+3) Giovanna Leonel Pereira
+• CPF: 521.432.168-66
+• E-mail: giovanna.leonel@vixting.com.br`
   },
   {
     id: "sistema-dani",
@@ -3229,7 +3238,7 @@ function renderAtalhosResult(shortcut){
   resultBox.appendChild(label);
 
   const bubble = document.createElement('div');
-  bubble.className = 'copiloto-result-bubble';
+  bubble.className = 'copiloto-result-bubble plain-text';
   bubble.textContent = shortcut.message;
   resultBox.appendChild(bubble);
 

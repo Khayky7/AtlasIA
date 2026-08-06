@@ -1312,6 +1312,46 @@
   }
   .vlow-heading{ font-size:24px; margin:0; color:var(--text); }
   .vlow-subtitle{ font-size:13.5px; color:var(--text-dim); margin:0; line-height:1.5; }
+
+  /* Sub-abas dentro de uma tela cheia (hoje só a aba Contratos usa, pra
+     alternar entre "Comparar" e "Preenchimento automático"). */
+  .contratos-subtabs{ display:flex; gap:8px; flex-wrap:wrap; }
+  .contratos-subtab{
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    color:var(--text-dim);
+    padding:8px 14px;
+    border-radius:10px;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .contratos-subtab:hover{ border-color:var(--accent); color:var(--text); }
+  .contratos-subtab.active{ background:var(--accent); border-color:var(--accent); color:#fff; }
+
+  /* Preenchimento automático de contrato: lista de modelos salvos + botão
+     de marcação de cor/destaque detectado no upload. */
+  .contract-marker-option{
+    width:100%;
+    text-align:left;
+    cursor:pointer;
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    font-size:13px;
+    line-height:1.5;
+  }
+  .contract-marker-option:hover{ border-color:var(--accent); }
+  .contract-marker-swatch{
+    display:inline-block;
+    width:16px; height:16px;
+    border-radius:4px;
+    border:1px solid var(--border);
+    flex:0 0 auto;
+    margin-top:2px;
+  }
+  .contract-missing-list{ margin:6px 0 0; padding-left:18px; font-size:12.5px; line-height:1.6; color:var(--text-dim); }
+  .contract-review-input, .contract-code-input{ width:100%; box-sizing:border-box; }
   .vlow-link-row{ display:flex; gap:8px; }
   .vlow-link-row input{
     flex:1;
@@ -6045,6 +6085,11 @@ function showContratosView(){
   closeSidebarIfMobile();
 }
 
+// Qual sub-tela da aba Contratos está ativa — 'comparador' (original) ou
+// 'preencher' (Preenchimento automático, ver mais abaixo). Persiste só
+// durante a sessão (não precisa lembrar entre visitas).
+let contratosSubView = 'comparador';
+
 function renderContratosView(){
   const chat = document.getElementById('chat');
   chat.innerHTML = '';
@@ -6054,9 +6099,35 @@ function renderContratosView(){
 
   const heading = document.createElement('h2');
   heading.className = 'vlow-heading';
-  heading.textContent = 'Comparador de Contratos';
+  heading.textContent = 'Contratos';
   wrap.appendChild(heading);
 
+  const subtabs = document.createElement('div');
+  subtabs.className = 'contratos-subtabs';
+  const tabDefs = [
+    { key: 'comparador', label: '🔍 Comparar contratos' },
+    { key: 'preencher', label: '📝 Preenchimento automático' },
+  ];
+  tabDefs.forEach(t => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'contratos-subtab' + (contratosSubView === t.key ? ' active' : '');
+    btn.textContent = t.label;
+    btn.onclick = () => { contratosSubView = t.key; renderContratosView(); };
+    subtabs.appendChild(btn);
+  });
+  wrap.appendChild(subtabs);
+
+  if(contratosSubView === 'preencher'){
+    renderContratoPreenchimentoSection(wrap);
+  } else {
+    renderContratoComparadorSection(wrap);
+  }
+
+  chat.appendChild(wrap);
+}
+
+function renderContratoComparadorSection(wrap){
   const subtitle = document.createElement('p');
   subtitle.className = 'vlow-subtitle';
   subtitle.textContent = 'Suba dois PDFs (ex: contrato antigo e novo, ou duas propostas) e a IA lista as diferenças concretas entre eles — cláusulas, valores, prazos e datas. Só funciona nesta sessão; os arquivos não ficam salvos em lugar nenhum.';
@@ -6074,8 +6145,891 @@ function renderContratosView(){
   compareBtn.disabled = !(contratoA && contratoB);
   compareBtn.onclick = compareContratos;
   wrap.appendChild(compareBtn);
+}
 
-  chat.appendChild(wrap);
+/* =========================================================
+   PREENCHIMENTO AUTOMÁTICO DE CONTRATO (Word) — 100% no navegador, sem
+   nenhuma biblioteca externa. Um .docx é, por baixo, um arquivo ZIP com
+   XML dentro — então lemos/escrevemos esse ZIP manualmente aqui (formato
+   binário simples e bem documentado) e usamos as APIs nativas do
+   navegador CompressionStream/DecompressionStream (Chrome/Edge, Safari
+   16.4+, Firefox 113+) pra inflar/deflatar cada parte comprimida — mesmo
+   raciocínio já usado neste projeto pra tirar dependência de CDN externo
+   (ver comentário do pdf.js vendorizado, "vendor/pdfjs/").
+
+   Como funciona, ponta a ponta:
+   1) Você sobe um modelo de contrato em Word (.docx) que já tem os campos
+      variáveis (nome, CPF, endereço etc.) marcados com destaque/cor no
+      próprio Word — a Vixting já faz isso (conferido no contrato real:
+      usa "Realce" ciano do Word em cima dos campos a preencher).
+   2) O app detecta essa marcação sozinho e mostra as opções encontradas
+      pra você confirmar qual é a certa (evita confundir negrito/título
+      com campo de verdade).
+   3) Na hora de gerar um contrato, você cola os dados da parte contratada
+      em texto livre; a IA lê o rótulo ao redor de cada campo (o texto do
+      parágrafo, tipo "CPF:" do lado) e decide qual valor vai onde — nunca
+      inventa: campo sem dado correspondente fica marcado "[PREENCHER]"
+      (continua destacado) em vez de vir preenchido errado.
+   4) O .docx final baixa pronto, com a formatação original intacta — só
+      o texto dos campos preenchidos muda, e o destaque desses campos é
+      removido; os que ficaram faltando continuam destacados, pra chamar
+      atenção na revisão manual antes de assinar.
+   Nenhum contrato PREENCHIDO (com dado real de pessoa) é salvo na nuvem —
+   só o modelo em branco. O preenchimento roda no navegador na hora, e o
+   arquivo final vai direto pro download.
+   ========================================================= */
+
+const CONTRACT_TEMPLATES_BUCKET = 'contract-templates';
+const DOCX_W_NS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+
+// ---- CRC32 (obrigatório no cabeçalho de cada entrada do zip) ----
+const DOCX_CRC_TABLE = (() => {
+  const table = new Uint32Array(256);
+  for(let n = 0; n < 256; n++){
+    let c = n;
+    for(let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    table[n] = c >>> 0;
+  }
+  return table;
+})();
+function docxCrc32(bytes){
+  let crc = 0xFFFFFFFF;
+  for(let i = 0; i < bytes.length; i++) crc = DOCX_CRC_TABLE[(crc ^ bytes[i]) & 0xFF] ^ (crc >>> 8);
+  return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+
+async function docxInflateRaw(bytes){
+  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+async function docxDeflateRaw(bytes){
+  const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate-raw'));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+/* Lê um .docx (ZIP) percorrendo os Local File Headers sequencialmente.
+   Cada entrada guarda o método original (8=deflate, 0=stored) pra
+   docxBuildZip recomprimir do mesmo jeito por padrão — só quem MODIFICA
+   uma entrada (o word/document.xml, depois de editado) precisa trocar
+   isso manualmente. */
+async function docxReadZip(arrayBuffer){
+  const bytes = new Uint8Array(arrayBuffer);
+  const view = new DataView(arrayBuffer);
+  const entries = [];
+  let offset = 0;
+  while(offset < bytes.length - 4){
+    if(view.getUint32(offset, true) !== 0x04034b50) break; // fim dos Local File Headers
+    const method = view.getUint16(offset + 8, true);
+    const compSize = view.getUint32(offset + 18, true);
+    const nameLen = view.getUint16(offset + 26, true);
+    const extraLen = view.getUint16(offset + 28, true);
+    const name = new TextDecoder('utf-8').decode(bytes.subarray(offset + 30, offset + 30 + nameLen));
+    const dataStart = offset + 30 + nameLen + extraLen;
+    const compBytes = bytes.slice(dataStart, dataStart + compSize);
+    let data;
+    if(method === 0) data = compBytes;
+    else if(method === 8) data = await docxInflateRaw(compBytes);
+    else throw new Error('Formato de compressão do .docx não suportado (' + method + ') em ' + name);
+    entries.push({ name, data, method });
+    offset = dataStart + compSize;
+  }
+  return entries;
+}
+
+function docxU16(n){ const b = new Uint8Array(2); new DataView(b.buffer).setUint16(0, n, true); return b; }
+function docxU32(n){ const b = new Uint8Array(4); new DataView(b.buffer).setUint32(0, n, true); return b; }
+function docxConcat(chunks){
+  const total = chunks.reduce((s, c) => s + c.length, 0);
+  const out = new Uint8Array(total);
+  let o = 0;
+  for(const c of chunks){ out.set(c, o); o += c.length; }
+  return out;
+}
+
+/* Escreve local file headers + central directory + EOCD. Cada entrada
+   mantém seu método original (docxReadZip já preservou isso); só
+   recomprime de fato quando method===8. */
+async function docxBuildZip(entries){
+  const encoder = new TextEncoder();
+  const localChunks = [];
+  const centralChunks = [];
+  let offset = 0;
+  for(const entry of entries){
+    const nameBytes = encoder.encode(entry.name);
+    const method = entry.method === 8 ? 8 : 0;
+    const compBytes = method === 8 ? await docxDeflateRaw(entry.data) : entry.data;
+    const crc = docxCrc32(entry.data);
+    const localHeader = docxConcat([
+      docxU32(0x04034b50), docxU16(20), docxU16(0), docxU16(method), docxU16(0), docxU16(0),
+      docxU32(crc), docxU32(compBytes.length), docxU32(entry.data.length),
+      docxU16(nameBytes.length), docxU16(0), nameBytes,
+    ]);
+    localChunks.push(localHeader, compBytes);
+    const centralHeader = docxConcat([
+      docxU32(0x02014b50), docxU16(20), docxU16(20), docxU16(0), docxU16(method), docxU16(0), docxU16(0),
+      docxU32(crc), docxU32(compBytes.length), docxU32(entry.data.length),
+      docxU16(nameBytes.length), docxU16(0), docxU16(0), docxU16(0), docxU16(0), docxU32(0),
+      docxU32(offset), nameBytes,
+    ]);
+    centralChunks.push(centralHeader);
+    offset += localHeader.length + compBytes.length;
+  }
+  const centralStart = offset;
+  const centralBytes = docxConcat(centralChunks);
+  const eocd = docxConcat([
+    docxU32(0x06054b50), docxU16(0), docxU16(0), docxU16(entries.length), docxU16(entries.length),
+    docxU32(centralBytes.length), docxU32(centralStart), docxU16(0),
+  ]);
+  return docxConcat([...localChunks, centralBytes, eocd]).buffer;
+}
+
+/* A marcação de "campo a preencher" pode ser DESTAQUE/marca-texto
+   (<w:highlight>, o caso real da Vixting) ou COR DE FONTE (<w:color>) —
+   suporto os dois, porque "cor" no sentido comum cobre ambos e quem
+   prepara o modelo no Word pode ter usado qualquer um dos dois. */
+function docxGetRunMarker(run){
+  const rPr = run.getElementsByTagNameNS(DOCX_W_NS, 'rPr')[0];
+  if(!rPr) return null;
+  const highlight = rPr.getElementsByTagNameNS(DOCX_W_NS, 'highlight')[0];
+  if(highlight){
+    const val = highlight.getAttributeNS(DOCX_W_NS, 'val') || highlight.getAttribute('w:val');
+    if(val && val !== 'none') return { kind: 'highlight', value: val.toLowerCase() };
+  }
+  const color = rPr.getElementsByTagNameNS(DOCX_W_NS, 'color')[0];
+  if(color){
+    const val = color.getAttributeNS(DOCX_W_NS, 'val') || color.getAttribute('w:val');
+    if(val && val.toLowerCase() !== 'auto') return { kind: 'color', value: val.toUpperCase() };
+  }
+  return null;
+}
+function docxGetRunText(run){
+  return Array.from(run.getElementsByTagNameNS(DOCX_W_NS, 't')).map(t => t.textContent).join('');
+}
+function docxSetRunText(run, text){
+  const tNodes = run.getElementsByTagNameNS(DOCX_W_NS, 't');
+  if(!tNodes.length) return;
+  tNodes[0].textContent = text;
+  tNodes[0].setAttribute('xml:space', 'preserve');
+  for(let i = 1; i < tNodes.length; i++) tNodes[i].textContent = '';
+}
+function docxClearRunMarker(run){
+  const rPr = run.getElementsByTagNameNS(DOCX_W_NS, 'rPr')[0];
+  if(!rPr) return;
+  const highlight = rPr.getElementsByTagNameNS(DOCX_W_NS, 'highlight')[0];
+  if(highlight) rPr.removeChild(highlight);
+  const color = rPr.getElementsByTagNameNS(DOCX_W_NS, 'color')[0];
+  if(color) rPr.removeChild(color);
+}
+
+/* Extrai os campos marcados no document.xml (procura em TODO o corpo,
+   inclusive dentro de tabelas — getElementsByTagNameNS não distingue
+   aninhamento), cada um com o texto do parágrafo inteiro como contexto
+   (o "rótulo" do lado). Retorna { doc, placeholders } — doc é o XML já
+   parseado, mantido em memória pra reaproveitar exatamente os mesmos nós
+   na hora de preencher, sem re-parsear e arriscar desalinhar índices. */
+function docxExtractPlaceholders(documentXmlText, targetMarker){
+  const doc = new DOMParser().parseFromString(documentXmlText, 'application/xml');
+  const placeholders = [];
+  for(const p of doc.getElementsByTagNameNS(DOCX_W_NS, 'p')){
+    const runs = Array.from(p.getElementsByTagNameNS(DOCX_W_NS, 'r'));
+    const paragraphText = runs.map(docxGetRunText).join('');
+    runs.forEach((run) => {
+      const marker = docxGetRunMarker(run);
+      if(marker && marker.kind === targetMarker.kind && marker.value === targetMarker.value){
+        placeholders.push({ id: placeholders.length, run, originalText: docxGetRunText(run), paragraphText });
+      }
+    });
+  }
+  return { doc, placeholders };
+}
+
+/* Lista todas as marcações (destaque/cor de fonte) presentes no
+   documento — pro passo de upload perguntar "qual dessas marca os campos
+   a preencher?" sem o usuário precisar adivinhar um código de cor. */
+function docxListDistinctMarkers(documentXmlText){
+  const doc = new DOMParser().parseFromString(documentXmlText, 'application/xml');
+  const markers = new Map();
+  for(const run of doc.getElementsByTagNameNS(DOCX_W_NS, 'r')){
+    const marker = docxGetRunMarker(run);
+    if(!marker) continue;
+    const text = docxGetRunText(run);
+    if(!text.trim()) continue;
+    const key = marker.kind + ':' + marker.value;
+    if(!markers.has(key)) markers.set(key, { ...marker, count: 0, samples: [] });
+    const entry = markers.get(key);
+    entry.count++;
+    if(entry.samples.length < 5) entry.samples.push(text.trim());
+  }
+  return Array.from(markers.values());
+}
+
+function docxApplyFills(placeholders, valuesById){
+  const missing = [];
+  placeholders.forEach((ph) => {
+    const value = valuesById[ph.id];
+    if(value === null || value === undefined || value === ''){
+      // Deixa marcado visivelmente em vez de sumir com o campo — nunca
+      // inventa um dado que não veio.
+      docxSetRunText(ph.run, '[PREENCHER]');
+      missing.push(ph);
+    } else {
+      docxSetRunText(ph.run, value);
+      docxClearRunMarker(ph.run);
+    }
+  });
+  return missing;
+}
+
+function markerToCssColor(marker){
+  if(marker.kind === 'color') return '#' + marker.value;
+  const HIGHLIGHT_CSS = {
+    yellow:'#FFFF00', green:'#00FF00', cyan:'#00FFFF', magenta:'#FF00FF', blue:'#0000FF', red:'#FF0000',
+    darkblue:'#000080', darkcyan:'#008080', darkgreen:'#008000', darkmagenta:'#800080', darkred:'#800000',
+    darkyellow:'#808000', darkgray:'#808080', lightgray:'#C0C0C0', black:'#000000', white:'#FFFFFF',
+  };
+  return HIGHLIGHT_CSS[marker.value.toLowerCase()] || '#999999';
+}
+
+/* Sugere um CÓDIGO curto (ex: "RAZAO_SOCIAL", "CPF", "EMAIL") pra um campo
+   marcado, a partir do texto que já está escrito ali dentro no Word — na
+   prática, quem prepara o contrato já costuma escrever algo descritivo no
+   lugar do dado (o contrato real da Vixting, por ex, tem campos com o
+   texto "RAZÃO SOCIAL", "ENDEREÇO", "E-MAIL" já dentro do trecho marcado).
+   Isso vira a referência principal da IA na hora de casar cada campo com o
+   dado certo — bem mais confiável que só o contexto ao redor, que pode
+   confundir campos parecidos (ex: CPF do representante x CPF da
+   testemunha). Sempre pode ser editado pela pessoa antes de salvar o
+   modelo (ver renderContractUploadCodes), então um palpite imperfeito
+   aqui não é grave. */
+const CONTRACT_FIELD_KEYWORDS = [
+  'CNPJ', 'CPF', 'RG', 'CEP', 'EMAIL', 'TELEFONE', 'CELULAR', 'ENDERECO',
+  'CIDADE', 'ESTADO', 'BAIRRO', 'RUA', 'NUMERO', 'RAZAO SOCIAL', 'NOME',
+  'REPRESENTANTE', 'TESTEMUNHA', 'DATA', 'VALOR', 'CARGO', 'PROFISSAO',
+];
+function suggestFieldCode(originalText, paragraphText, usedCodes){
+  const normalize = (s) => (s || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+  let base = normalize(originalText).replace(/[^A-Z\s]/g, ' ').trim().replace(/\s+/g, '_');
+  if(base.length < 2){
+    // Texto do campo não tem letra suficiente (ex: só números/pontuação,
+    // como um CNPJ de exemplo "00.000.000/0001-00") — procura uma palavra-
+    // chave conhecida no texto do parágrafo ao redor como pista melhor.
+    const normParagraph = normalize(paragraphText);
+    const found = CONTRACT_FIELD_KEYWORDS.find(kw => normParagraph.includes(kw));
+    base = found ? found.replace(/\s+/g, '_') : 'CAMPO';
+  }
+  base = base.slice(0, 40);
+  // Garante um código único dentro do mesmo modelo (evita dois campos com
+  // o mesmo código, o que tornaria o casamento ambíguo).
+  let code = base;
+  let n = 2;
+  while(usedCodes.has(code)){ code = base + '_' + n; n++; }
+  usedCodes.add(code);
+  return code;
+}
+
+// ---- Supabase: modelos de contrato salvos (bucket privado + tabela) ----
+async function listContractTemplates(){
+  const client = getSupabaseClient();
+  if(!client || !cloudUser) return [];
+  const { data, error } = await client
+    .from('contract_templates')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if(error){ console.warn('Erro ao listar modelos de contrato:', error.message); return []; }
+  return data || [];
+}
+
+async function uploadContractTemplate(file, marker, name, fieldCodes){
+  const client = getSupabaseClient();
+  if(!client) throw new Error('Sem conexão com o serviço de armazenamento agora.');
+  if(!cloudUser) throw new Error('Faça login antes de enviar um modelo.');
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const path = 'templates/' + Date.now() + '_' + safeName;
+  const { error: upErr } = await client.storage.from(CONTRACT_TEMPLATES_BUCKET).upload(path, file, {
+    cacheControl: '3600', upsert: false,
+  });
+  if(upErr) throw upErr;
+  const { data, error: insErr } = await client.from('contract_templates').insert({
+    name, storage_path: path, marker_kind: marker.kind, marker_value: marker.value, field_count: marker.count,
+    field_codes: fieldCodes || [],
+  }).select().single();
+  if(insErr) throw insErr;
+  return data;
+}
+
+async function downloadContractTemplateBytes(storagePath){
+  const client = getSupabaseClient();
+  if(!client) throw new Error('Sem conexão com o serviço de armazenamento agora.');
+  const { data, error } = await client.storage.from(CONTRACT_TEMPLATES_BUCKET).download(storagePath);
+  if(error) throw error;
+  return await data.arrayBuffer();
+}
+
+async function deleteContractTemplate(template){
+  const client = getSupabaseClient();
+  if(!client) throw new Error('Sem conexão com o serviço de armazenamento agora.');
+  await client.storage.from(CONTRACT_TEMPLATES_BUCKET).remove([template.storage_path]);
+  const { error } = await client.from('contract_templates').delete().eq('id', template.id);
+  if(error) throw error;
+}
+
+// ---- Estado da tela ----
+let contractTemplatesCache = null; // carregado sob demanda, invalidado ao salvar/remover
+let selectedContractTemplateId = null;
+let pendingContractUpload = null; // { file, xmlText, markers, name } — durante a revisão do upload, antes de confirmar
+
+function renderContratoPreenchimentoSection(wrap){
+  if(!cloudUser){
+    const gate = document.createElement('div');
+    gate.className = 'workspace-item';
+    gate.style.cssText = 'flex-direction:column; align-items:flex-start; gap:8px;';
+    const msg = document.createElement('p');
+    msg.className = 'vlow-subtitle';
+    msg.style.margin = '0';
+    msg.textContent = 'Os modelos de contrato ficam guardados na sua conta, por isso essa função só está disponível pra quem está logado.';
+    gate.appendChild(msg);
+    const loginBtn = document.createElement('button');
+    loginBtn.type = 'button';
+    loginBtn.className = 'vlow-share-btn';
+    loginBtn.textContent = 'Entrar / criar conta';
+    loginBtn.onclick = () => showAuthOverlay();
+    gate.appendChild(loginBtn);
+    wrap.appendChild(gate);
+    return;
+  }
+
+  const subtitle = document.createElement('p');
+  subtitle.className = 'vlow-subtitle';
+  subtitle.textContent = 'Suba um modelo de contrato em Word (.docx) com os campos que variam já destacados/coloridos no próprio documento (nome, CPF, endereço etc.) — o app detecta a marcação sozinho. Depois é só escolher o modelo salvo, colar os dados da parte contratada e baixar o contrato pronto, com a formatação original.';
+  wrap.appendChild(subtitle);
+
+  const contentBox = document.createElement('div');
+  contentBox.id = 'contractFillContent';
+  contentBox.style.cssText = 'display:flex; flex-direction:column; gap:10px;';
+  wrap.appendChild(contentBox);
+
+  if(pendingContractUpload){
+    renderContractUploadReview(contentBox);
+  } else if(selectedContractTemplateId){
+    renderContractFillForm(contentBox);
+  } else {
+    renderContractTemplateList(contentBox);
+  }
+}
+
+async function renderContractTemplateList(box){
+  box.innerHTML = '<p class="vlow-subtitle">Carregando modelos salvos…</p>';
+  if(!contractTemplatesCache) contractTemplatesCache = await listContractTemplates();
+  // A pessoa pode ter saído da tela (ou trocado de sub-aba) enquanto isso
+  // carregava — não redesenha por cima de outra coisa nesse caso.
+  if(currentView !== 'contratos' || contratosSubView !== 'preencher' || pendingContractUpload || selectedContractTemplateId) return;
+  box.innerHTML = '';
+
+  if(contractTemplatesCache.length){
+    const listTitle = document.createElement('strong');
+    listTitle.textContent = 'Modelos salvos';
+    box.appendChild(listTitle);
+
+    contractTemplatesCache.forEach((tpl) => {
+      const item = document.createElement('div');
+      item.className = 'workspace-item';
+
+      const info = document.createElement('div');
+      info.className = 'workspace-item-info';
+      const name = document.createElement('strong');
+      name.textContent = tpl.name;
+      info.appendChild(name);
+      const meta = document.createElement('span');
+      meta.className = 'workspace-file-status';
+      meta.textContent = tpl.field_count + ' campo(s) detectado(s)';
+      info.appendChild(meta);
+      item.appendChild(info);
+
+      const actions = document.createElement('div');
+      actions.style.cssText = 'display:flex; gap:8px; flex-shrink:0;';
+      const useBtn = document.createElement('button');
+      useBtn.type = 'button';
+      useBtn.className = 'vlow-share-btn';
+      useBtn.textContent = 'Usar este modelo';
+      useBtn.onclick = () => { selectedContractTemplateId = tpl.id; renderContratosView(); };
+      actions.appendChild(useBtn);
+
+      const delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'vlow-share-btn';
+      delBtn.textContent = '🗑️';
+      delBtn.title = 'Remover modelo';
+      delBtn.onclick = async () => {
+        if(!confirm('Remover o modelo "' + tpl.name + '"? Essa ação não pode ser desfeita.')) return;
+        try{
+          await deleteContractTemplate(tpl);
+          contractTemplatesCache = null;
+          renderContratosView();
+        }catch(err){
+          showToast('Não consegui remover: ' + err.message);
+        }
+      };
+      actions.appendChild(delBtn);
+
+      item.appendChild(actions);
+      box.appendChild(item);
+    });
+  }
+
+  const uploadBtn = document.createElement('label');
+  uploadBtn.className = 'workspace-file-btn';
+  uploadBtn.style.marginTop = '4px';
+  uploadBtn.textContent = '+ Enviar novo modelo (.docx)';
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = '.docx';
+  fileInput.onchange = () => handleContractTemplateFileSelect(fileInput);
+  uploadBtn.appendChild(fileInput);
+  box.appendChild(uploadBtn);
+}
+
+function handleContractTemplateFileSelect(fileInput){
+  const file = fileInput.files && fileInput.files[0];
+  if(!file) return;
+  if(!file.name.toLowerCase().endsWith('.docx')){
+    showToast('Só arquivos .docx (Word) são aceitos.');
+    fileInput.value = '';
+    return;
+  }
+  (async () => {
+    try{
+      const arrayBuffer = await file.arrayBuffer();
+      const entries = await docxReadZip(arrayBuffer);
+      const docEntry = entries.find(e => e.name === 'word/document.xml');
+      if(!docEntry) throw new Error('Esse arquivo não parece um .docx válido.');
+      const xmlText = new TextDecoder('utf-8').decode(docEntry.data);
+      const markers = docxListDistinctMarkers(xmlText);
+      if(!markers.length) throw new Error('Não encontrei nenhum texto destacado/colorido nesse documento. Marque no Word (com "Realce" ou cor da fonte) os campos que devem ser preenchidos automaticamente, e suba de novo.');
+      pendingContractUpload = { file, xmlText, markers, name: file.name.replace(/\.docx$/i, ''), chosenMarker: null, placeholders: null, codes: null };
+      renderContratosView();
+    }catch(err){
+      showToast('Não consegui ler esse arquivo: ' + err.message);
+    }
+  })();
+}
+
+function renderContractUploadReview(box){
+  box.innerHTML = '';
+  if(pendingContractUpload.chosenMarker){
+    renderContractUploadCodes(box);
+    return;
+  }
+
+  const { markers, name } = pendingContractUpload;
+
+  const nameLabel = document.createElement('label');
+  nameLabel.style.cssText = 'display:block; font-size:12px; font-weight:700;';
+  nameLabel.textContent = 'Nome deste modelo';
+  box.appendChild(nameLabel);
+
+  const nameInput = document.createElement('input');
+  nameInput.type = 'text';
+  nameInput.id = 'contractTemplateNameInput';
+  nameInput.className = 'workspace-input';
+  nameInput.style.cssText = 'width:100%; box-sizing:border-box;';
+  nameInput.value = name;
+  box.appendChild(nameInput);
+
+  const title = document.createElement('strong');
+  title.style.marginTop = '6px';
+  title.textContent = 'Qual marcação indica um campo a preencher?';
+  box.appendChild(title);
+
+  const desc = document.createElement('p');
+  desc.className = 'vlow-subtitle';
+  desc.textContent = 'Encontrei ' + markers.length + ' marcação(ões) diferente(s) nesse documento. Escolha qual delas marca os campos a preencher — as outras não serão tocadas.';
+  box.appendChild(desc);
+
+  markers.forEach((m) => {
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.className = 'workspace-item contract-marker-option';
+    const swatch = document.createElement('span');
+    swatch.className = 'contract-marker-swatch';
+    swatch.style.background = markerToCssColor(m);
+    item.appendChild(swatch);
+    const label = document.createElement('span');
+    label.innerHTML = '<strong>' + (m.kind === 'highlight' ? 'Destaque ' + escapeHtml(m.value) : 'Cor de fonte #' + escapeHtml(m.value)) + '</strong> — ' + m.count + ' ocorrência(s). Exemplos: ' + m.samples.map(s => '"' + escapeHtml(s) + '"').join(', ');
+    item.appendChild(label);
+    item.onclick = () => chooseContractUploadMarker(m);
+    box.appendChild(item);
+  });
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.type = 'button';
+  cancelBtn.className = 'vlow-share-btn';
+  cancelBtn.textContent = 'Cancelar';
+  cancelBtn.onclick = () => { pendingContractUpload = null; renderContratosView(); };
+  box.appendChild(cancelBtn);
+}
+
+/* Depois de escolher a marcação, extrai TODOS os campos daquela marcação e
+   sugere um código curto pra cada um (ver suggestFieldCode) — o próximo
+   passo (renderContractUploadCodes) deixa a pessoa conferir/ajustar cada
+   código antes de salvar o modelo de vez. */
+function chooseContractUploadMarker(marker){
+  // Captura o nome (possivelmente editado) ANTES de trocar de tela — a
+  // próxima etapa (códigos por campo) não tem esse campo de nome.
+  const nameInputNow = document.getElementById('contractTemplateNameInput');
+  if(nameInputNow && nameInputNow.value.trim()) pendingContractUpload.name = nameInputNow.value.trim();
+
+  const { doc, placeholders } = docxExtractPlaceholders(pendingContractUpload.xmlText, marker);
+  const usedCodes = new Set();
+  const codes = placeholders.map(ph => suggestFieldCode(ph.originalText, ph.paragraphText, usedCodes));
+  pendingContractUpload.chosenMarker = marker;
+  pendingContractUpload.placeholders = placeholders;
+  pendingContractUpload.codes = codes;
+  renderContratosView();
+}
+
+/* Última etapa da revisão de upload: um código curto editável por campo
+   (ex: "CPF", "EMAIL", "TESTEMUNHA_NOME") — é essa referência que a IA usa
+   como sinal principal na hora de preencher (ver buildContractFillUserText),
+   então vale a pena a pessoa bater o olho aqui antes de salvar. */
+function renderContractUploadCodes(box){
+  box.innerHTML = '';
+  const { placeholders, codes, name } = pendingContractUpload;
+
+  const nameNote = document.createElement('p');
+  nameNote.className = 'vlow-subtitle';
+  nameNote.style.margin = '0';
+  nameNote.innerHTML = 'Modelo: <strong>' + escapeHtml(name || '') + '</strong>';
+  box.appendChild(nameNote);
+
+  const title = document.createElement('strong');
+  title.textContent = 'Confira o código de cada campo (' + placeholders.length + ' encontrado(s))';
+  box.appendChild(title);
+
+  const desc = document.createElement('p');
+  desc.className = 'vlow-subtitle';
+  desc.textContent = 'Sugeri um código curto pra cada campo a partir do texto que já estava escrito ali no Word — ajuste se algum ficou estranho ou ambíguo (ex: dois campos de CPF diferentes precisam de códigos diferentes, tipo CPF_REPRESENTANTE e CPF_TESTEMUNHA).';
+  box.appendChild(desc);
+
+  placeholders.forEach((ph, idx) => {
+    const row = document.createElement('div');
+    row.className = 'workspace-item';
+    row.style.cssText = 'flex-direction:column; align-items:stretch; gap:6px;';
+
+    const context = document.createElement('span');
+    context.className = 'workspace-file-status';
+    context.textContent = ph.paragraphText.replace(/\s+/g, ' ').trim().slice(0, 160);
+    row.appendChild(context);
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'workspace-input contract-code-input';
+    input.dataset.codeIndex = String(idx);
+    input.value = codes[idx];
+    row.appendChild(input);
+
+    box.appendChild(row);
+  });
+
+  const actionsRow = document.createElement('div');
+  actionsRow.style.cssText = 'display:flex; gap:8px; margin-top:4px;';
+
+  const backBtn = document.createElement('button');
+  backBtn.type = 'button';
+  backBtn.className = 'workspace-cancel-edit-btn';
+  backBtn.textContent = '← Trocar marcação';
+  backBtn.onclick = () => { pendingContractUpload.chosenMarker = null; pendingContractUpload.placeholders = null; pendingContractUpload.codes = null; renderContratosView(); };
+  actionsRow.appendChild(backBtn);
+
+  const saveBtn = document.createElement('button');
+  saveBtn.type = 'button';
+  saveBtn.id = 'contractSaveTemplateBtn';
+  saveBtn.className = 'vlow-share-btn';
+  saveBtn.textContent = '💾 Salvar modelo';
+  saveBtn.onclick = saveContractTemplateWithCodes;
+  actionsRow.appendChild(saveBtn);
+  box.appendChild(actionsRow);
+}
+
+async function saveContractTemplateWithCodes(){
+  const nameInput = document.getElementById('contractTemplateNameInput');
+  const name = nameInput ? nameInput.value.trim() : (pendingContractUpload.name || '');
+  if(!name){ showToast('Dê um nome pro modelo antes de salvar.'); return; }
+
+  const codeInputs = Array.from(document.querySelectorAll('.contract-code-input'))
+    .sort((a, b) => Number(a.dataset.codeIndex) - Number(b.dataset.codeIndex));
+  const codes = codeInputs.map(i => i.value.trim().toUpperCase().replace(/\s+/g, '_'));
+  if(codes.some(c => !c)){ showToast('Nenhum código de campo pode ficar em branco.'); return; }
+  const duplicates = codes.filter((c, i) => codes.indexOf(c) !== i);
+  if(duplicates.length){ showToast('Códigos repetidos: ' + [...new Set(duplicates)].join(', ') + ' — cada campo precisa de um código diferente.'); return; }
+
+  const btn = document.getElementById('contractSaveTemplateBtn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Salvando…'; }
+  try{
+    await uploadContractTemplate(pendingContractUpload.file, pendingContractUpload.chosenMarker, name, codes);
+    pendingContractUpload = null;
+    contractTemplatesCache = null;
+    showToast('✓ Modelo salvo.');
+    renderContratosView();
+  }catch(err){
+    showToast('Não consegui salvar o modelo: ' + err.message);
+    if(btn){ btn.disabled = false; btn.textContent = '💾 Salvar modelo'; }
+  }
+}
+
+// Estado do rascunho entre "Analisar campos com IA" e "Confirmar e baixar":
+// { tpl, entries, docEntry, doc, placeholders, valuesById } — mantém o XML
+// já parseado em memória (não re-baixa/re-parseia ao confirmar), pra não
+// desalinhar os nós dos campos. Só é zerado ao trocar de modelo ou voltar
+// pra editar os dados de novo.
+let contractFillDraft = null;
+
+function renderContractFillForm(box){
+  const tpl = (contractTemplatesCache || []).find(t => t.id === selectedContractTemplateId);
+  if(!tpl){ selectedContractTemplateId = null; renderContratosView(); return; }
+  box.innerHTML = '';
+
+  const header = document.createElement('div');
+  header.style.cssText = 'display:flex; align-items:center; justify-content:space-between; gap:10px;';
+  const name = document.createElement('strong');
+  name.textContent = '📄 ' + tpl.name;
+  header.appendChild(name);
+  const backBtn = document.createElement('button');
+  backBtn.type = 'button';
+  backBtn.className = 'workspace-cancel-edit-btn';
+  backBtn.textContent = 'Trocar modelo';
+  backBtn.onclick = () => { selectedContractTemplateId = null; contractFillDraft = null; renderContratosView(); };
+  header.appendChild(backBtn);
+  box.appendChild(header);
+
+  const bodyBox = document.createElement('div');
+  bodyBox.id = 'contractFillBody';
+  bodyBox.style.cssText = 'display:flex; flex-direction:column; gap:10px;';
+  box.appendChild(bodyBox);
+
+  if(contractFillDraft && contractFillDraft.tpl.id === tpl.id){
+    renderContractFillReview(bodyBox);
+  } else {
+    renderContractFillDataInput(bodyBox);
+  }
+}
+
+function renderContractFillDataInput(box){
+  const label = document.createElement('label');
+  label.style.cssText = 'display:block; font-size:12px; font-weight:700;';
+  label.textContent = 'Dados da parte contratada (texto livre — nome, CPF, endereço, e-mail etc.)';
+  box.appendChild(label);
+
+  const textarea = document.createElement('textarea');
+  textarea.id = 'contractFillDataInput';
+  textarea.className = 'workspace-input';
+  textarea.style.cssText = 'width:100%; box-sizing:border-box; min-height:120px;';
+  textarea.placeholder = 'Ex: Nome: Clínica Teste LTDA\nCPF/CNPJ: 12.345.678/0001-90\nEndereço: Rua das Flores, 123, Centro, São Paulo - SP\nE-mail: contato@clinicateste.com.br';
+  box.appendChild(textarea);
+
+  const analyzeBtn = document.createElement('button');
+  analyzeBtn.type = 'button';
+  analyzeBtn.id = 'contractAnalyzeBtn';
+  analyzeBtn.className = 'vlow-share-btn';
+  analyzeBtn.textContent = '✨ Analisar campos com IA';
+  analyzeBtn.onclick = analyzeContractFill;
+  box.appendChild(analyzeBtn);
+
+  const resultBox = document.createElement('div');
+  resultBox.id = 'contractFillResult';
+  box.appendChild(resultBox);
+}
+
+/* Depois da IA propor o valor de cada campo, mostra uma lista editável —
+   "esse campo vai receber esse valor" — pra conferir/corrigir ANTES de
+   gerar o .docx final. Mesma cautela anti-erro usada no resto do
+   AtlasIA: dado de contrato (CPF, nome, valor) errado tem custo alto,
+   então nada é gravado no arquivo sem essa conferência passar por aqui. */
+function renderContractFillReview(box){
+  box.innerHTML = '';
+  const { placeholders, valuesById } = contractFillDraft;
+
+  const desc = document.createElement('p');
+  desc.className = 'vlow-subtitle';
+  desc.textContent = 'Confira o valor que vai em cada campo antes de gerar o contrato final — pode corrigir qualquer um aqui. Campo em branco não foi encontrado nos dados que você colou (fica marcado "[PREENCHER]" no arquivo final, a menos que você preencha manualmente aqui).';
+  box.appendChild(desc);
+
+  placeholders.forEach(ph => {
+    const row = document.createElement('div');
+    row.className = 'workspace-item';
+    row.style.cssText = 'flex-direction:column; align-items:stretch; gap:6px;';
+
+    const label = document.createElement('span');
+    label.className = 'workspace-file-status';
+    label.innerHTML = (ph.code ? '<strong>' + escapeHtml(ph.code) + '</strong> — ' : '') + escapeHtml(ph.paragraphText.replace(/\s+/g, ' ').trim().slice(0, 160));
+    row.appendChild(label);
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'workspace-input contract-review-input';
+    input.dataset.placeholderId = String(ph.id);
+    input.value = valuesById[ph.id] || '';
+    input.placeholder = '(não encontrado — deixe em branco ou preencha aqui manualmente)';
+    row.appendChild(input);
+
+    box.appendChild(row);
+  });
+
+  const actionsRow = document.createElement('div');
+  actionsRow.style.cssText = 'display:flex; gap:8px; margin-top:4px;';
+
+  const backBtn = document.createElement('button');
+  backBtn.type = 'button';
+  backBtn.className = 'workspace-cancel-edit-btn';
+  backBtn.textContent = '← Editar dados';
+  backBtn.onclick = () => { contractFillDraft = null; renderContratosView(); };
+  actionsRow.appendChild(backBtn);
+
+  const confirmBtn = document.createElement('button');
+  confirmBtn.type = 'button';
+  confirmBtn.id = 'contractConfirmBtn';
+  confirmBtn.className = 'vlow-share-btn';
+  confirmBtn.textContent = '✅ Confirmar e baixar contrato';
+  confirmBtn.onclick = confirmAndDownloadContractFill;
+  actionsRow.appendChild(confirmBtn);
+  box.appendChild(actionsRow);
+
+  const resultBox = document.createElement('div');
+  resultBox.id = 'contractFillResult';
+  box.appendChild(resultBox);
+}
+
+function buildContractFillSystemPrompt(){
+  return 'Você é um assistente que preenche campos de um contrato a partir de dados fornecidos em texto livre. Cada campo tem um CÓDIGO curto (ex: CPF, EMAIL, TESTEMUNHA_NOME) — é a referência PRINCIPAL pra decidir o que vai em cada campo (casar pelo SIGNIFICADO do código, não pelo texto literal — os dados do usuário não vão necessariamente usar esses mesmos nomes). Use o contexto (a frase do contrato onde o campo aparece) como apoio, principalmente pra desempatar entre campos parecidos (ex: dois campos de CPF diferentes, um do representante e outro da testemunha). Responda SOMENTE um objeto JSON válido (sem markdown, sem texto antes ou depois), no formato {"0": "valor ou null", "1": "valor ou null", ...} — uma chave por id de campo. Regras: NUNCA invente um valor que não esteja explicitamente no texto de dados fornecido; se não tiver certeza de qual dado corresponde a um campo, ou o dado simplesmente não veio, use null nesse id — é preferível deixar um campo sem preencher a preencher com informação errada. Escreva cada valor exatamente como deve aparecer no documento final (ex: mantenha a formatação de CPF/telefone/data como veio no texto original do usuário).';
+}
+function buildContractFillUserText(placeholders, dataText, codes){
+  const fieldsList = placeholders.map((ph, i) =>
+    'Campo ' + ph.id + ' [código: ' + (codes[i] || 'CAMPO') + ']: o texto atual desse campo no contrato é "' + ph.originalText + '", e ele aparece nesta frase do contrato: "' + ph.paragraphText.replace(/\s+/g, ' ').trim().slice(0, 220) + '"'
+  ).join('\n');
+  return 'CAMPOS A PREENCHER:\n' + fieldsList + '\n\nDADOS FORNECIDOS PELO USUÁRIO:\n' + dataText;
+}
+
+/* Fase 1: baixa o modelo, extrai os campos e pede à IA um PALPITE de valor
+   pra cada um — mas NÃO gera nem baixa nada ainda. O resultado vira uma
+   lista editável (renderContractFillReview) pra conferir/corrigir antes
+   do arquivo final existir. */
+async function analyzeContractFill(){
+  const tpl = (contractTemplatesCache || []).find(t => t.id === selectedContractTemplateId);
+  if(!tpl) return;
+  const dataInput = document.getElementById('contractFillDataInput');
+  const dataText = dataInput ? dataInput.value.trim() : '';
+  if(!dataText){ showToast('Cole os dados do contrato antes de analisar.'); return; }
+  if(!hasAiAccess()){
+    showToast('Ative a IA generativa em Configurações (o Gemini é grátis) ou faça login pra usar a IA da empresa.');
+    return;
+  }
+  const btn = document.getElementById('contractAnalyzeBtn');
+  const resultBox = document.getElementById('contractFillResult');
+  if(btn){ btn.disabled = true; btn.textContent = 'Analisando…'; }
+  if(resultBox) resultBox.innerHTML = '';
+  try{
+    const arrayBuffer = await downloadContractTemplateBytes(tpl.storage_path);
+    const entries = await docxReadZip(arrayBuffer);
+    const docEntry = entries.find(e => e.name === 'word/document.xml');
+    if(!docEntry) throw new Error('Esse arquivo não parece um .docx válido (não achei word/document.xml).');
+    const xmlText = new TextDecoder('utf-8').decode(docEntry.data);
+    const { doc, placeholders } = docxExtractPlaceholders(xmlText, { kind: tpl.marker_kind, value: tpl.marker_value });
+    if(!placeholders.length) throw new Error('Não encontrei nenhum campo marcado nesse modelo — confira se ele não foi alterado depois do upload.');
+
+    let codes = (tpl.field_codes && tpl.field_codes.length === placeholders.length) ? tpl.field_codes : null;
+    if(!codes){
+      const usedCodes = new Set();
+      codes = placeholders.map(ph => suggestFieldCode(ph.originalText, ph.paragraphText, usedCodes));
+    }
+    placeholders.forEach((ph, i) => { ph.code = codes[i]; });
+
+    const systemPrompt = buildContractFillSystemPrompt();
+    const userText = buildContractFillUserText(placeholders, dataText, codes);
+    const raw = await askAIRaw(systemPrompt, userText);
+    const mapping = extractJsonFromAiText(raw);
+
+    const valuesById = {};
+    placeholders.forEach(ph => {
+      const v = mapping[String(ph.id)];
+      valuesById[ph.id] = (v === undefined || v === null || v === 'null') ? '' : String(v).trim();
+    });
+
+    contractFillDraft = { tpl, entries, docEntry, doc, placeholders, valuesById };
+    renderContratosView();
+  }catch(err){
+    if(resultBox) resultBox.innerHTML = '<p class="vlow-empty">Não consegui analisar os campos agora: ' + escapeHtml(err.message) + '</p>';
+  }finally{
+    if(btn){ btn.disabled = false; btn.textContent = '✨ Analisar campos com IA'; }
+  }
+}
+
+/* Fase 2: só roda depois da conferência manual — lê os valores atuais dos
+   campos editáveis da tela (podem ter sido corrigidos pela pessoa),
+   aplica no XML mantido em memória desde a análise, e só ENTÃO gera e
+   baixa o .docx final. */
+async function confirmAndDownloadContractFill(){
+  if(!contractFillDraft) return;
+  const { tpl, entries, docEntry, doc, placeholders } = contractFillDraft;
+  const btn = document.getElementById('contractConfirmBtn');
+  const resultBox = document.getElementById('contractFillResult');
+  if(btn){ btn.disabled = true; btn.textContent = 'Gerando…'; }
+  if(resultBox) resultBox.innerHTML = '';
+  try{
+    const finalValues = {};
+    document.querySelectorAll('.contract-review-input').forEach(input => {
+      const id = Number(input.dataset.placeholderId);
+      const v = input.value.trim();
+      finalValues[id] = v || null;
+    });
+    const missing = docxApplyFills(placeholders, finalValues);
+
+    const serializer = new XMLSerializer();
+    docEntry.data = new TextEncoder().encode(serializer.serializeToString(doc));
+    docEntry.method = 8; // documento editado -> força recompressão
+
+    const outBuffer = await docxBuildZip(entries);
+    const blob = new Blob([outBuffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = tpl.name.replace(/[^a-zA-Z0-9._-]/g, '_') + '_preenchido.docx';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+    renderContractFillOutcome(resultBox, placeholders, missing);
+  }catch(err){
+    if(resultBox) resultBox.innerHTML = '<p class="vlow-empty">Não consegui gerar o contrato agora: ' + escapeHtml(err.message) + '</p>';
+  }finally{
+    if(btn){ btn.disabled = false; btn.textContent = '✅ Confirmar e baixar contrato'; }
+  }
+}
+
+function renderContractFillOutcome(resultBox, placeholders, missing){
+  if(!resultBox) return;
+  resultBox.innerHTML = '';
+  const filledCount = placeholders.length - missing.length;
+  const summary = document.createElement('p');
+  summary.className = 'vlow-subtitle';
+  summary.textContent = '✅ Contrato baixado — ' + filledCount + ' de ' + placeholders.length + ' campo(s) preenchido(s).';
+  resultBox.appendChild(summary);
+  if(missing.length){
+    const warn = document.createElement('div');
+    warn.className = 'workspace-item';
+    warn.style.cssText = 'flex-direction:column; align-items:flex-start; gap:6px; border-color:#e6a03c;';
+    const warnTitle = document.createElement('strong');
+    warnTitle.textContent = '⚠️ ' + missing.length + ' campo(s) não encontrado(s) nos dados que você mandou — ficaram marcados "[PREENCHER]" no arquivo baixado (ainda destacados), revise antes de assinar:';
+    warn.appendChild(warnTitle);
+    const list = document.createElement('ul');
+    list.className = 'contract-missing-list';
+    missing.forEach(ph => {
+      const li = document.createElement('li');
+      li.textContent = ph.paragraphText.replace(/\s+/g, ' ').trim().slice(0, 140);
+      list.appendChild(li);
+    });
+    warn.appendChild(list);
+    resultBox.appendChild(warn);
+  }
 }
 
 function buildContratoSlot(letra, contrato){

@@ -953,6 +953,11 @@
   .msg.bot .bot-copy-btn:hover{ border-color:var(--border); color:var(--text); }
   .msg.bot .bot-copy-btn.copied{ color:var(--accent-2); opacity:1; }
   .msg.bot .bot-copy-btn.favorited{ color:#fbbf24; opacity:1; }
+  .msg.msg-highlight-flash{ animation: msgHighlightFlash 2.2s ease-out; border-radius:12px; }
+  @keyframes msgHighlightFlash{
+    0%{ background:rgba(47,125,255,0.22); box-shadow:0 0 0 2px rgba(47,125,255,0.45); }
+    100%{ background:transparent; box-shadow:0 0 0 2px rgba(47,125,255,0); }
+  }
   .msg-actions{ display:flex; flex-wrap:wrap; align-items:center; }
 
   /* Botões de ação (Copiar/WhatsApp/PDF/Card) reaproveitados fora do chat —
@@ -3698,7 +3703,7 @@ function renderFavoritosList(){
     openBtn.type = 'button';
     openBtn.className = 'action-btn';
     openBtn.textContent = 'Abrir conversa →';
-    openBtn.onclick = () => switchConversation(fav.convId);
+    openBtn.onclick = () => switchConversationAndScrollTo(fav.convId, fav.idx);
     actions.appendChild(openBtn);
     info.appendChild(actions);
 
@@ -4046,6 +4051,54 @@ function openLinksInNewTab(html){
   return container.innerHTML;
 }
 
+/* Telefone (com DDD entre parênteses, ex: "(45) 3033-3335" ou
+   "(45) 99999-9999") vira link clicável pro WhatsApp — resolve a
+   reclamação de que os números que a Lumi manda (ex: telefone de clínica de
+   medicina ocupacional) não dão pra clicar, nem depois de copiar/colar no
+   próprio WhatsApp (o link já sai pronto com wa.me, então clicar abre a
+   conversa direto, sem precisar digitar o número).
+   Exige o "(XX)" na frente de propósito — sem isso o padrão de dígitos
+   também bateria com CEP ("00000-000") ou outros números que não são
+   telefone, e isso geraria link errado. */
+const PHONE_LINK_PATTERN = '\\(\\d{2}\\)\\s?9?\\d{4}[-\\s]?\\d{4}';
+
+function linkifyPhoneNumbers(html){
+  const container = document.createElement('div');
+  container.innerHTML = html;
+  const testRe = new RegExp(PHONE_LINK_PATTERN);
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
+    acceptNode(node){
+      const parent = node.parentElement;
+      if(parent && (parent.closest('a') || parent.closest('code') || parent.closest('pre'))) return NodeFilter.FILTER_REJECT;
+      return testRe.test(node.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+    }
+  });
+  const targets = [];
+  let n;
+  while((n = walker.nextNode())) targets.push(n);
+
+  targets.forEach(node => {
+    const text = node.nodeValue;
+    const extractRe = new RegExp(PHONE_LINK_PATTERN, 'g');
+    const frag = document.createDocumentFragment();
+    let lastIndex = 0;
+    let m;
+    while((m = extractRe.exec(text))){
+      if(m.index > lastIndex) frag.appendChild(document.createTextNode(text.slice(lastIndex, m.index)));
+      const digits = m[0].replace(/\D/g, '');
+      const a = document.createElement('a');
+      a.href = 'https://wa.me/55' + digits;
+      a.textContent = m[0];
+      frag.appendChild(a);
+      lastIndex = m.index + m[0].length;
+    }
+    frag.appendChild(document.createTextNode(text.slice(lastIndex)));
+    node.parentNode.replaceChild(frag, node);
+  });
+
+  return container.innerHTML;
+}
+
 function renderMarkdown(text){
   let html;
   if(typeof marked !== 'undefined'){
@@ -4057,6 +4110,7 @@ function renderMarkdown(text){
   if(typeof DOMPurify !== 'undefined'){
     try{ html = DOMPurify.sanitize(html); }catch(e){ /* segue sem sanitizar se falhar */ }
   }
+  try{ html = linkifyPhoneNumbers(html); }catch(e){ /* não fatal — pior caso, número fica só como texto */ }
   try{ html = openLinksInNewTab(html); }catch(e){ /* não fatal — pior caso, link abre na mesma aba */ }
   return html;
 }
@@ -4070,6 +4124,7 @@ function addBotMessage(text, record, replayEntry, replayIndex){
   const chat = document.getElementById('chat');
   const div = document.createElement('div');
   div.className = 'msg bot';
+  if(replayIndex !== undefined && replayIndex !== null) div.dataset.msgIdx = String(replayIndex);
 
   const content = document.createElement('div');
   content.className = 'md';
@@ -8669,6 +8724,22 @@ function switchConversation(id){
   replayConversation(conv);
   saveState();
   closeSidebarIfMobile();
+}
+
+/* Abre a conversa (mesma lógica do switchConversation) e já rola até a
+   mensagem específica (ex: vindo da aba Favoritos), em vez de deixar a
+   pessoa subir a conversa toda procurando. replayConversation marca cada
+   mensagem do bot com data-msg-idx (ver addBotMessage), então dá pra achar
+   o elemento certo assim que a troca de conversa terminar (é síncrona). */
+function switchConversationAndScrollTo(id, idx){
+  switchConversation(id);
+  const chat = document.getElementById('chat');
+  if(!chat) return;
+  const target = chat.querySelector('[data-msg-idx="' + idx + '"]');
+  if(!target) return;
+  target.scrollIntoView({ block: 'center', behavior: 'auto' });
+  target.classList.add('msg-highlight-flash');
+  setTimeout(() => target.classList.remove('msg-highlight-flash'), 2200);
 }
 
 function deleteConversation(id, event){

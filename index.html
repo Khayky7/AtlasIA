@@ -3315,8 +3315,9 @@ function insertTemplate(shortcut){
 }
 
 function copyToClipboard(text){
+  const normalized = normalizePhoneNumbersForExport(text);
   if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(text).catch(()=>{ /* fallback silencioso, botão "Copiar" na mensagem resolve */ });
+    navigator.clipboard.writeText(normalized).catch(()=>{ /* fallback silencioso, botão "Copiar" na mensagem resolve */ });
   }
 }
 
@@ -3333,7 +3334,7 @@ function copyToClipboard(text){
    pra mandar um arquivo de verdade a pessoa usaria o menu de compartilhar
    nativo do celular, que é outro mecanismo. */
 function shareViaWhatsApp(text){
-  const trimmed = (text || '').trim();
+  const trimmed = normalizePhoneNumbersForExport((text || '').trim());
   if(!trimmed){ showToast('Nada pra compartilhar ainda.'); return; }
   const url = 'https://wa.me/?text=' + encodeURIComponent(trimmed);
   window.open(url, '_blank', 'noopener,noreferrer');
@@ -4059,8 +4060,31 @@ function openLinksInNewTab(html){
    conversa direto, sem precisar digitar o número).
    Exige o "(XX)" na frente de propósito — sem isso o padrão de dígitos
    também bateria com CEP ("00000-000") ou outros números que não são
-   telefone, e isso geraria link errado. */
-const PHONE_LINK_PATTERN = '\\(\\d{2}\\)\\s?9?\\d{4}[-\\s]?\\d{4}';
+   telefone, e isso geraria link errado.
+
+   O espaço depois do "(DDD)" e o traço antes dos 4 últimos dígitos aceitam
+   variantes "não padrão" (espaço largo/non-breaking, travessão em vez de
+   hífen comum etc.) — a IA às vezes gera esses caracteres "bonitinhos" em
+   vez do espaço/hífen normal do teclado, e isso é exatamente o que fazia o
+   WhatsApp não reconhecer como telefone um número copiado de dentro do
+   Atlas (mesmo os dois números parecendo idênticos visualmente, um deles
+   tinha caractere diferente por baixo). */
+const PHONE_SPACE_CHARS = ' \\u00A0\\u2000-\\u200A\\u202F\\u205F\\u3000';
+const PHONE_DASH_CHARS = '\\-\\u2010-\\u2015\\u2212';
+const PHONE_LINK_PATTERN = '\\(\\d{2}\\)[' + PHONE_SPACE_CHARS + ']?9?\\d{4}[' + PHONE_DASH_CHARS + PHONE_SPACE_CHARS + ']?\\d{4}';
+
+/* Usado antes de copiar/mandar por WhatsApp (não na exibição em tela) —
+   troca esses caracteres "bonitinhos" por espaço/hífen comuns dentro de
+   qualquer trecho que bata com formato de telefone, sem mexer no resto do
+   texto (não altera travessões de pontuação normal numa frase). */
+function normalizePhoneNumbersForExport(text){
+  if(typeof text !== 'string' || !text) return text;
+  const re = new RegExp(PHONE_LINK_PATTERN, 'g');
+  return text.replace(re, (match) => match
+    .replace(new RegExp('[' + PHONE_SPACE_CHARS + ']', 'g'), ' ')
+    .replace(new RegExp('[' + PHONE_DASH_CHARS + ']', 'g'), '-')
+  );
+}
 
 function linkifyPhoneNumbers(html){
   const container = document.createElement('div');
@@ -4100,6 +4124,13 @@ function linkifyPhoneNumbers(html){
 }
 
 function renderMarkdown(text){
+  // Normaliza telefone (espaço/travessão "bonitinho" -> espaço/hífen comum)
+  // aqui, no ponto central por onde passa QUALQUER texto exibido em tela
+  // (chat normal, Copiloto BI, mensagem de credenciamento etc.) — assim o
+  // DOM já nasce com o texto certo, e selecionar-e-copiar manualmente (sem
+  // usar os botões "Copiar"/"WhatsApp") também sai limpo.
+  try{ text = normalizePhoneNumbersForExport(text); }catch(e){ /* não fatal — pior caso, mantém o texto original */ }
+
   let html;
   if(typeof marked !== 'undefined'){
     try{ html = marked.parse(text, { breaks: true }); }
@@ -4121,6 +4152,15 @@ function renderMarkdown(text){
    em qual (conversa, posição) gravar a mudança. Numa mensagem nova/ao vivo,
    essas posições vêm de recordMessage() logo abaixo. */
 function addBotMessage(text, record, replayEntry, replayIndex){
+  // Normaliza telefone (espaço/travessão "bonitinho" -> espaço/hífen comum)
+  // JÁ AQUI, antes de exibir OU gravar — não só nos botões de exportar.
+  // Motivo: a reclamação foi que copiar o número SELECIONANDO o texto na
+  // tela (sem passar pelo botão "Copiar") também saía sem funcionar no
+  // WhatsApp — isso só se resolve deixando o texto certo desde a origem,
+  // porque selecionar-e-copiar pega literalmente o que está no DOM, sem
+  // rodar nenhum código nosso no meio.
+  text = normalizePhoneNumbersForExport(text);
+
   const chat = document.getElementById('chat');
   const div = document.createElement('div');
   div.className = 'msg bot';

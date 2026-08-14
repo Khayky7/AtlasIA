@@ -45,10 +45,17 @@
 <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" as="style">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
-<!-- marked/DOMPurify são usados em toda mensagem, mas com "defer" o navegador
-     baixa em paralelo sem travar a primeira renderização da página. -->
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.5/purify.min.js"></script>
+<!-- marked/DOMPurify são usados em TODA mensagem (não é uma função sob
+     demanda como pdf.js/xlsx) — por isso, assim como o pdf.js, ficam
+     publicados dentro do próprio repositório do AtlasIA (pasta vendor/, ao
+     lado do index.html) em vez de vir de um CDN externo. Sem isso, uma rede
+     corporativa/firewall bloqueando domínios externos faria toda resposta
+     da Lumi perder a formatação (sem negrito, links, listas) sem nenhum
+     aviso — um jeito de quebrar bem mais difícil de perceber do que um
+     recurso simplesmente não funcionar. Com "defer" o navegador baixa em
+     paralelo sem travar a primeira renderização da página. -->
+<script defer src="./vendor/marked/marked.js"></script>
+<script defer src="./vendor/dompurify/purify.min.js"></script>
 <!-- Supabase: login de usuário + banco de dados na nuvem, pra sincronizar
      conversas/memória/configurações entre aparelhos (ver window.onload). -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -654,6 +661,38 @@
     text-transform:uppercase;
     color:var(--accent-2);
   }
+  /* Configurações virou um acordeão (details/summary nativo do navegador,
+     sem precisar de JS pra abrir/fechar) — pedido real: a tela já tinha 9
+     seções empilhadas numa rolagem só (IA generativa, Modelo, Comportamento,
+     Memória, Aparência, Notificações, Conta, Assinatura, Dados salvos), e
+     pra chegar nas últimas tinha que rolar por todas as anteriores,
+     principalmente ruim no celular. Cada seção some por baixo do título até
+     a pessoa clicar — "display:flex" no <summary> já remove o triângulo
+     padrão do navegador de forma consistente entre navegadores, sem
+     precisar de nenhum truque a mais. */
+  summary.settings-section-title{
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    user-select:none;
+    -webkit-tap-highlight-color:transparent;
+  }
+  summary.settings-section-title::-webkit-details-marker{ display:none; }
+  summary.settings-section-title::after{
+    content:'';
+    width:7px; height:7px;
+    border-right:1.6px solid var(--text-dim);
+    border-bottom:1.6px solid var(--text-dim);
+    transform:rotate(45deg);
+    transition:transform .18s ease;
+    flex-shrink:0;
+    margin-left:10px;
+  }
+  details.settings-section[open] > summary.settings-section-title::after{
+    transform:rotate(-135deg);
+  }
+  details.settings-section > summary.settings-section-title:hover{ color:var(--text); }
   .settings select{
     flex:1;
     min-width:220px;
@@ -953,6 +992,16 @@
   .msg.bot .bot-copy-btn:hover{ border-color:var(--border); color:var(--text); }
   .msg.bot .bot-copy-btn.copied{ color:var(--accent-2); opacity:1; }
   .msg.bot .bot-copy-btn.favorited{ color:#fbbf24; opacity:1; }
+  /* Em tela de toque não existe hover — o gatilho ".msg.bot:hover" acima
+     nunca dispara, então esses botões (Copiar/Ouvir/WhatsApp/PDF/Cartão/
+     Favoritar) ficavam sempre travados em 55% de opacidade, parecendo
+     decoração em vez de botão de verdade. Detecção por CAPACIDADE do
+     dispositivo (hover:none), não por tamanho de tela — cobre tablet e
+     notebook touch também, não só celular. */
+  @media (hover:none){
+    .msg.bot .bot-copy-btn{ opacity:.85; }
+    .msg.bot .bot-copy-btn:active{ opacity:1; }
+  }
   .msg.msg-highlight-flash{ animation: msgHighlightFlash 2.2s ease-out; border-radius:12px; }
   @keyframes msgHighlightFlash{
     0%{ background:rgba(47,125,255,0.22); box-shadow:0 0 0 2px rgba(47,125,255,0.45); }
@@ -2411,8 +2460,8 @@
       <div class="settings-header-title">Configurações</div>
       <button type="button" class="secondary" onclick="toggleSettings()" title="Fechar" aria-label="Fechar Configurações">✕ Fechar</button>
     </div>
-    <div class="settings-section" id="iaGenerativaSection">
-      <div class="settings-section-title">IA generativa</div>
+    <details class="settings-section" id="iaGenerativaSection">
+      <summary class="settings-section-title">IA generativa</summary>
       <div class="settings-row">
         <label style="width:100%">Opcional — sem isso, o AtlasIA usa a base de FAQ local. Alternativa: role até "Conta" e faça login para usar a IA da empresa sem precisar colar nenhuma chave aqui.</label>
       </div>
@@ -2429,21 +2478,21 @@
         <a id="getKeyLink" href="#" target="_blank" rel="noopener" class="get-key-link">Não tem chave ainda? Clique aqui para gerar uma grátis (abre em nova aba) →</a>
       </div>
       <div class="hint" id="providerHint"></div>
-    </div>
+    </details>
     <div class="settings-section" id="iaGenerativaOwnerNote" style="display:none">
       <div class="hint">🔒 A configuração de IA generativa (provedor e chave) é restrita ao dono da conta. Você continua usando a IA da empresa normalmente via login.</div>
     </div>
 
-    <div class="settings-section">
-      <div class="settings-section-title">Modelo preferido</div>
+    <details class="settings-section">
+      <summary class="settings-section-title">Modelo preferido</summary>
       <div class="settings-row">
         <select id="modelSelect" onchange="setPreferredModel()"></select>
       </div>
       <div class="hint">Se esse modelo estiver indisponível no momento, o AtlasIA tenta automaticamente os próximos da lista.</div>
-    </div>
+    </details>
 
-    <div class="settings-section">
-      <div class="settings-section-title">Comportamento da IA</div>
+    <details class="settings-section">
+      <summary class="settings-section-title">Comportamento da IA</summary>
       <div class="settings-row">
         <label style="width:100%">Estilo de resposta</label>
       </div>
@@ -2453,10 +2502,10 @@
         <button type="button" id="styleDetailedBtn" class="provider-btn" onclick="setResponseStyle('detalhada')">Detalhada</button>
       </div>
       <div class="hint">Controla o tamanho e o nível de detalhe das respostas da IA generativa — não afeta o modo FAQ local.</div>
-    </div>
+    </details>
 
-    <div class="settings-section">
-      <div class="settings-section-title">Memória</div>
+    <details class="settings-section">
+      <summary class="settings-section-title">Memória</summary>
       <div class="hint">O AtlasIA guarda pequenas notas para lembrar entre conversas e usar nas respostas da IA generativa. Diga algo como <em>"lembre que eu prefiro respostas curtas"</em> no chat (funciona mesmo sem essa frase exata, quando a IA generativa está ativada), ou adicione manualmente aqui.</div>
       <div id="memoryList" class="memory-list"></div>
       <div class="settings-row">
@@ -2464,10 +2513,10 @@
         <button onclick="addMemoryFromSettings()">Adicionar</button>
         <button class="secondary" onclick="clearMemory()">Limpar memória</button>
       </div>
-    </div>
+    </details>
 
-    <div class="settings-section">
-      <div class="settings-section-title">Aparência</div>
+    <details class="settings-section">
+      <summary class="settings-section-title">Aparência</summary>
       <div class="settings-row">
         <label style="width:100%">Tema</label>
       </div>
@@ -2487,18 +2536,22 @@
         <button type="button" id="fontSizeMediumBtn" class="provider-btn active" onclick="setChatFontSize('medium')">Médio</button>
         <button type="button" id="fontSizeLargeBtn" class="provider-btn" onclick="setChatFontSize('large')">Grande</button>
       </div>
-    </div>
+    </details>
 
-    <div class="settings-section">
-      <div class="settings-section-title">Notificações</div>
+    <details class="settings-section">
+      <summary class="settings-section-title">Notificações</summary>
       <div class="hint">Toca um som curto quando a Lumi termina de responder — útil se você troca de aba enquanto espera.</div>
       <div class="settings-row">
         <button type="button" id="notifySoundToggle" class="provider-btn" onclick="toggleNotifySound()"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 21a2 2 0 0 0 4 0"/></svg> <span id="notifySoundLabel">Som desativado</span></button>
       </div>
-    </div>
+      <div class="hint" style="margin-top:10px">Opcional: manda um aviso do navegador (o mesmo tipo usado nos lembretes de Tarefas) quando a Lumi terminar de responder e você não estiver com a aba do AtlasIA em primeiro plano — só enquanto o AtlasIA continuar aberto em alguma aba/janela, não é um aviso que chega com o app fechado.</div>
+      <div class="settings-row">
+        <button type="button" id="notifyDesktopToggle" class="provider-btn" onclick="toggleNotifyDesktop()"><svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> <span id="notifyDesktopLabel">Desativado</span></button>
+      </div>
+    </details>
 
-    <div class="settings-section">
-      <div class="settings-section-title">Conta</div>
+    <details class="settings-section">
+      <summary class="settings-section-title">Conta</summary>
       <div id="accountLoggedOut" class="account-box" style="display:flex">
         <div class="hint" style="flex:1">Entre pra sincronizar conversas, memória e configurações entre aparelhos.</div>
         <button type="button" onclick="showAuthOverlay()">Entrar / criar conta</button>
@@ -2509,19 +2562,19 @@
         <div style="flex:1"></div>
         <button type="button" class="secondary" onclick="signOutCloud()">Sair</button>
       </div>
-    </div>
+    </details>
 
-    <div class="settings-section">
-      <div class="settings-section-title">Assinatura</div>
+    <details class="settings-section">
+      <summary class="settings-section-title">Assinatura</summary>
       <div class="upgrade-card">
         <div class="upgrade-card-title">🚧 Em manutenção</div>
         <div class="hint">Planos com mais recursos estão a caminho. Assim que estiver pronto, o upgrade fica disponível por aqui.</div>
         <button class="secondary" disabled>Fazer upgrade (em breve)</button>
       </div>
-    </div>
+    </details>
 
-    <div class="settings-section">
-      <div class="settings-section-title">Dados salvos neste navegador</div>
+    <details class="settings-section">
+      <summary class="settings-section-title">Dados salvos neste navegador</summary>
       <div class="hint">
         A chave, o histórico de conversas, sua memória, suas preferências de aparência e seu perfil ficam guardados neste navegador automaticamente — não precisa colar a chave de novo toda vez.
         Nada é enviado pra mim nem salvo em servidor.
@@ -2544,7 +2597,7 @@
         </select>
       </div>
       <div class="hint">Quando o limite é atingido, as conversas mais antigas são apagadas automaticamente para não estourar o espaço de armazenamento do navegador.</div>
-    </div>
+    </details>
 
     <div class="settings-section settings-save-section">
       <button type="button" class="settings-save-btn" onclick="saveSettingsAndClose()">💾 Salvar configurações</button>
@@ -4206,7 +4259,16 @@ function addBotMessage(text, record, replayEntry, replayIndex){
 
   chat.appendChild(div);
   chat.scrollTop = chat.scrollHeight;
-  if(notifySound) playNotifySound();
+  // Só som/notificação pra mensagem nova de verdade — nunca durante o
+  // replay de uma conversa antiga (replayEntry vem preenchido nesse caso,
+  // ver replayConversation): sem esta checagem, abrir uma conversa velha
+  // tocaria o som (e, pior, dispararia um aviso do navegador) uma vez pra
+  // CADA mensagem antiga dela. Bug pré-existente do som, corrigido de
+  // brinde ao adicionar a notificação do navegador (ver maybeNotifyDesktop).
+  if(!replayEntry){
+    if(notifySound) playNotifySound();
+    maybeNotifyDesktop(text);
+  }
 }
 
 function addTemplateMessage(shortcut, record){
@@ -8394,7 +8456,7 @@ async function syncStateToCloud(){
       profileName: nameInput ? nameInput.value : 'Você',
       conversations, currentConvId, convCounter,
       currentMode, memoryNotes,
-      themeMode, accentColor, notifySound
+      themeMode, accentColor, notifySound, notifyDesktop
     };
     await client.from('profiles').update({
       app_state: appState,
@@ -8616,7 +8678,7 @@ function buildStateSnapshot(){
     profileName: nameInput ? nameInput.value : 'Você',
     conversations, currentConvId, convCounter,
     currentMode, memoryNotes,
-    themeMode, accentColor, notifySound,
+    themeMode, accentColor, notifySound, notifyDesktop,
     responseStyle, chatFontSize, maxConversationsLimit,
     vlowLink,
     reajusteExams, reajustePercent, reajusteClinicaValor, reajusteVixtingValor,
@@ -9248,6 +9310,7 @@ function renderAccentSwatches(){
    NOTIFICAÇÕES — som ao receber resposta
    ========================================================= */
 let notifySound = false;
+let notifyDesktop = false;
 
 function toggleNotifySound(){
   notifySound = !notifySound;
@@ -9256,12 +9319,59 @@ function toggleNotifySound(){
   if(notifySound) playNotifySound();
 }
 
+/* Opcional, desativado por padrão — pedido explícito do usuário. Usa a
+   mesma API de notificação do navegador já usada nos lembretes de Tarefas
+   (ver fireTaskNotification), só que disparada quando a Lumi termina de
+   responder (ver maybeNotifyDesktop, chamada nos mesmos pontos que hoje já
+   tocam o som). Pedir permissão exige um clique real da pessoa — por isso
+   aproveitamos este mesmo clique do toggle pra pedir, na primeira vez, em
+   vez de precisar de um botão separado só pra isso. */
+function toggleNotifyDesktop(){
+  if(!notifyDesktop && 'Notification' in window && Notification.permission === 'default'){
+    Notification.requestPermission().then((perm) => {
+      notifyDesktop = perm === 'granted';
+      renderNotifySettings();
+      saveState();
+      if(perm === 'denied') showToast('⚠️ Notificações bloqueadas pra esta página — dá pra mudar isso nas configurações do próprio navegador, se quiser ativar depois.');
+    });
+    return;
+  }
+  notifyDesktop = !notifyDesktop;
+  renderNotifySettings();
+  saveState();
+}
+
 function renderNotifySettings(){
   const btn = document.getElementById('notifySoundToggle');
   const label = document.getElementById('notifySoundLabel');
-  if(!btn) return;
-  btn.classList.toggle('active', notifySound);
-  if(label) label.textContent = notifySound ? 'Som ativado' : 'Som desativado';
+  if(btn){
+    btn.classList.toggle('active', notifySound);
+    if(label) label.textContent = notifySound ? 'Som ativado' : 'Som desativado';
+  }
+  const dBtn = document.getElementById('notifyDesktopToggle');
+  const dLabel = document.getElementById('notifyDesktopLabel');
+  if(dBtn){
+    const blocked = 'Notification' in window && Notification.permission === 'denied';
+    dBtn.classList.toggle('active', notifyDesktop && !blocked);
+    if(dLabel) dLabel.textContent = blocked ? 'Bloqueado pelo navegador' : (notifyDesktop ? 'Ativado' : 'Desativado');
+  }
+}
+
+/* Chamada nos mesmos pontos que hoje já tocam o som de notificação —
+   dispara um aviso do navegador só quando: (1) a pessoa ativou essa opção
+   em Configurações, (2) o navegador suporta e já autorizou notificações, e
+   (3) a aba do AtlasIA não está em primeiro plano agora (document.hidden)
+   — se a pessoa está olhando pra tela, o balão seria só uma distração
+   redundante com a mensagem que acabou de aparecer no chat. */
+function maybeNotifyDesktop(previewText){
+  if(!notifyDesktop) return;
+  if(!('Notification' in window) || Notification.permission !== 'granted') return;
+  if(!document.hidden) return;
+  try{
+    const body = (previewText || 'Sua resposta está pronta.').replace(/\s+/g, ' ').trim().slice(0, 140) || 'Sua resposta está pronta.';
+    const n = new Notification('Lumi — AtlasIA', { body, tag: 'atlasia-resposta', icon: './icons/icon-192.png' });
+    n.onclick = () => { window.focus(); n.close(); };
+  }catch(e){ /* alguns navegadores recusam Notification fora de contexto seguro — sem problema, o som (se ativado) já cobre esse caso */ }
 }
 
 function playNotifySound(){
@@ -9466,6 +9576,7 @@ function forgetAllData(){
   applyAccentColor(accentColor);
   renderAccentSwatches();
   notifySound = false;
+  notifyDesktop = false;
   renderNotifySettings();
   startNewConversation();
   addBotMessage("Pronto — esqueci sua chave, seu histórico, sua memória, suas preferências e seu perfil neste navegador.");
@@ -10675,6 +10786,7 @@ function addDownloadableFileMessage(introText, blob, downloadFileName){
   chat.appendChild(div);
   chat.scrollTop = chat.scrollHeight;
   if(notifySound) playNotifySound();
+  maybeNotifyDesktop(introText || ('Arquivo pronto: ' + downloadFileName));
   setTimeout(() => { try{ URL.revokeObjectURL(url); }catch(e){} }, 5 * 60 * 1000);
 }
 
@@ -11036,6 +11148,7 @@ function addImageMessage(dataUrl, prompt){
   chat.appendChild(div);
   chat.scrollTop = chat.scrollHeight;
   if(notifySound) playNotifySound();
+  maybeNotifyDesktop('🎨 Sua imagem está pronta: "' + prompt + '"');
   recordMessage({ kind: 'bot', text: '🎨 Gerei uma imagem para: "' + prompt + '". (A imagem não fica salva entre sessões — baixe se quiser guardar.)' });
 }
 
@@ -11460,6 +11573,44 @@ function buildIntelligentContext(){
   return sections.map(s => s.text).join('');
 }
 
+/* =========================================================
+   HISTÓRICO DA CONVERSA — antes desta correção, CADA chamada à
+   OpenAI/Gemini mandava só a pergunta atual: nenhuma mensagem anterior da
+   mesma conversa ia junto (só um aviso em texto no systemPrompt dizendo
+   "esta conversa já está em andamento", sem o CONTEÚDO do que já tinha
+   sido dito). Na prática, isso fazia a IA "esquecer" o que ela mesma
+   acabara de responder — ex: alguém pedia um texto, depois pedia "manda
+   isso em formato de WhatsApp em vez de e-mail", e a IA não tinha
+   nenhuma ideia de qual texto/assunto "isso" se referia, porque a
+   chamada anterior nunca chegou a ela.
+   Esta função monta as últimas trocas da conversa atual — sempre
+   excluindo a própria mensagem que disparou a chamada, já enviada à
+   parte como a pergunta atual — num formato neutro { role, text }, que
+   cada provedor (callOpenAIModel/callOpenAIModelSearch/callGeminiModel,
+   mais abaixo) converte pro formato específico dele. Cortado por
+   orçamento de tokens (HISTORY_TOKEN_BUDGET), removendo as trocas mais
+   ANTIGAS primeiro — mesma lógica de corte já usada em
+   buildIntelligentContext() pra memória entre conversas. */
+const HISTORY_TOKEN_BUDGET = 4000;
+
+function getRecentConversationTurns(){
+  const conv = conversations.find(c => c.id === currentConvId);
+  if(!conv || conv.messages.length <= 1) return [];
+  // Ignora a última entrada (é a pergunta atual desta própria chamada, já
+  // mandada à parte) e qualquer mensagem do tipo "template" (atalho/
+  // resposta rápida pré-pronta — não é um texto de conversa de verdade,
+  // mandar isso como se fosse uma fala da pessoa ou da IA confundiria
+  // mais do que ajudaria).
+  const usable = conv.messages.slice(0, -1).filter(m => (m.kind === 'user' || m.kind === 'bot') && m.text);
+  const turns = usable.map(m => ({ role: m.kind === 'user' ? 'user' : 'assistant', text: m.text }));
+
+  let total = turns.reduce((sum, t) => sum + estimateTokens(t.text), 0);
+  while(total > HISTORY_TOKEN_BUDGET && turns.length > 1){
+    total -= estimateTokens(turns.shift().text);
+  }
+  return turns;
+}
+
 function buildSystemPrompt(){
   const modeInfo = MODES[currentMode];
   let prompt = modeInfo.systemPromptIntro + " " + LUMI_VOICE_GUIDE + " " + RELIABILITY_GUIDE + " " + INTENT_UNDERSTANDING_GUIDE + " " + (RESPONSE_STYLE_GUIDES[responseStyle] || '') + " Base de conhecimento de referência:\n\n" +
@@ -11485,9 +11636,11 @@ function buildSystemPrompt(){
   if(currentAttachments.length || pendingImage){
     prompt += "\n\n" + SENIOR_ANALYSIS_GUIDE;
   }
-  // Cada chamada à IA é isolada (sem histórico de conversa enviado ao modelo),
-  // então sem essa checagem o modelo "acha" que toda mensagem é a primeira e
-  // se apresenta de novo toda hora. Avisa explicitamente quando não é.
+  // O histórico de verdade da conversa já vai junto na chamada (ver
+  // getRecentConversationTurns(), usada em callOpenAIModel/
+  // callOpenAIModelSearch/callGeminiModel) — mas este aviso continua
+  // valendo como reforço extra, pra nunca se reapresentar do nada no meio
+  // de uma conversa já em andamento.
   const conv = conversations.find(c => c.id === currentConvId);
   const isFirstMessage = !conv || conv.messages.length <= 1;
   prompt += isFirstMessage
@@ -12004,6 +12157,9 @@ async function callOpenAIModel(model, systemPrompt, userText, image){
         { type: 'image_url', image_url: { url: image.dataUrl } }
       ]
     : userText;
+  // Ver getRecentConversationTurns() — sem isso, a IA não lembra do que
+  // ela mesma respondeu duas mensagens atrás.
+  const historyMessages = getRecentConversationTurns().map(t => ({ role: t.role, content: t.text }));
   // Com chave pessoal (válida pra OpenAI), manda a Authorization aqui mesmo
   // (chamada direta, como sempre). Sem chave pessoal válida (login via
   // ai-proxy, ou chave guardada que era de outro provedor), NÃO manda
@@ -12019,6 +12175,7 @@ async function callOpenAIModel(model, systemPrompt, userText, image){
       model: model,
       messages: [
         { role: 'system', content: systemPrompt },
+        ...historyMessages,
         { role: 'user', content: userContent }
       ],
       temperature: 0.4
@@ -12058,6 +12215,9 @@ async function callOpenAIModelSearch(model, systemPrompt, userText){
   const headers = { 'Content-Type': 'application/json' };
   const openAiKey = getValidPersonalKey('openai');
   if(openAiKey) headers['Authorization'] = 'Bearer ' + openAiKey;
+  // Ver getRecentConversationTurns() — mesmo histórico usado em
+  // callOpenAIModel, só que no formato "input" da Responses API.
+  const historyMessages = getRecentConversationTurns().map(t => ({ role: t.role, content: t.text }));
   const res = await providerFetch('https://api.openai.com/v1/responses', {
     method: 'POST',
     headers: headers,
@@ -12065,6 +12225,7 @@ async function callOpenAIModelSearch(model, systemPrompt, userText){
       model: model,
       input: [
         { role: 'system', content: systemPrompt },
+        ...historyMessages,
         { role: 'user', content: userText }
       ],
       tools: [{ type: 'web_search' }],
@@ -12254,9 +12415,17 @@ async function callGeminiModel(model, systemPrompt, userText, image, useSearch){
   const headers = { 'Content-Type': 'application/json' };
   const geminiKey = getValidPersonalKey('gemini');
   if(geminiKey) headers['x-goog-api-key'] = geminiKey;
+  // Ver getRecentConversationTurns() — mesmo histórico usado na OpenAI,
+  // convertido pro formato do Gemini (troca "assistant" por "model", que é
+  // como o Gemini chama o papel da própria IA numa conversa de várias
+  // mensagens).
+  const historyContents = getRecentConversationTurns().map(t => ({
+    role: t.role === 'assistant' ? 'model' : 'user',
+    parts: [{ text: t.text }]
+  }));
   const body = {
     system_instruction: { parts: [{ text: systemPrompt }] },
-    contents: [{ role: 'user', parts }],
+    contents: [...historyContents, { role: 'user', parts }],
     generationConfig: { temperature: 0.4 }
   };
   // Grounding com busca no Google: o próprio Gemini decide, por conta
@@ -12513,6 +12682,12 @@ function applyLoadedState(saved){
   themeMode = saved.themeMode === 'light' ? 'light' : 'dark';
   accentColor = ACCENT_PRESETS[saved.accentColor] ? saved.accentColor : 'azul';
   notifySound = !!saved.notifySound;
+  // A permissão de notificação é por navegador/aparelho — se a preferência
+  // veio "ativada" de outro aparelho (sincronizada via conta) mas este
+  // aqui nunca autorizou, mantém desligado até a pessoa confirmar aqui
+  // também (clicando de novo no toggle), em vez de mostrar "Ativado" sem
+  // realmente funcionar neste navegador.
+  notifyDesktop = !!saved.notifyDesktop && ('Notification' in window) && Notification.permission === 'granted';
   responseStyle = RESPONSE_STYLE_GUIDES[saved.responseStyle] ? saved.responseStyle : 'equilibrada';
   chatFontSize = (saved.chatFontSize === 'small' || saved.chatFontSize === 'large') ? saved.chatFontSize : 'medium';
   vlowLink = typeof saved.vlowLink === 'string' ? saved.vlowLink : '';

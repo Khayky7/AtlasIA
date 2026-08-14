@@ -993,8 +993,8 @@
   .msg.bot .bot-copy-btn.copied{ color:var(--accent-2); opacity:1; }
   .msg.bot .bot-copy-btn.favorited{ color:#fbbf24; opacity:1; }
   /* Em tela de toque não existe hover — o gatilho ".msg.bot:hover" acima
-     nunca dispara, então esses botões (Copiar/Ouvir/WhatsApp/PDF/Cartão/
-     Favoritar) ficavam sempre travados em 55% de opacidade, parecendo
+     nunca dispara, então esses botões (Copiar/Ouvir/WhatsApp/Favoritar)
+     ficavam sempre travados em 55% de opacidade, parecendo
      decoração em vez de botão de verdade. Detecção por CAPACIDADE do
      dispositivo (hover:none), não por tamanho de tela — cobre tablet e
      notebook touch também, não só celular. */
@@ -1009,7 +1009,7 @@
   }
   .msg-actions{ display:flex; flex-wrap:wrap; align-items:center; }
 
-  /* Botões de ação (Copiar/WhatsApp/PDF/Card) reaproveitados fora do chat —
+  /* Botões de ação (Copiar/WhatsApp) reaproveitados fora do chat —
      nos itens de Equipes/Projetos/Compartilhados (Workspace). Visual
      parecido com .bot-copy-btn, mas sempre visível (sem exigir hover, já
      que os cards do Workspace não têm esse padrão de "revelar ao passar o
@@ -3375,10 +3375,12 @@ function copyToClipboard(text){
 }
 
 /* =========================================================
-   COMPARTILHAR / EXPORTAR — botões reaproveitados em toda resposta da Lumi
-   no chat E nos itens de Equipes/Projetos/Compartilhados (Workspace):
-   copiar, mandar por WhatsApp, exportar em PDF, e gerar um "card" (imagem
-   PNG) com uma marca d'água discreta da AtlasIA.
+   COMPARTILHAR / EXPORTAR — botões reaproveitados em respostas da Lumi no
+   chat (copiar, ouvir, mandar por WhatsApp, favoritar) e nos itens de
+   Equipes/Projetos/Compartilhados (Workspace, que tem os mesmos: copiar e
+   WhatsApp). Existiu também exportar em PDF e gerar um "card" (imagem PNG
+   com marca d'água da AtlasIA) em ambos os lugares — removidos a pedido do
+   usuário (chat/Favoritos primeiro, Workspace depois).
    ========================================================= */
 
 /* WhatsApp: abre uma conversa já com o texto preenchido (wa.me), funciona
@@ -3419,166 +3421,16 @@ async function ensureJsPdfLoaded(){
   return typeof window.jspdf !== 'undefined' && !!window.jspdf.jsPDF;
 }
 
-async function exportTextAsPdf(text){
-  const trimmed = (text || '').trim();
-  if(!trimmed){ showToast('Nada pra exportar ainda.'); return; }
-  try{
-    if(!(await ensureJsPdfLoaded())) throw new Error('jsPDF não carregou');
-
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
-    const marginX = 48, marginTop = 72, marginBottom = 56;
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const usableWidth = pageWidth - marginX * 2;
-
-    const drawHeader = () => {
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(14);
-      doc.setTextColor(40, 40, 40);
-      doc.text('AtlasIA', marginX, 38);
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      doc.setTextColor(140, 140, 140);
-      doc.text(new Date().toLocaleString('pt-BR'), pageWidth - marginX, 38, { align: 'right' });
-      doc.setDrawColor(220, 220, 220);
-      doc.line(marginX, 48, pageWidth - marginX, 48);
-    };
-    const drawFooter = () => {
-      doc.setFont('helvetica', 'italic');
-      doc.setFontSize(8);
-      doc.setTextColor(175, 175, 175);
-      doc.text('Gerado pelo AtlasIA', pageWidth / 2, pageHeight - 28, { align: 'center' });
-    };
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(11);
-    doc.setTextColor(25, 25, 25);
-    const plainText = stripMarkdownForExport(trimmed);
-    const lines = doc.splitTextToSize(plainText, usableWidth);
-
-    drawHeader();
-    let y = marginTop;
-    const lineHeight = 15;
-    lines.forEach(line => {
-      if(y > pageHeight - marginBottom){
-        drawFooter();
-        doc.addPage();
-        drawHeader();
-        y = marginTop;
-      }
-      doc.text(line, marginX, y);
-      y += lineHeight;
-    });
-    drawFooter();
-
-    doc.save('atlasia-' + Date.now() + '.pdf');
-  }catch(e){
-    showToast('⚠️ Não consegui gerar o PDF (verifique sua internet e tente de novo).');
-  }
-}
-
-/* Quebra o texto em linhas que cabem em maxWidth, respeitando quebras de
-   parágrafo já existentes no texto original — usado pra montar o card. */
-function wrapCanvasText(ctx, text, maxWidth){
-  const paragraphs = text.split(/\n+/);
-  const lines = [];
-  paragraphs.forEach(p => {
-    const words = p.split(/\s+/).filter(Boolean);
-    if(!words.length){ lines.push(''); return; }
-    let line = '';
-    words.forEach(word => {
-      const test = line ? line + ' ' + word : word;
-      if(line && ctx.measureText(test).width > maxWidth){
-        lines.push(line);
-        line = word;
-      } else {
-        line = test;
-      }
-    });
-    if(line) lines.push(line);
-  });
-  return lines;
-}
-
-// Cards são pensados pra um trecho curto/citável, não a resposta inteira
-// (senão vira uma imagem gigante, difícil de compartilhar) — corta com "…"
-// quando o texto passa disso.
-const CARD_MAX_CHARS = 700;
-
-function drawCardWatermark(ctx, width, height, padding){
-  const logoImg = document.querySelector('img.logo');
-  const wmSize = 30;
-  const baseline = height - padding + 10;
-  if(logoImg && logoImg.complete && logoImg.naturalWidth){
-    ctx.globalAlpha = 0.6;
-    try{ ctx.drawImage(logoImg, width - padding - wmSize, baseline - wmSize, wmSize, wmSize); }catch(e){ /* segue só com o texto se a imagem não estiver pronta */ }
-    ctx.globalAlpha = 1;
-  }
-  ctx.textAlign = 'right';
-  ctx.fillStyle = 'rgba(143,160,194,0.75)';
-  ctx.font = '500 13px -apple-system, Segoe UI, Roboto, Arial, sans-serif';
-  ctx.fillText('AtlasIA', width - padding - wmSize - 10, baseline - wmSize / 2 + 4);
-  ctx.textAlign = 'left';
-}
-
-/* Gera uma imagem (PNG) estilizada da resposta, com uma marca d'água
-   discreta da AtlasIA no canto — pensada pra postar/compartilhar (inclusive
-   por WhatsApp, anexando a imagem baixada). */
-function exportTextAsCard(text){
-  const trimmed = stripMarkdownForExport((text || '').trim());
-  if(!trimmed){ showToast('Nada pra gerar o card ainda.'); return; }
-  try{
-    const content = trimmed.length > CARD_MAX_CHARS ? trimmed.slice(0, CARD_MAX_CHARS).trim() + '…' : trimmed;
-    const width = 900;
-    const padding = 56;
-    const fontSize = 30;
-    const lineHeight = Math.round(fontSize * 1.45);
-    const maxTextWidth = width - padding * 2;
-
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    ctx.font = '600 ' + fontSize + 'px -apple-system, Segoe UI, Roboto, Arial, sans-serif';
-    const lines = wrapCanvasText(ctx, content, maxTextWidth);
-
-    const headerHeight = 96;
-    const footerHeight = 76;
-    const height = Math.max(480, headerHeight + lines.length * lineHeight + footerHeight);
-    canvas.width = width;
-    canvas.height = height;
-
-    const grad = ctx.createLinearGradient(0, 0, width, height);
-    grad.addColorStop(0, '#05070d');
-    grad.addColorStop(1, '#0c1220');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, width, height);
-
-    ctx.fillStyle = '#63a6ff';
-    ctx.font = '700 22px -apple-system, Segoe UI, Roboto, Arial, sans-serif';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'alphabetic';
-    ctx.fillText('AtlasIA', padding, 46);
-
-    ctx.fillStyle = '#eef2fb';
-    ctx.font = '600 ' + fontSize + 'px -apple-system, Segoe UI, Roboto, Arial, sans-serif';
-    let y = headerHeight;
-    lines.forEach(line => { ctx.fillText(line, padding, y); y += lineHeight; });
-
-    drawCardWatermark(ctx, width, height, padding);
-
-    const link = document.createElement('a');
-    link.download = 'atlasia-card-' + Date.now() + '.png';
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-  }catch(e){
-    showToast('⚠️ Não consegui gerar o card.');
-  }
-}
-
 /* Botões pequenos reaproveitados tanto nas respostas do chat quanto nos
    itens de Workspace — `btnClass` deixa escolher o visual certo pra cada
    contexto (.bot-copy-btn no chat, com hover-reveal; .action-btn sempre
-   visível nos cards do Workspace). */
+   visível nos cards do Workspace).
+   Observação: existiram aqui também buildPdfActionButton/exportTextAsPdf e
+   buildCardActionButton/exportTextAsCard (baixar a resposta/item como PDF
+   ou como imagem "card" com marca d'água) — removidos a pedido do usuário,
+   tanto do chat/Favoritos quanto do Workspace. ensureJsPdfLoaded e
+   stripMarkdownForExport continuam existindo porque o PDF de resumo
+   executivo do BI (generateDashboardPdf) ainda depende dos dois. */
 function buildCopyActionButton(text, btnClass){
   const btn = document.createElement('button');
   btn.className = btnClass;
@@ -3596,20 +3448,6 @@ function buildWhatsAppActionButton(text, btnClass){
   btn.className = btnClass;
   btn.textContent = '📲 WhatsApp';
   btn.onclick = () => shareViaWhatsApp(text);
-  return btn;
-}
-function buildPdfActionButton(text, btnClass){
-  const btn = document.createElement('button');
-  btn.className = btnClass;
-  btn.textContent = '📄 PDF';
-  btn.onclick = () => exportTextAsPdf(text);
-  return btn;
-}
-function buildCardActionButton(text, btnClass){
-  const btn = document.createElement('button');
-  btn.className = btnClass;
-  btn.textContent = '🖼️ Card';
-  btn.onclick = () => exportTextAsCard(text);
   return btn;
 }
 
@@ -3751,8 +3589,6 @@ function renderFavoritosList(){
     actions.className = 'workspace-item-actions';
     actions.appendChild(buildCopyActionButton(fav.text, 'action-btn'));
     actions.appendChild(buildWhatsAppActionButton(fav.text, 'action-btn'));
-    actions.appendChild(buildPdfActionButton(fav.text, 'action-btn'));
-    actions.appendChild(buildCardActionButton(fav.text, 'action-btn'));
     const openBtn = document.createElement('button');
     openBtn.type = 'button';
     openBtn.className = 'action-btn';
@@ -4252,8 +4088,6 @@ function addBotMessage(text, record, replayEntry, replayIndex){
   }
 
   actions.appendChild(buildWhatsAppActionButton(text, 'bot-copy-btn'));
-  actions.appendChild(buildPdfActionButton(text, 'bot-copy-btn'));
-  actions.appendChild(buildCardActionButton(text, 'bot-copy-btn'));
 
   div.appendChild(actions);
 
@@ -5613,7 +5447,7 @@ function renderReajusteResults(){
    calculados acima (calcReajusteImpact) como contexto; a IA nunca inventa
    valor novo, só escreve os argumentos e organiza a mensagem final. O
    resultado aparece como mensagem no chat (mesmo componente de sempre),
-   o que já dá de graça os botões de copiar/WhatsApp/PDF/card. */
+   o que já dá de graça os botões de copiar/WhatsApp/favoritar. */
 async function generateReajusteContraproposta(){
   if(!hasAiAccess()){
     addBotMessage('Pra gerar a contraproposta com IA, ative a IA generativa em Configurações (o Gemini é grátis) ou faça login pra usar a IA da empresa.', false);
@@ -7829,7 +7663,7 @@ function showWorkspaceNewItemsBanner(key, newItems){
 
 /* Monta a pergunta pra Lumi resumir os itens novos de uma aba do Workspace
    — manda o conteúdo de verdade dos itens (via itemShareText, mesmo texto
-   usado no WhatsApp/PDF/Card) dentro da própria mensagem, já que a IA não
+   usado no botão de WhatsApp) dentro da própria mensagem, já que a IA não
    tem acesso direto ao banco de dados do Workspace. */
 function requestWorkspaceSummary(key, items){
   const cfg = WORKSPACE_TABLES[key];
@@ -8336,8 +8170,6 @@ function renderWorkspaceItems(key, items){
     actions.className = 'workspace-item-actions';
     actions.appendChild(buildCopyActionButton(shareText, 'action-btn'));
     actions.appendChild(buildWhatsAppActionButton(shareText, 'action-btn'));
-    actions.appendChild(buildPdfActionButton(shareText, 'action-btn'));
-    actions.appendChild(buildCardActionButton(shareText, 'action-btn'));
     if(key === 'compartilhados') actions.appendChild(buildRagIndexButton(item));
     info.appendChild(actions);
 
@@ -8410,6 +8242,69 @@ function getSupabaseClient(){
   return sb;
 }
 
+/* =========================================================
+   MESCLA DE CONVERSAS ENTRE APARELHOS (web e celular usam o mesmo site,
+   mesma conta — mas cada aba/navegador só tem em memória o que carregou
+   da última vez que puxou da nuvem).
+
+   Problema que isso resolve: antes, tanto o "puxar" (reconcileCloudState,
+   ao logar) quanto o "empurrar" (syncStateToCloud, a cada mudança)
+   tratavam `conversations` como um bloco único, "quem salvou por último
+   vence" — sem mesclar. Cenário real: você conversa no site pelo celular
+   de manhã (sobe pra nuvem), deixa a aba do computador aberta de ontem (que
+   nunca recarregou, então só tem o estado de ontem em memória), e à tarde
+   escreve algo nessa aba antiga — ela salva e SOBRESCREVE a nuvem inteira,
+   apagando silenciosamente as conversas que só existiam no celular. Por
+   isso a pesquisa feita num aparelho podia simplesmente sumir no outro.
+
+   mergeConversationLists nunca decide "um lado vence, ponto" — pega os ids
+   dos dois lados e, pra cada conversa que existe nos dois, fica com a
+   versão que tem MAIS mensagens (mensagens só são adicionadas, nunca
+   removidas dentro de uma conversa — ver recordMessage — então mais
+   mensagens = versão mais completa/recente com segurança). Em empate de
+   quantidade, desempata por updatedAt. Conversa que só existe de um lado
+   (criada nesse aparelho e ainda não sincronizada) sempre entra no
+   resultado — nunca é descartada. */
+function mergeConversationLists(localList, remoteList){
+  const map = new Map();
+  (remoteList || []).forEach(c => { if(c && c.id) map.set(c.id, c); });
+  (localList || []).forEach(c => {
+    if(!c || !c.id) return;
+    const existing = map.get(c.id);
+    if(!existing){ map.set(c.id, c); return; }
+    const localMsgCount = (c.messages || []).length;
+    const existingMsgCount = (existing.messages || []).length;
+    if(localMsgCount > existingMsgCount){
+      map.set(c.id, c);
+    } else if(localMsgCount === existingMsgCount){
+      const localTime = c.updatedAt || c.createdAt || 0;
+      const existingTime = existing.updatedAt || existing.createdAt || 0;
+      if(localTime > existingTime) map.set(c.id, c);
+    }
+    // Se a versão remota já tem mais (ou igual, mais nova) mensagens, fica
+    // como está — a que já estava no map (remota) é a mais completa.
+  });
+  return Array.from(map.values())
+    .sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0));
+}
+
+/* "Assinatura" barata pra saber se duas listas de conversas são
+   provavelmente diferentes, sem precisar comparar tudo campo a campo
+   (JSON.stringify de meses de histórico a cada 900ms de debounce seria
+   caro). Não é criptográfica nem 100% infalível — só compara quantidade de
+   conversas, total de mensagens somadas, e o updatedAt mais recente —
+   suficiente pra decidir "vale a pena re-renderizar / re-mesclar". */
+function conversationsFingerprint(list){
+  if(!Array.isArray(list) || !list.length) return '0:0:0';
+  let totalMsgs = 0, maxUpdated = 0;
+  list.forEach(c => {
+    totalMsgs += (c.messages || []).length;
+    const t = c.updatedAt || c.createdAt || 0;
+    if(t > maxUpdated) maxUpdated = t;
+  });
+  return list.length + ':' + totalMsgs + ':' + maxUpdated;
+}
+
 /* Sobe o estado atual pra nuvem, com um pequeno atraso (debounce) — assim
    digitar/trocar de conversa várias vezes seguidas não dispara uma
    gravação de rede a cada tecla, só depois que a pessoa dá uma pausa. */
@@ -8446,6 +8341,24 @@ async function syncStateToCloud(){
   if(!client || !cloudUser) return;
   updateSyncIndicator('syncing');
   try{
+    // Antes de sobrescrever a nuvem, confere rapidinho se outro aparelho
+    // (ex: celular) já salvou conversas que este navegador ainda não tem em
+    // memória — sem isso, o último aparelho a salvar "vencia" e apagava sem
+    // querer o que o outro tinha guardado (ver mergeConversationLists).
+    // Se essa checagem falhar (sem internet, etc.), segue só com o que já
+    // está em memória — não trava o salvamento local por causa disso.
+    try{
+      const { data } = await client.from('profiles').select('app_state').eq('id', cloudUser.id).single();
+      const remoteConvs = data && data.app_state && data.app_state.conversations;
+      if(remoteConvs && remoteConvs.length){
+        const merged = mergeConversationLists(conversations, remoteConvs);
+        if(conversationsFingerprint(merged) !== conversationsFingerprint(conversations)){
+          conversations = merged;
+          renderConversationList();
+        }
+      }
+    }catch(e){ /* segue só com o que já tinha em memória */ }
+
     const nameInput = document.getElementById('profileNameInput');
     const appState = {
       v: 1,
@@ -8782,6 +8695,11 @@ function recordMessage(entry){
   const conv = conversations.find(c => c.id === currentConvId);
   if(!conv) return;
   conv.messages.push(entry);
+  // updatedAt marca a última vez que ESTA conversa recebeu mensagem nova —
+  // usado por mergeConversationLists pra decidir, entre duas versões da
+  // mesma conversa vindas de aparelhos diferentes, qual é a mais recente
+  // (ver comentário completo em mergeConversationLists).
+  conv.updatedAt = Date.now();
   if(conv.title === 'Nova conversa' && entry.kind === 'user'){
     conv.title = entry.text.length > 32 ? entry.text.slice(0, 32) + '…' : entry.text;
     renderConversationList();
@@ -8797,7 +8715,7 @@ function startNewConversation(){
   closeOverlayPanels();
   currentView = 'mode';
   convCounter++;
-  const conv = { id: 'conv-' + convCounter, title: 'Nova conversa', messages: [], mode: currentMode, createdAt: Date.now() };
+  const conv = { id: 'conv-' + convCounter, title: 'Nova conversa', messages: [], mode: currentMode, createdAt: Date.now(), updatedAt: Date.now() };
   conversations.unshift(conv);
   currentConvId = conv.id;
   trimConversations();
@@ -12785,11 +12703,24 @@ async function reconcileCloudState(){
   hideAuthOverlay();
   try{ window.localStorage.removeItem('atlasia_skip_auth'); }catch(e){}
   const cloudState = await loadStateFromCloud();
+  const local = loadState();
   if(cloudState && cloudState.conversations && cloudState.conversations.length){
-    applyLoadedState(cloudState);
+    // Mescla em vez de simplesmente aceitar a nuvem como verdade absoluta:
+    // se este navegador tinha conversas locais que ainda não tinham sido
+    // sincronizadas (ex: usou sem internet, ou a sincronização anterior
+    // falhou), elas entram no resultado em vez de serem descartadas.
+    const localConvs = local && local.conversations;
+    const merged = (localConvs && localConvs.length)
+      ? mergeConversationLists(localConvs, cloudState.conversations)
+      : cloudState.conversations;
+    applyLoadedState({ ...cloudState, conversations: merged });
+    if(localConvs && localConvs.length && conversationsFingerprint(merged) !== conversationsFingerprint(cloudState.conversations)){
+      // A mescla trouxe algo que a nuvem ainda não tinha — sobe de volta
+      // já mesclado, pra não depender de uma próxima mudança pra sincronizar.
+      await syncStateToCloud();
+    }
     addBotMessage("🔗 Conectado à sua conta — sincronizei suas conversas, memória e configurações salvas na nuvem.", false);
   } else {
-    const local = loadState();
     if(local && local.conversations && local.conversations.length){
       applyLoadedState(local);
     }
@@ -12797,6 +12728,40 @@ async function reconcileCloudState(){
     addBotMessage("🔗 Conta conectada! A partir de agora suas conversas, memória e configurações ficam salvas na nuvem também — abra de qualquer aparelho com este login.", false);
   }
   updateAccountUI();
+}
+
+/* Além de puxar a nuvem uma vez no login (reconcileCloudState), também
+   confere por novidades sempre que a pessoa volta pra esta aba/janela —
+   ex: escreveu no celular, depois voltou pra aba do computador que já
+   estava aberta desde antes. Sem isso, essa aba do computador só saberia
+   das conversas novas do celular na próxima vez que fosse recarregada. Não
+   mexe na tela se nada mudou, e nunca interrompe um envio em andamento
+   (isSendingMessage) pra não trocar o chão debaixo da pessoa no meio de
+   uma resposta chegando. */
+let cloudRefreshInFlight = false;
+async function refreshCloudStateIfNeeded(){
+  if(!cloudUser || isSendingMessage || cloudRefreshInFlight) return;
+  cloudRefreshInFlight = true;
+  try{
+    const cloudState = await loadStateFromCloud();
+    if(!cloudState || !cloudState.conversations || !cloudState.conversations.length) return;
+    const merged = mergeConversationLists(conversations, cloudState.conversations);
+    if(conversationsFingerprint(merged) === conversationsFingerprint(conversations)) return; // nada novo
+
+    const currentBefore = conversations.find(c => c.id === currentConvId);
+    conversations = merged;
+    renderConversationList();
+
+    // Só re-desenha a conversa aberta na tela se ela de fato ganhou
+    // mensagem nova em outro aparelho (nunca encolhe o que já estava
+    // visível, e não mexe em conversa que a pessoa não está olhando agora).
+    const currentAfter = conversations.find(c => c.id === currentConvId);
+    if(currentBefore && currentAfter && currentAfter.messages.length > currentBefore.messages.length && currentView === 'mode'){
+      replayConversation(currentAfter);
+      showToast('🔄 Chegou mensagem nova de outro aparelho nesta conversa.');
+    }
+  }catch(e){ /* silencioso — próxima vez que a aba ganhar foco tenta de novo */ }
+  finally{ cloudRefreshInFlight = false; }
 }
 
 /* =========================================================
@@ -12867,6 +12832,15 @@ window.onload = () => {
   updateOnlineStatus();
   window.addEventListener('online', updateOnlineStatus);
   window.addEventListener('offline', updateOnlineStatus);
+
+  // Confere se chegou conversa nova de outro aparelho (ex: celular) sempre
+  // que a pessoa volta pra esta aba — ver refreshCloudStateIfNeeded. Os
+  // dois eventos juntos cobrem tanto trocar de aba/app (visibilitychange)
+  // quanto voltar pra janela do navegador em foco (focus, ex: alt-tab).
+  document.addEventListener('visibilitychange', () => {
+    if(!document.hidden) refreshCloudStateIfNeeded();
+  });
+  window.addEventListener('focus', () => refreshCloudStateIfNeeded());
 
   // "Aquece" a lista de vozes do navegador cedo, já que em vários navegadores
   // ela só fica disponível de forma assíncrona (evento voiceschanged).

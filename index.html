@@ -1367,6 +1367,12 @@
   .vlow-heading{ font-size:24px; margin:0; color:var(--text); }
   .vlow-subtitle{ font-size:13.5px; color:var(--text-dim); margin:0; line-height:1.5; }
 
+  /* As abas de Workspace (Clínicas/Projetos/Equipe/Compartilhados/Tarefas)
+     reaproveitam o layout do Vlow, mas mostram listas/tabelas de registros
+     em vez de um texto pra ler — por isso usam mais largura de tela em vez
+     do max-width estreito (720px) pensado pra leitura. */
+  .workspace-view{ max-width:1180px; }
+
   /* Sub-abas dentro de uma tela cheia (hoje só a aba Contratos usa, pra
      alternar entre "Comparar" e "Preenchimento automático"). */
   .contratos-subtabs{ display:flex; gap:8px; flex-wrap:wrap; }
@@ -3052,12 +3058,28 @@ Testemunha:
 • CPF:`
   },
   {
-    id: "mudanca-contrato",
-    label: "Mudança de modelo de contrato",
+    id: "pa-para-faturado",
+    label: "PA para Faturado",
     message:
-`Prezado parceiro, tudo bem?
-Nós mudamos nosso modelo de contrato, iremos seguir com o modelo abaixo a partir de hoje, eu irei encaminhar nosso contrato novamente para assinatura, certo?
-Segue modelo para sua análise, após me dizer que deseja seguir nesse modelo, eu irei seguir com a assinatura novamente, certo?`
+`Oi, tudo bem? 👋
+Aqui é o Khayky, do time de Credenciamento da Vixting.
+
+Queria falar com vocês sobre uma mudança na forma de pagamento da nossa parceria, seria sair do pagamento antecipado e passar pro faturamento.
+
+Essa mudança é uma oportunidade de ampliar a parceria, com o faturamento, a Vixting ganha mais flexibilidade pra direcionar demanda, o que tende a virar mais encaminhamentos e mais agendamentos pra clínica com o tempo.
+
+Requisitos para pagamento:
+Nota fiscal original, sem rasuras, com o detalhamento dos atendimentos e os dados bancários.
+
+Cronograma de pagamento:
+Faturamento até o dia 10 → pagamento dia 25 do mesmo mês.
+Faturamento depois do dia 10 → pagamento dia 15 do mês seguinte.
+
+Gostaria de contar com vocês nessa mudança, pra fortalecer a parceria e abrir mais oportunidades de atendimento pra clínica.
+
+Podemos seguir com o faturamento?
+
+Qualquer dúvida, é só chamar! 🙂`
   },
   {
     id: "dados-preenchimento-contrato",

@@ -1705,12 +1705,8 @@
   }
   .workspace-status-badge.status-em_andamento{ background:rgba(251,146,60,.18); color:#fb923c; }
   .workspace-status-badge.status-concluido{ background:rgba(52,211,153,.18); color:#34d399; }
-  .workspace-status-badge.status-negociacao{ background:rgba(251,146,60,.18); color:#fb923c; }
-  .workspace-status-badge.status-credenciada{ background:rgba(52,211,153,.18); color:#34d399; }
-  .workspace-status-badge.status-inativa{ background:rgba(148,163,184,.18); color:#94a3b8; }
-  /* Badge da campanha de conversão pra faturado — prefixo "pa-" pra nunca
-     colidir com os badges de status de credenciamento acima (são duas
-     dimensões diferentes, ver PA_STATUS_LABELS). */
+  /* Badge da campanha de conversão pra faturado, único status que a aba
+     Clínicas acompanha hoje (ver PA_STATUS_LABELS). */
   .workspace-status-badge.pa-em_contato{ background:rgba(251,146,60,.18); color:#fb923c; }
   .workspace-status-badge.pa-recusou{ background:rgba(248,113,113,.18); color:#f87171; }
   .workspace-status-badge.pa-convertida{ background:rgba(52,211,153,.18); color:#34d399; }
@@ -2943,7 +2939,7 @@ const MODES = {
     greeting: TRABALHO_GREETING,
     quickReplies: TRABALHO_QUICK_REPLIES,
     kb: TRABALHO_KB,
-    systemPromptIntro: "Você é a Lumi, a assistente de IA (feminino) do sistema AtlasIA, atuando agora no modo Trabalho, em português do Brasil. Sempre que falar de si mesma, use o nome Lumi e a primeira pessoa no feminino. Este modo cobre três frentes: (1) apoio geral ao dia a dia profissional — redigir e revisar e-mails, organizar atas/resumos de reunião, estruturar relatórios e documentar processos internos; (2) credenciamento de prestadores de saúde (médicos, clínicas, hospitais, laboratórios) junto a convênios/planos de saúde — dúvidas sobre o processo, documentação exigida, prazos, recredenciamento, tabela de procedimentos e faturamento, além de ajudar a redigir ou ajustar mensagens e e-mails de contato/negociação com clínicas e prestadores; e (3) quando a pessoa pedir explicitamente, cadastrar uma clínica/projeto/contato novo direto no Workspace dela (ver a instrução de tag mais abaixo, quando disponível), em vez de só explicar como cadastrar manualmente. Se o usuário pedir um modelo de mensagem pronto sobre credenciamento (cronograma de pagamento, e-mails, dados de contrato etc.), lembre que eles já estão disponíveis automaticamente no botão Atalhos ou digitando \"/\" na caixa de mensagem, sem precisar reescrevê-los do zero. Seja objetiva e prática — quando a pessoa colar um texto pra revisar, aponte melhorias concretas (não só reescreva sem explicar o que mudou). Pedidos curtos são normais aqui (ex: \"manda um email pra clínica cobrando retorno\", \"cadastra essa clínica\") — use o nome da empresa (Vixting), o histórico da conversa e os dados de clínicas/projetos já cadastrados no Workspace (quando existirem) pra preencher os detalhes você mesma antes de perguntar; só pergunte pelo dado pontual que realmente falta (ex: nome da clínica, se não foi dito em nenhum lugar), nunca uma lista de perguntas antes de começar. Dúvidas frequentes sobre exames ocupacionais (tipos de exame, exames complementares, ASO) e sobre clínicas específicas (quais exames uma clínica faz, onde tem clínica parceira numa região, status/protocolo de uma clínica) são muito comuns neste modo — responda primeiro com a base de conhecimento geral sobre exames ocupacionais e, sempre que a pergunta for sobre uma clínica específica ou \"quem faz tal exame na região X\", cheque os dados reais de clínicas já cadastrados no Workspace (tabela de preços/exames e histórico) antes de responder; se a clínica ou exame perguntado não estiver nesses dados, diga isso claramente em vez de supor ou inventar. Quando, em vez disso, a pessoa pedir pra ENCONTRAR/buscar novas opções de clínica numa cidade, estado ou região do Brasil (prospecção — não uma clínica específica já cadastrada), isso não é uma pergunta sobre o Workspace: você tem busca na internet disponível pra esse tipo de pedido, então use o resultado real dessa busca — cite nomes de clínicas/prestadores, cidade e, quando disponível, contato encontrados de verdade — em vez de responder só com base no que já sabia ou dizer que não tem esse dado; isso só vale como resposta quando a busca de verdade não retornar nenhuma opção relevante, e mesmo assim é ok dar essa negativa nesse caso, em vez de inventar um nome de clínica que não foi encontrado. Para dados específicos de credenciamento (número de protocolo, prazo exato de um caso, valores de tabela) que você não tem certeza e que também não estão nos dados cadastrados, não invente — oriente a pessoa a confirmar no portal do credenciado ou com a central de credenciamento. A exigência exata de exames ocupacionais depende do PCMSO e do PGR de cada empresa contratante e do grau de risco da função — trate isso sempre como regra geral, nunca como uma lista única válida pra qualquer empresa. Você não substitui aconselhamento médico, jurídico ou de compliance: para exigência legal específica (normas regulamentadoras, prazo contratual exato, interpretação de cláusula), oriente a pessoa a confirmar com o responsável técnico/jurídico ou com a central de credenciamento/operadora envolvida, em vez de responder como se fosse uma garantia. Dados de clínicas, prestadores e colaboradores frequentemente envolvem informação sensível (inclusive de saúde, no caso de exames) — trate com discrição, e nunca peça nem repita dado de saúde de uma pessoa física identificável além do estritamente necessário pra responder o que foi pedido."
+    systemPromptIntro: "Você é a Lumi, a assistente de IA (feminino) do sistema AtlasIA, atuando agora no modo Trabalho, em português do Brasil. Sempre que falar de si mesma, use o nome Lumi e a primeira pessoa no feminino. Este modo cobre três frentes: (1) apoio geral ao dia a dia profissional — redigir e revisar e-mails, organizar atas/resumos de reunião, estruturar relatórios e documentar processos internos; (2) credenciamento de prestadores de saúde (médicos, clínicas, hospitais, laboratórios) junto a convênios/planos de saúde — dúvidas sobre o processo, documentação exigida, prazos, recredenciamento, tabela de procedimentos e faturamento, além de ajudar a redigir ou ajustar mensagens e e-mails de contato/negociação com clínicas e prestadores; e (3) quando a pessoa pedir explicitamente, cadastrar uma clínica/projeto/contato novo direto no Workspace dela (ver a instrução de tag mais abaixo, quando disponível), em vez de só explicar como cadastrar manualmente. Se o usuário pedir um modelo de mensagem pronto sobre credenciamento (cronograma de pagamento, e-mails, dados de contrato etc.), lembre que eles já estão disponíveis automaticamente no botão Atalhos ou digitando \"/\" na caixa de mensagem, sem precisar reescrevê-los do zero. Seja objetiva e prática — quando a pessoa colar um texto pra revisar, aponte melhorias concretas (não só reescreva sem explicar o que mudou). Pedidos curtos são normais aqui (ex: \"manda um email pra clínica cobrando retorno\", \"cadastra essa clínica\") — use o nome da empresa (Vixting), o histórico da conversa e os dados de clínicas/projetos já cadastrados no Workspace (quando existirem) pra preencher os detalhes você mesma antes de perguntar; só pergunte pelo dado pontual que realmente falta (ex: nome da clínica, se não foi dito em nenhum lugar), nunca uma lista de perguntas antes de começar. Dúvidas frequentes sobre exames ocupacionais (tipos de exame, exames complementares, ASO) são muito comuns neste modo — responda com a base de conhecimento geral sobre exames ocupacionais; ela não depende dos dados de clínicas do Workspace. Os dados de clínicas cadastrados no Workspace hoje só cobrem a campanha de conversão de Pagamento Antecipado pra Faturado (status da conversão, valor no período, responsável, motivo de recusa) — não guardam mais quais exames cada clínica faz, preço de tabela nem status de credenciamento; se perguntarem isso sobre uma clínica específica, diga que esse dado não está mais disponível no cadastro em vez de supor ou inventar. Quando a pergunta for sobre o andamento da conversão de uma clínica específica (status, valor no período, quem está responsável, por que recusou), cheque os dados reais de clínicas já cadastrados no Workspace antes de responder; se a clínica perguntada não estiver nesses dados, diga isso claramente. Quando, em vez disso, a pessoa pedir pra ENCONTRAR/buscar novas opções de clínica numa cidade, estado ou região do Brasil (prospecção — não uma clínica específica já cadastrada), isso não é uma pergunta sobre o Workspace: você tem busca na internet disponível pra esse tipo de pedido, então use o resultado real dessa busca — cite nomes de clínicas/prestadores, cidade e, quando disponível, contato encontrados de verdade — em vez de responder só com base no que já sabia ou dizer que não tem esse dado; isso só vale como resposta quando a busca de verdade não retornar nenhuma opção relevante, e mesmo assim é ok dar essa negativa nesse caso, em vez de inventar um nome de clínica que não foi encontrado. Para dados específicos de credenciamento (número de protocolo, prazo exato de um caso, valores de tabela) que você não tem certeza e que também não estão nos dados cadastrados, não invente — oriente a pessoa a confirmar no portal do credenciado ou com a central de credenciamento. A exigência exata de exames ocupacionais depende do PCMSO e do PGR de cada empresa contratante e do grau de risco da função — trate isso sempre como regra geral, nunca como uma lista única válida pra qualquer empresa. Você não substitui aconselhamento médico, jurídico ou de compliance: para exigência legal específica (normas regulamentadoras, prazo contratual exato, interpretação de cláusula), oriente a pessoa a confirmar com o responsável técnico/jurídico ou com a central de credenciamento/operadora envolvida, em vez de responder como se fosse uma garantia. Dados de clínicas, prestadores e colaboradores frequentemente envolvem informação sensível (inclusive de saúde, no caso de exames) — trate com discrição, e nunca peça nem repita dado de saúde de uma pessoa física identificável além do estritamente necessário pra responder o que foi pedido."
   },
   imagens: {
     label: "Imagens",
@@ -4577,48 +4573,6 @@ function getUpcomingProjects(daysAhead){
     return due >= now && due <= limit;
   });
 }
-/* Mesmo padrão de getOverdueProjects/getUpcomingProjects, agora pro campo
-   proxima_acao das clínicas (pedido do usuário: "mais automação e
-   independência" na aba Clínicas — a primeira peça é a Lumi conseguir
-   avisar sozinha quando uma ação prevista pra uma clínica venceu, em vez de
-   a pessoa ter que lembrar de checar cada card manualmente). Clínicas
-   'inativa' não entram — não faz sentido cobrar prazo de algo já encerrado. */
-function getOverdueClinicas(){
-  const now = Date.now();
-  return (dataCache.clinicas || []).filter(c => c.proxima_acao && c.status !== 'inativa' && new Date(c.proxima_acao).getTime() < now);
-}
-function getUpcomingClinicas(daysAhead){
-  const now = Date.now();
-  const limit = now + (daysAhead || 7) * 86400000;
-  return (dataCache.clinicas || []).filter(c => {
-    if(!c.proxima_acao || c.status === 'inativa') return false;
-    const due = new Date(c.proxima_acao).getTime();
-    return due >= now && due <= limit;
-  });
-}
-/* Detecta clínicas "paradas" — sinal de negociação estagnada que merece um
-   retorno (aponta pro Copiloto, objetivo "Retorno", em vez de criar um novo
-   jeito de mandar mensagem). Duas situações contam como "precisando de
-   atenção": (1) proxima_acao já vencida (dado concreto, sempre confiável) e
-   (2) clínica em prospecção/negociação, sem proxima_acao definida, cadastrada
-   há mais de STALLED_DAYS dias — aqui usamos created_at como aproximação
-   honesta de "faz tempo que não é atualizada", já que o app não guarda um
-   timestamp de "último contato" separado. */
-const CLINICA_STALLED_DAYS = 20;
-function getClinicasNeedingAttention(){
-  const now = Date.now();
-  const overdue = getOverdueClinicas();
-  const overdueIds = new Set(overdue.map(c => c.id));
-  const stalledLimit = now - CLINICA_STALLED_DAYS * 86400000;
-  const stalled = (dataCache.clinicas || []).filter(c => {
-    if(overdueIds.has(c.id)) return false; // já contado como atrasada, não duplica
-    if(c.proxima_acao) return false; // tem próxima ação definida, não é "esquecida"
-    if(!['prospeccao', 'negociacao'].includes(c.status)) return false;
-    if(!c.created_at) return false;
-    return new Date(c.created_at).getTime() < stalledLimit;
-  });
-  return overdue.concat(stalled);
-}
 /* Quantos itens de cada aba do Workspace foram criados depois da última
    vez que a pessoa abriu aquela aba (lastSeenWorkspace) — a base tanto do
    aviso na Home quanto da sugestão proativa ao entrar numa aba do
@@ -4664,6 +4618,17 @@ async function maybeNudgeOverdueTasks(){
    Inteligente (buildDailySummaryText reaproveita getOverdueTasks/
    getUpcomingTasks/getWorkspaceNewCounts), só que como mensagem no chat
    em vez de um painel visual. */
+/* Pro resumo diário: quantas clínicas da campanha de conversão Pagamento
+   Antecipado → Faturado ainda não foram contatadas, com valor real em jogo
+   no período — mesmo critério de prioridade do relatório da campanha (ver
+   generatePaReducaoReport), só que aqui é a contagem simples pro lembrete
+   do dia, sem gerar PDF nenhum. Substitui o antigo aviso de "ação vencida/
+   negociação parada" de credenciamento, removido junto com os campos de
+   credenciamento desta aba (pedido do usuário). */
+function getClinicasPaPendentes(){
+  return (dataCache.clinicas || []).filter(c => (c.pa_status || 'nao_contatado') === 'nao_contatado' && Number(c.pa_valor_periodo) > 0);
+}
+
 async function maybeShowDailySummary(){
   if(!cloudUser) return;
   const today = todayKey();
@@ -4694,9 +4659,9 @@ function buildDailySummaryText(){
   if(upcomingProjects.length){
     parts.push('🗓️ ' + upcomingProjects.length + ' projeto' + (upcomingProjects.length > 1 ? 's' : '') + ' com prazo nos próximos 7 dias: ' + upcomingProjects.slice(0, 3).map(p => p.title).join(', ') + (upcomingProjects.length > 3 ? '...' : ''));
   }
-  const clinicasAttention = getClinicasNeedingAttention();
-  if(clinicasAttention.length){
-    parts.push('🏥 ' + clinicasAttention.length + ' clínica' + (clinicasAttention.length > 1 ? 's' : '') + ' pedindo atenção (ação vencida ou negociação parada há tempo): ' + clinicasAttention.slice(0, 3).map(c => c.nome).join(', ') + (clinicasAttention.length > 3 ? '...' : '') + '. Uma opção é usar o Copiloto (objetivo "Retorno") pra retomar contato.');
+  const clinicasPaPendentes = getClinicasPaPendentes();
+  if(clinicasPaPendentes.length){
+    parts.push('🏥 ' + clinicasPaPendentes.length + ' clínica' + (clinicasPaPendentes.length > 1 ? 's' : '') + ' da campanha de conversão pra faturado ainda não contatada' + (clinicasPaPendentes.length > 1 ? 's' : '') + ' (com valor no período): ' + clinicasPaPendentes.slice(0, 3).map(c => c.nome).join(', ') + (clinicasPaPendentes.length > 3 ? '...' : '') + '. Uma opção é usar o Copiloto (objetivo "Retorno") pra iniciar contato.');
   }
   Object.keys(newCounts).forEach(key => {
     if(newCounts[key] > 0){
@@ -5770,15 +5735,16 @@ async function generateCopilotoMessage(){
   if(btn){ btn.disabled = true; btn.textContent = 'Montando...'; }
   if(resultBox) resultBox.innerHTML = '<p class="vlow-empty">Montando mensagem…</p>';
   try{
-    const systemPrompt = "Você é a Lumi, assistente do AtlasIA, escrevendo uma mensagem de credenciamento/relacionamento com clínicas parceiras da Vixting, seguindo exatamente o objetivo, canal e tom informados. Use o histórico da clínica (se fornecido) pra deixar a mensagem específica e coerente com o que já foi conversado antes — nunca invente um fato, valor, prazo ou combinado que não esteja no histórico. Adeque o formato ao canal: WhatsApp pede mensagem mais curta e direta (sem cabeçalho de e-mail); e-mail pede saudação, corpo e despedida formais, terminando com uma despedida assinada pelo nome do remetente informado (se houver). Se o remetente foi informado, assine a mensagem com esse nome ao final (no WhatsApp isso pode ser bem mais discreto, tipo só o primeiro nome no fim; no e-mail, uma despedida formal com o nome completo). Quando o canal for e-mail, a resposta DEVE começar com uma linha 'Assunto: ' seguida de um assunto curto e claro pro e-mail (baseado no objetivo), depois uma linha em branco, e só então o corpo da mensagem; quando o canal for WhatsApp, nunca inclua essa linha de assunto. Responda em português do Brasil, só com o texto pronto da mensagem (sem explicações antes ou depois).";
+    const systemPrompt = "Você é a Lumi, assistente do AtlasIA, escrevendo uma mensagem de relacionamento com clínicas parceiras da Vixting (inclusive sobre a campanha de conversão de pagamento antecipado pra faturado), seguindo exatamente o objetivo, canal e tom informados. Use os dados da clínica (se fornecidos) pra deixar a mensagem específica e coerente com o que já se sabe dela — nunca invente um fato, valor, prazo ou combinado que não esteja informado. Adeque o formato ao canal: WhatsApp pede mensagem mais curta e direta (sem cabeçalho de e-mail); e-mail pede saudação, corpo e despedida formais, terminando com uma despedida assinada pelo nome do remetente informado (se houver). Se o remetente foi informado, assine a mensagem com esse nome ao final (no WhatsApp isso pode ser bem mais discreto, tipo só o primeiro nome no fim; no e-mail, uma despedida formal com o nome completo). Quando o canal for e-mail, a resposta DEVE começar com uma linha 'Assunto: ' seguida de um assunto curto e claro pro e-mail (baseado no objetivo), depois uma linha em branco, e só então o corpo da mensagem; quando o canal for WhatsApp, nunca inclua essa linha de assunto. Responda em português do Brasil, só com o texto pronto da mensagem (sem explicações antes ou depois).";
     let userText = 'Objetivo: ' + objetivoLabel + '\nCliente/destinatário: ' + (cliente || 'não informado') + '\nRemetente/quem está enviando: ' + (remetente || 'não informado') + '\nClínica: ' + nomeClinica + '\nCanal: ' + canalLabel + '\nTom: ' + tomLabel + '\n';
     if(clinicaCadastrada){
       userText += '\nDados cadastrados desta clínica (use como contexto real, não invente além disso):\n' +
         'Cidade: ' + (clinicaCadastrada.cidade || 'não informado') + '\n' +
-        'Status: ' + (CLINICA_STATUS_LABELS[clinicaCadastrada.status] || 'Prospecção') + '\n' +
-        'Prazo de pagamento: ' + (clinicaCadastrada.prazo_pagamento || 'não informado') + '\n' +
-        'Tabela de preços/observações: ' + (clinicaCadastrada.tabela_precos || 'não informado') + '\n' +
-        'Histórico de contato/negociação: ' + (clinicaCadastrada.historico || 'não informado') + '\n';
+        'Status da conversão p/ faturado: ' + (PA_STATUS_LABELS[clinicaCadastrada.pa_status] || 'Não contatado') + '\n' +
+        (clinicaCadastrada.pa_valor_periodo ? 'Valor faturado em antecipado no período: R$ ' + Number(clinicaCadastrada.pa_valor_periodo).toFixed(2).replace('.', ',') + '\n' : '') +
+        (clinicaCadastrada.pa_qtd_periodo ? 'Qtd. de atendimentos no período: ' + clinicaCadastrada.pa_qtd_periodo + '\n' : '') +
+        (clinicaCadastrada.pa_motivo_recusa ? 'Motivo de uma recusa anterior: ' + clinicaCadastrada.pa_motivo_recusa + '\n' : '') +
+        (clinicaCadastrada.pa_responsavel ? 'Responsável por esta conversão: ' + clinicaCadastrada.pa_responsavel + '\n' : '');
     }
     const reply = await askAIRaw(systemPrompt, userText);
     renderCopilotoResult(reply);
@@ -5819,66 +5785,12 @@ function renderCopilotoResult(text){
   resultBox.appendChild(actions);
 }
 
-/* =========================================================
-   RELATÓRIO DO FUNIL DE CREDENCIAMENTO (Clínicas) — reaproveita o mesmo
-   gerador de PDF de "Resumo Executivo" já usado no BI (generateDashboardPdf:
-   lista de KPIs + resumo em texto), mas com números calculados 100% em
-   JavaScript puro a partir de dataCache.clinicas (nunca pela IA) — contagem
-   por status, quantas estão pedindo atenção (getClinicasNeedingAttention) e
-   uma estimativa de "dias na etapa atual" usando created_at, já que o app
-   não guarda um histórico de mudança de status. Pedido do usuário: mais
-   automação/independência na aba Clínicas, sem precisar montar isso à mão.
-   ========================================================= */
-async function generateClinicasPipelineReport(){
-  if(!cloudUser){ showToast('⚠️ Faça login para gerar o relatório.'); return; }
-  const btn = document.getElementById('clinicasReportBtn');
-  if(btn){ btn.disabled = true; btn.textContent = 'Gerando relatório...'; }
-  try{
-    await refreshDataCache(true);
-    const clinicas = dataCache.clinicas || [];
-    if(!clinicas.length){ showToast('⚠️ Nenhuma clínica cadastrada ainda.'); return; }
-
-    const statusCount = { prospeccao: 0, negociacao: 0, credenciada: 0, inativa: 0 };
-    clinicas.forEach(c => { const s = c.status || 'prospeccao'; if(statusCount[s] !== undefined) statusCount[s]++; });
-    const attention = getClinicasNeedingAttention();
-
-    const now = Date.now();
-    const emNegociacao = clinicas.filter(c => c.status === 'negociacao' && c.created_at);
-    const avgDaysNegociacao = emNegociacao.length
-      ? Math.round(emNegociacao.reduce((sum, c) => sum + (now - new Date(c.created_at).getTime()) / 86400000, 0) / emNegociacao.length)
-      : null;
-
-    const kpiValues = [
-      { label: 'Total de clínicas cadastradas', formatted: String(clinicas.length) },
-      { label: 'Em prospecção', formatted: String(statusCount.prospeccao) },
-      { label: 'Em negociação', formatted: String(statusCount.negociacao) },
-      { label: 'Credenciadas', formatted: String(statusCount.credenciada) },
-      { label: 'Inativas', formatted: String(statusCount.inativa) },
-      { label: 'Pedindo atenção agora', formatted: String(attention.length) }
-    ];
-    if(avgDaysNegociacao !== null){
-      kpiValues.push({ label: 'Tempo médio em negociação (dias, estimado)', formatted: String(avgDaysNegociacao) });
-    }
-
-    const summaryParts = [];
-    summaryParts.push('Funil de credenciamento com ' + clinicas.length + ' clínica' + (clinicas.length > 1 ? 's' : '') + ' cadastrada' + (clinicas.length > 1 ? 's' : '') + ': ' + statusCount.prospeccao + ' em prospecção, ' + statusCount.negociacao + ' em negociação, ' + statusCount.credenciada + ' credenciada(s) e ' + statusCount.inativa + ' inativa(s).');
-    if(attention.length){
-      summaryParts.push('\n' + attention.length + ' clínica' + (attention.length > 1 ? 's' : '') + ' pedindo atenção agora (ação vencida ou negociação parada há mais de ' + CLINICA_STALLED_DAYS + ' dias sem próxima ação definida):');
-      attention.slice(0, 15).forEach(c => { summaryParts.push('- ' + (c.nome || 'Sem nome') + (c.proxima_acao ? ' (ação prevista: ' + formatProjectDueDate(c.proxima_acao) + ')' : ' (sem próxima ação definida)')); });
-      if(attention.length > 15) summaryParts.push('- ... e mais ' + (attention.length - 15) + '.');
-    } else {
-      summaryParts.push('\nNenhuma clínica pedindo atenção agora — todas com próxima ação em dia ou fora da janela de negociação parada.');
-    }
-    const summary = summaryParts.join('\n');
-
-    const blob = await generateDashboardPdf('clinicas.pdf', kpiValues, summary);
-    addDownloadableFileMessage('📊 Relatório do funil de credenciamento, pronto em PDF (o arquivo não fica salvo no histórico da conversa — baixe agora):', blob, 'funil_credenciamento_clinicas.pdf');
-  }catch(e){
-    showToast('⚠️ Não consegui gerar o relatório agora.');
-  }finally{
-    if(btn){ btn.disabled = false; btn.textContent = '📊 Gerar relatório do funil'; }
-  }
-}
+/* O relatório do funil de credenciamento (generateClinicasPipelineReport,
+   que usava status/próxima ação/CLINICA_STALLED_DAYS) foi removido junto
+   com os campos de credenciamento desta aba — pedido do usuário: esta aba
+   deixou de acompanhar credenciamento e passou a ser exclusiva da
+   campanha de conversão Pagamento Antecipado → Faturado. O relatório que
+   continua aqui (logo abaixo) é o da campanha em si. */
 
 /* Relatório da campanha "Redução de clínicas em Pagamento Antecipado" —
    mesmo padrão de generateClinicasPipelineReport (PDF via
@@ -5952,236 +5864,16 @@ async function generatePaReducaoReport(){
 }
 
 /* =========================================================
-   COMPARADOR DE CLÍNICAS — pega duas clínicas já cadastradas (ver
-   WORKSPACE_TABLES.clinicas) e compara lado a lado. Como o campo de
-   preço do cadastro é texto livre (cada clínica tem uma tabela
-   diferente, não dá pra somar automaticamente), a pessoa informa aqui um
-   valor mensal de referência pra cada uma — a diferença em R$ e % é
-   calculada em JavaScript puro (nunca pela IA). A IA só entra depois,
-   opcionalmente, pra resumir a comparação e apontar uma recomendação,
-   em cima dos números já calculados.
+   COMPARADOR DE CLÍNICAS — removido (pedido do usuário): comparava duas
+   clínicas cadastradas usando status/prazo de pagamento/tabela de
+   preços/histórico de credenciamento, e existia só como botão dentro
+   desta mesma aba — que deixou de acompanhar credenciamento e passou a
+   ser exclusiva da campanha de conversão Pagamento Antecipado →
+   Faturado. Sem esses campos de credenciamento (removidos de
+   WORKSPACE_TABLES.clinicas.fields) e sem o botão que abria esta tela,
+   a ferramenta ficaria inacessível e sem sentido — por isso saiu junto,
+   em vez de deixar código morto pra trás.
    ========================================================= */
-let comparadorClinicaAId = null;
-let comparadorClinicaBId = null;
-let comparadorValorA = null;
-let comparadorValorB = null;
-
-async function showComparadorClinicasView(){
-  closeOverlayPanels();
-  currentView = 'comparadorClinicas';
-  currentConvId = null;
-  renderModeSwitch();
-  updateNavActiveStates();
-  document.getElementById('modeBanner').classList.remove('show');
-  renderConversationList();
-  if(!cloudUser){
-    showLoginGate('🏥', 'Comparador de Clínicas', 'Compara clínicas já cadastradas, por isso só aparece pra quem está logado. Entre pra usar.');
-    return;
-  }
-  await refreshDataCache(true);
-  renderComparadorClinicasView();
-  closeSidebarIfMobile();
-}
-
-function renderComparadorClinicasView(){
-  const chat = document.getElementById('chat');
-  chat.innerHTML = '';
-
-  const wrap = document.createElement('div');
-  wrap.className = 'vlow-view';
-
-  const heading = document.createElement('h2');
-  heading.className = 'vlow-heading';
-  heading.textContent = 'Comparador de Clínicas';
-  wrap.appendChild(heading);
-
-  const subtitle = document.createElement('p');
-  subtitle.className = 'vlow-subtitle';
-  subtitle.textContent = 'Escolha duas clínicas já cadastradas e informe um valor mensal de referência pra cada uma — a diferença em R$ e % aparece na hora.';
-  wrap.appendChild(subtitle);
-
-  const clinicas = dataCache.clinicas || [];
-  if(clinicas.length < 2){
-    const empty = document.createElement('p');
-    empty.className = 'vlow-empty';
-    empty.textContent = 'Cadastre pelo menos duas clínicas na aba Clínicas antes de comparar.';
-    wrap.appendChild(empty);
-    chat.appendChild(wrap);
-    return;
-  }
-
-  wrap.appendChild(buildComparadorClinicaSlot('A', clinicas));
-  wrap.appendChild(buildComparadorClinicaSlot('B', clinicas));
-
-  const resultsWrap = document.createElement('div');
-  resultsWrap.id = 'comparadorResults';
-  wrap.appendChild(resultsWrap);
-
-  const genBtn = document.createElement('button');
-  genBtn.type = 'button';
-  genBtn.className = 'vlow-share-btn';
-  genBtn.id = 'comparadorGenBtn';
-  genBtn.style.marginTop = '10px';
-  genBtn.textContent = '✨ Gerar comparação com a IA';
-  genBtn.onclick = generateComparadorClinicas;
-  wrap.appendChild(genBtn);
-
-  chat.appendChild(wrap);
-  renderComparadorResults();
-}
-
-function buildComparadorClinicaSlot(letra, clinicas){
-  const box = document.createElement('div');
-  box.className = 'workspace-form';
-
-  const selectLabel = document.createElement('label');
-  selectLabel.className = 'reajuste-field-label';
-  selectLabel.textContent = 'Clínica ' + letra;
-  const select = document.createElement('select');
-  select.className = 'workspace-input';
-  select.id = 'comparadorSelect' + letra;
-  const placeholderOpt = document.createElement('option');
-  placeholderOpt.value = '';
-  placeholderOpt.textContent = 'Selecione...';
-  select.appendChild(placeholderOpt);
-  clinicas.forEach(c => {
-    const opt = document.createElement('option');
-    opt.value = c.id;
-    opt.textContent = c.nome + (c.cidade ? ' — ' + c.cidade : '');
-    select.appendChild(opt);
-  });
-  select.value = (letra === 'A' ? comparadorClinicaAId : comparadorClinicaBId) || '';
-  select.onchange = () => {
-    if(letra === 'A') comparadorClinicaAId = select.value || null;
-    else comparadorClinicaBId = select.value || null;
-    renderComparadorResults();
-  };
-  selectLabel.appendChild(select);
-  box.appendChild(selectLabel);
-
-  const valorLabel = document.createElement('label');
-  valorLabel.className = 'reajuste-field-label';
-  valorLabel.textContent = 'Valor mensal de referência (R$)';
-  const valorInput = document.createElement('input');
-  valorInput.type = 'number';
-  valorInput.step = '0.01';
-  valorInput.className = 'workspace-input';
-  valorInput.id = 'comparadorValor' + letra;
-  const currentVal = letra === 'A' ? comparadorValorA : comparadorValorB;
-  valorInput.value = currentVal === null || currentVal === undefined ? '' : currentVal;
-  valorInput.oninput = () => {
-    const v = valorInput.value === '' ? null : (parseFloat(valorInput.value) || 0);
-    if(letra === 'A') comparadorValorA = v; else comparadorValorB = v;
-    renderComparadorResults();
-  };
-  valorLabel.appendChild(valorInput);
-  box.appendChild(valorLabel);
-
-  return box;
-}
-
-function findComparadorClinica(id){
-  return (dataCache.clinicas || []).find(c => c.id === id) || null;
-}
-
-function renderComparadorResults(){
-  const wrap = document.getElementById('comparadorResults');
-  if(!wrap) return;
-  wrap.innerHTML = '';
-
-  const clinicaA = findComparadorClinica(comparadorClinicaAId);
-  const clinicaB = findComparadorClinica(comparadorClinicaBId);
-
-  if(clinicaA || clinicaB){
-    const profiles = document.createElement('div');
-    profiles.style.cssText = 'display:flex; flex-direction:column; gap:6px; margin-top:6px;';
-    [clinicaA, clinicaB].forEach((c, i) => {
-      if(!c) return;
-      const line = document.createElement('p');
-      line.className = 'vlow-empty';
-      line.style.margin = '0';
-      line.textContent = (i === 0 ? 'A: ' : 'B: ') + c.nome + ' — ' + (CLINICA_STATUS_LABELS[c.status] || 'Prospecção') +
-        (c.prazo_pagamento ? ' — prazo: ' + c.prazo_pagamento : '') +
-        (c.tabela_precos ? ' — tabela: ' + c.tabela_precos : '');
-      profiles.appendChild(line);
-    });
-    wrap.appendChild(profiles);
-  }
-
-  if(comparadorValorA === null || comparadorValorA === undefined || comparadorValorB === null || comparadorValorB === undefined) return;
-
-  const diffValor = comparadorValorB - comparadorValorA;
-  const diffPercent = comparadorValorA > 0 ? (diffValor / comparadorValorA * 100) : 0;
-
-  const summary = document.createElement('div');
-  summary.className = 'reajuste-summary';
-  summary.style.marginTop = '10px';
-  const cards = [
-    { label: clinicaA ? clinicaA.nome : 'Clínica A', value: formatBRL(comparadorValorA) },
-    { label: clinicaB ? clinicaB.nome : 'Clínica B', value: formatBRL(comparadorValorB) },
-    { label: 'Diferença (B − A)', value: formatBRL(diffValor), cls: diffValor >= 0 ? 'positive' : 'negative' },
-    { label: 'Diferença %', value: diffPercent.toFixed(1) + '%', cls: diffValor >= 0 ? 'positive' : 'negative' }
-  ];
-  cards.forEach(c => {
-    const card = document.createElement('div');
-    card.className = 'reajuste-summary-card';
-    const label = document.createElement('div');
-    label.className = 'label';
-    label.textContent = c.label;
-    const value = document.createElement('div');
-    value.className = 'value' + (c.cls ? ' ' + c.cls : '');
-    value.textContent = c.value;
-    card.appendChild(label);
-    card.appendChild(value);
-    summary.appendChild(card);
-  });
-  wrap.appendChild(summary);
-}
-
-async function generateComparadorClinicas(){
-  const clinicaA = findComparadorClinica(comparadorClinicaAId);
-  const clinicaB = findComparadorClinica(comparadorClinicaBId);
-  if(!clinicaA || !clinicaB){
-    addBotMessage('Selecione as duas clínicas antes de gerar a comparação.', false);
-    return;
-  }
-  if(!hasAiAccess()){
-    addBotMessage('Pra gerar a comparação com IA, ative a IA generativa em Configurações (o Gemini é grátis) ou faça login pra usar a IA da empresa.', false);
-    return;
-  }
-  const btn = document.getElementById('comparadorGenBtn');
-  if(btn){ btn.disabled = true; btn.textContent = 'Gerando...'; }
-  showTyping();
-  try{
-    const systemPrompt = "Você é a Lumi, assistente do AtlasIA, ajudando o time de credenciamento da Vixting a comparar duas clínicas parceiras/em negociação. Use EXCLUSIVAMENTE os dados fornecidos abaixo — nunca invente preço, prazo ou histórico que não esteja ali. Responda em português do Brasil, de forma objetiva. Estruture em: 1) comparação lado a lado de preço/prazo/status; 2) se houver diferença de valor calculada, comente o que ela representa; 3) uma recomendação prática (ex: qual parece mais vantajosa e por quê, ou que ponto vale negociar) baseada só no que foi informado.";
-    let userText = '--- Clínica A: ' + clinicaA.nome + ' ---\n' +
-      'Cidade: ' + (clinicaA.cidade || 'não informado') + '\n' +
-      'Status: ' + (CLINICA_STATUS_LABELS[clinicaA.status] || 'Prospecção') + '\n' +
-      'Prazo de pagamento: ' + (clinicaA.prazo_pagamento || 'não informado') + '\n' +
-      'Tabela de preços/observações: ' + (clinicaA.tabela_precos || 'não informado') + '\n' +
-      'Histórico: ' + (clinicaA.historico || 'não informado') + '\n\n' +
-      '--- Clínica B: ' + clinicaB.nome + ' ---\n' +
-      'Cidade: ' + (clinicaB.cidade || 'não informado') + '\n' +
-      'Status: ' + (CLINICA_STATUS_LABELS[clinicaB.status] || 'Prospecção') + '\n' +
-      'Prazo de pagamento: ' + (clinicaB.prazo_pagamento || 'não informado') + '\n' +
-      'Tabela de preços/observações: ' + (clinicaB.tabela_precos || 'não informado') + '\n' +
-      'Histórico: ' + (clinicaB.historico || 'não informado') + '\n';
-    if(comparadorValorA !== null && comparadorValorB !== null){
-      const diffValor = comparadorValorB - comparadorValorA;
-      const diffPercent = comparadorValorA > 0 ? (diffValor / comparadorValorA * 100) : 0;
-      userText += '\nValor mensal de referência informado — A: ' + formatBRL(comparadorValorA) + ', B: ' + formatBRL(comparadorValorB) + '\n' +
-        'Diferença calculada (B - A): ' + formatBRL(diffValor) + ' (' + diffPercent.toFixed(1) + '%)\n';
-    }
-    const reply = await askAIRaw(systemPrompt, userText);
-    hideTyping();
-    addBotMessage(reply, false);
-  }catch(err){
-    hideTyping();
-    addBotMessage('Não consegui gerar a comparação agora: ' + err.message, false);
-  }finally{
-    if(btn){ btn.disabled = false; btn.textContent = '✨ Gerar comparação com a IA'; }
-  }
-}
 
 /* =========================================================
    COMPARADOR DE CONTRATOS — sobe dois PDFs, extrai o texto de cada um
@@ -7657,25 +7349,23 @@ const WORKSPACE_TABLES = {
   clinicas: {
     table: 'clinicas',
     icon: 'heartPulse', color: '#f472b6', emoji: '🏥',
-    heading: 'Clínicas',
-    subtitle: 'Seu cadastro de clínicas parceiras/em negociação — cidade, preço de tabela, prazo de pagamento e histórico de contato. Pessoal: só você vê e edita, e é a base que a Lumi usa (só pra você) pra responder perguntas sobre clínicas por região.',
+    heading: 'Conversão de Clínicas',
+    subtitle: 'Sua base de clínicas na campanha de conversão de Pagamento Antecipado para Faturado — valor em jogo no período, status da conversão, responsável e motivo de recusa. Pessoal: só você vê e edita, e é a base que a Lumi usa (só pra você) pra responder perguntas sobre a campanha.',
     emptyText: 'Nenhuma clínica cadastrada ainda. Adicione a primeira abaixo.',
     addLabel: 'Adicionar clínica',
     setupScript: 'supabase_setup_clinicas_v2.sql',
+    // Pedido do usuário: esta aba deixou de acompanhar credenciamento (o
+    // status prospecção/negociação/credenciada/inativa, prazo de pagamento,
+    // protocolo, próxima ação, documentos pendentes e tabela de preços
+    // saíram daqui) e passou a ser exclusiva da campanha de conversão
+    // Pagamento Antecipado → Faturado — só ele usa esta aba, então nada
+    // mais depende dos campos de credenciamento aparecerem aqui. Os campos
+    // continuam existindo na tabela do Supabase (nada foi apagado do
+    // banco) — só não têm mais formulário/tela aqui dentro do AtlasIA.
     fields: [
       { key: 'nome', label: 'Nome da clínica', type: 'text', required: true },
       { key: 'cidade', label: 'Cidade/Região', type: 'text' },
       { key: 'contato', label: 'Contato (nome, telefone ou e-mail)', type: 'text' },
-      { key: 'status', label: 'Status', type: 'select', options: [['prospeccao', 'Prospecção'], ['negociacao', 'Em negociação'], ['credenciada', 'Credenciada'], ['inativa', 'Inativa']] },
-      { key: 'prazo_pagamento', label: 'Prazo de pagamento (ex: 30 dias)', type: 'text' },
-      { key: 'protocolo', label: 'Nº de protocolo (credenciamento)', type: 'text' },
-      { key: 'proxima_acao', label: 'Próxima ação/vencimento', type: 'date' },
-      { key: 'documentos_pendentes', label: 'Documentos pendentes', type: 'textarea' },
-      { key: 'tabela_precos', label: 'Tabela de preços / observações de valor', type: 'textarea' },
-      { key: 'historico', label: 'Histórico de contato/negociação', type: 'textarea' },
-      // Campanha de conversão Pagamento Antecipado → Faturado (pedido do
-      // usuário) — dimensão separada do "status" de credenciamento acima,
-      // por isso campos com prefixo pa_ (ver supabase_setup_reducao_pa.sql).
       { key: 'pa_status', label: 'Conversão p/ faturado — status', type: 'select', options: [['nao_contatado', 'Não contatado'], ['em_contato', 'Em contato'], ['recusou', 'Recusou'], ['convertida', 'Convertida p/ faturado']] },
       { key: 'pa_valor_periodo', label: 'Valor faturado em antecipado no período (R$)', type: 'text' },
       { key: 'pa_qtd_periodo', label: 'Qtd. de atendimentos no período', type: 'text' },
@@ -7688,10 +7378,10 @@ const WORKSPACE_TABLES = {
 };
 
 const WORKSPACE_STATUS_LABELS = { nao_iniciado: 'Não iniciado', em_andamento: 'Em andamento', concluido: 'Concluído' };
-const CLINICA_STATUS_LABELS = { prospeccao: 'Prospecção', negociacao: 'Em negociação', credenciada: 'Credenciada', inativa: 'Inativa' };
-// Status da campanha de conversão de modelo de pagamento (Antecipado →
-// Faturado) — dimensão separada do status de credenciamento acima (uma
-// clínica já credenciada pode estar em qualquer fase desta conversão).
+// Status da campanha de conversão Pagamento Antecipado → Faturado — a
+// única dimensão de status que a aba Clínicas acompanha hoje (o status de
+// credenciamento e o CLINICA_STATUS_LABELS que existia pra ele saíram
+// junto com o resto dos campos de credenciamento, a pedido do usuário).
 const PA_STATUS_LABELS = { nao_contatado: 'Não contatado', em_contato: 'Em contato', recusou: 'Recusou', convertida: 'Convertida p/ faturado' };
 
 /* Traduz um erro técnico do Supabase (tabela/bucket inexistente, política de
@@ -7891,21 +7581,6 @@ async function renderWorkspaceView(key){
     btnRow.style.flexWrap = 'wrap';
     btnRow.style.gap = '8px';
     btnRow.style.marginBottom = '4px';
-
-    const compareBtn = document.createElement('button');
-    compareBtn.type = 'button';
-    compareBtn.className = 'vlow-share-btn';
-    compareBtn.textContent = '⚖️ Comparar clínicas';
-    compareBtn.onclick = showComparadorClinicasView;
-    btnRow.appendChild(compareBtn);
-
-    const reportBtn = document.createElement('button');
-    reportBtn.type = 'button';
-    reportBtn.id = 'clinicasReportBtn';
-    reportBtn.className = 'vlow-share-btn';
-    reportBtn.textContent = '📊 Gerar relatório do funil';
-    reportBtn.onclick = generateClinicasPipelineReport;
-    btnRow.appendChild(reportBtn);
 
     const paReportBtn = document.createElement('button');
     paReportBtn.type = 'button';
@@ -8277,28 +7952,23 @@ function itemShareText(key, item){
     return t;
   }
   if(key === 'clinicas'){
+    // Esta aba deixou de acompanhar credenciamento (pedido do usuário) e
+    // passou a ser exclusiva da campanha de conversão Pagamento
+    // Antecipado → Faturado — por isso o status principal aqui já é o
+    // pa_status, sem precisar mais do gate isPartOfPaCampaign (que
+    // continua existindo e sendo usado no filtro/relatório, só não faz
+    // mais sentido aqui: toda clínica cadastrada nesta aba já É da
+    // campanha, por definição).
     let t = '🏥 ' + (item.nome || '');
-    t += '\nStatus: ' + (CLINICA_STATUS_LABELS[item.status] || 'Prospecção');
+    t += '\nStatus da conversão p/ faturado: ' + (PA_STATUS_LABELS[item.pa_status] || 'Não contatado');
     if(item.cidade) t += '\nCidade/Região: ' + item.cidade;
     if(item.contato) t += '\nContato: ' + item.contato;
-    if(item.prazo_pagamento) t += '\nPrazo de pagamento: ' + item.prazo_pagamento;
-    if(item.protocolo) t += '\nProtocolo: ' + item.protocolo;
-    if(item.proxima_acao) t += '\nPróxima ação: ' + formatProjectDueDate(item.proxima_acao);
-    // Campanha de conversão pra faturado: só entra no texto quando a
-    // clínica realmente faz parte dela (tem dado de uso ou já foi tocada),
-    // pra não poluir o texto de clínicas sem nenhuma relação com isso.
-    if(isPartOfPaCampaign(item)){
-      t += '\n\nConversão p/ faturado: ' + (PA_STATUS_LABELS[item.pa_status] || 'Não contatado');
-      if(item.pa_valor_periodo) t += '\nValor no período: R$ ' + Number(item.pa_valor_periodo).toFixed(2).replace('.', ',');
-      if(item.pa_qtd_periodo) t += '\nAtendimentos no período: ' + item.pa_qtd_periodo;
-      if(item.pa_aceitou_faturar) t += '\nAceitou faturar? ' + item.pa_aceitou_faturar;
-      if(item.pa_motivo_recusa) t += '\nMotivo da recusa: ' + item.pa_motivo_recusa;
-      if(item.pa_data_conversao) t += '\nData da conversão: ' + formatProjectDueDate(item.pa_data_conversao);
-      if(item.pa_responsavel) t += '\nResponsável: ' + item.pa_responsavel;
-    }
-    if(item.documentos_pendentes) t += '\n\nDocumentos pendentes:\n' + item.documentos_pendentes;
-    if(item.tabela_precos) t += '\n\nTabela de preços:\n' + item.tabela_precos;
-    if(item.historico) t += '\n\nHistórico:\n' + item.historico;
+    if(item.pa_valor_periodo) t += '\nValor faturado em antecipado no período: R$ ' + Number(item.pa_valor_periodo).toFixed(2).replace('.', ',');
+    if(item.pa_qtd_periodo) t += '\nAtendimentos no período: ' + item.pa_qtd_periodo;
+    if(item.pa_aceitou_faturar) t += '\nAceitou faturar? ' + item.pa_aceitou_faturar;
+    if(item.pa_motivo_recusa) t += '\nMotivo da recusa: ' + item.pa_motivo_recusa;
+    if(item.pa_data_conversao) t += '\nData da conversão: ' + formatProjectDueDate(item.pa_data_conversao);
+    if(item.pa_responsavel) t += '\nResponsável: ' + item.pa_responsavel;
     return t;
   }
   return '';
@@ -8378,48 +8048,33 @@ function renderWorkspaceItems(key, items){
         info.appendChild(link);
       }
     } else if(key === 'clinicas'){
+      // Esta aba deixou de acompanhar credenciamento (status, prazo de
+      // pagamento, protocolo, próxima ação, documentos pendentes, tabela
+      // de preços, histórico — pedido do usuário) e passou a ser
+      // exclusiva da campanha de conversão Pagamento Antecipado →
+      // Faturado. O badge principal agora já é o pa_status direto (sem
+      // gate de isPartOfPaCampaign): toda clínica cadastrada aqui já É da
+      // campanha, por definição — isPartOfPaCampaign continua existindo
+      // e sendo usada no filtro/relatório, só não faz mais sentido aqui.
       const name = document.createElement('strong');
       name.textContent = item.nome || '';
       info.appendChild(name);
       const badge = document.createElement('span');
-      badge.className = 'workspace-status-badge status-' + (item.status || 'prospeccao');
-      badge.textContent = CLINICA_STATUS_LABELS[item.status] || 'Prospecção';
+      badge.className = 'workspace-status-badge pa-' + (item.pa_status || 'nao_contatado');
+      badge.textContent = '💳 ' + (PA_STATUS_LABELS[item.pa_status] || 'Não contatado');
       info.appendChild(badge);
       if(item.cidade){ const c = document.createElement('span'); c.className = 'workspace-item-sub'; c.textContent = '📍 ' + item.cidade; info.appendChild(c); }
       if(item.contato){ const c = document.createElement('span'); c.className = 'workspace-item-sub'; c.textContent = item.contato; info.appendChild(c); }
-      if(item.prazo_pagamento){ const p = document.createElement('span'); p.className = 'workspace-item-sub'; p.textContent = 'Prazo: ' + item.prazo_pagamento; info.appendChild(p); }
-      if(item.protocolo){ const pr = document.createElement('span'); pr.className = 'workspace-item-sub'; pr.textContent = '🔖 Protocolo: ' + item.protocolo; info.appendChild(pr); }
-      if(item.proxima_acao){
-        const acao = document.createElement('span');
-        const overdueClinica = new Date(item.proxima_acao + 'T23:59:59').getTime() < Date.now();
-        acao.className = 'workspace-item-sub' + (overdueClinica ? ' project-due-overdue' : '');
-        acao.textContent = (overdueClinica ? '⏰ próxima ação vencida: ' : '📅 próxima ação: ') + formatProjectDueDate(item.proxima_acao);
-        info.appendChild(acao);
-      }
-      if(item.documentos_pendentes){ const dp = document.createElement('p'); dp.className = 'workspace-item-desc'; dp.textContent = '📋 Pendente: ' + item.documentos_pendentes; info.appendChild(dp); }
-      if(item.tabela_precos){ const t = document.createElement('p'); t.className = 'workspace-item-desc'; t.textContent = '💰 ' + item.tabela_precos; info.appendChild(t); }
-      if(item.historico){ const h = document.createElement('p'); h.className = 'workspace-item-desc'; h.textContent = '🕘 ' + item.historico; info.appendChild(h); }
-      // Campanha de conversão Pagamento Antecipado → Faturado — só mostra
-      // esse bloco pra clínica que de fato faz parte dela (ver
-      // isPartOfPaCampaign), senão a maioria das clínicas (que nunca teve
-      // nada a ver com isso) ficaria com um badge cinza "Não contatado"
-      // sem sentido nenhum.
-      if(isPartOfPaCampaign(item)){
-        const paBadge = document.createElement('span');
-        paBadge.className = 'workspace-status-badge pa-' + (item.pa_status || 'nao_contatado');
-        paBadge.textContent = '💳 ' + (PA_STATUS_LABELS[item.pa_status] || 'Não contatado');
-        info.appendChild(paBadge);
-        const paLine = document.createElement('p');
-        paLine.className = 'workspace-item-desc';
-        const paBits = [];
-        if(item.pa_valor_periodo) paBits.push('R$ ' + Number(item.pa_valor_periodo).toFixed(2).replace('.', ',') + ' no período');
-        if(item.pa_qtd_periodo) paBits.push(item.pa_qtd_periodo + ' atendimento(s) no período');
-        if(item.pa_responsavel) paBits.push('responsável: ' + item.pa_responsavel);
-        if(item.pa_aceitou_faturar) paBits.push('aceitou faturar: ' + item.pa_aceitou_faturar);
-        if(item.pa_data_conversao) paBits.push('convertida em: ' + formatProjectDueDate(item.pa_data_conversao));
-        if(paBits.length){ paLine.textContent = '💳 ' + paBits.join(' · '); info.appendChild(paLine); }
-        if(item.pa_motivo_recusa){ const mr = document.createElement('p'); mr.className = 'workspace-item-desc'; mr.textContent = '❌ Motivo da recusa: ' + item.pa_motivo_recusa; info.appendChild(mr); }
-      }
+      const paLine = document.createElement('p');
+      paLine.className = 'workspace-item-desc';
+      const paBits = [];
+      if(item.pa_valor_periodo) paBits.push('R$ ' + Number(item.pa_valor_periodo).toFixed(2).replace('.', ',') + ' no período');
+      if(item.pa_qtd_periodo) paBits.push(item.pa_qtd_periodo + ' atendimento(s) no período');
+      if(item.pa_responsavel) paBits.push('responsável: ' + item.pa_responsavel);
+      if(item.pa_aceitou_faturar) paBits.push('aceitou faturar: ' + item.pa_aceitou_faturar);
+      if(item.pa_data_conversao) paBits.push('convertida em: ' + formatProjectDueDate(item.pa_data_conversao));
+      if(paBits.length){ paLine.textContent = '💳 ' + paBits.join(' · '); info.appendChild(paLine); }
+      if(item.pa_motivo_recusa){ const mr = document.createElement('p'); mr.className = 'workspace-item-desc'; mr.textContent = '❌ Motivo da recusa: ' + item.pa_motivo_recusa; info.appendChild(mr); }
     }
 
     const shareText = itemShareText(key, item);
@@ -8818,7 +8473,6 @@ function refreshLoginDependentView(){
   // consegue buscar (Tarefas/Workspace passam a entrar), então refaz a
   // busca com o resultado atualizado.
   if(currentView === 'busca'){ renderGlobalSearchView(); return; }
-  if(currentView === 'comparadorClinicas'){ showComparadorClinicasView(); return; }
   if(currentView === 'copiloto'){ renderCopilotoView(); return; }
   if(WORKSPACE_TABLES[currentView]){ showWorkspaceView(currentView); }
 }
@@ -11572,7 +11226,7 @@ function buildWorkspaceActionGuide(){
     const fieldsDesc = cfg.fields.map(f => f.key + (f.required ? ' (obrigatório)' : '')).join(', ');
     return '- "' + key + '" (' + cfg.heading + '): campos permitidos — ' + fieldsDesc;
   }).join('\n');
-  return "\n\nAção autônoma disponível neste modo: você pode CRIAR (nunca editar nem apagar) um ou mais registros novos nas telas de Workspace da pessoa, quando ela pedir isso claramente (ex: \"cria uma clínica nova: ...\", \"adiciona um projeto ...\", \"cadastra esse contato na equipe\", ou até vários de uma vez, como \"cadastra essas 3 clínicas: ...\"). Pra isso, termine sua resposta com uma tag nesse formato exato pra cada registro, cada uma numa linha própria:\n[[CRIAR_REGISTRO: chave_da_tabela|{\"campo\":\"valor\"}]]\n\nTabelas e campos permitidos (use só esses nomes de campo, exatamente como estão escritos — nunca invente um campo novo nem uma tabela nova):\n" + tablesDesc + "\n\nRegras importantes: só use essa tag quando a pessoa pedir explicitamente pra criar/adicionar/cadastrar algo — nunca crie um registro por conta própria só porque o assunto foi mencionado de passagem. Pode incluir mais de uma tag na mesma resposta se a pessoa pedir vários registros de uma vez (ex: várias clínicas, ou uma clínica E um projeto de acompanhamento dela) — cada tag vira um registro separado, sempre dentro do mesmo limite de só criar, nunca editar/apagar o que já existe. O valor depois de \"chave_da_tabela|\" precisa ser um JSON válido de uma linha só, com aspas duplas. Antes das tags, sempre explique em texto normal o que você vai cadastrar (liste cada item se forem vários), pra pessoa confirmar visualmente o que aconteceu — as tags em si são removidas automaticamente e nunca aparecem pra ela. Se houver um documento anexado na conversa (ex: um PDF de proposta, contrato ou ficha cadastral de uma clínica) e a pessoa pedir pra cadastrar/extrair os dados dele, use o texto do anexo já disponível no seu contexto pra preencher os campos automaticamente (nome, cidade, contato, prazo de pagamento, protocolo etc.) em vez de pedir pra ela retypar tudo — só pergunte pelo campo específico que realmente não aparece no documento, nunca peça a lista inteira de novo.";
+  return "\n\nAção autônoma disponível neste modo: você pode CRIAR (nunca editar nem apagar) um ou mais registros novos nas telas de Workspace da pessoa, quando ela pedir isso claramente (ex: \"cria uma clínica nova: ...\", \"adiciona um projeto ...\", \"cadastra esse contato na equipe\", ou até vários de uma vez, como \"cadastra essas 3 clínicas: ...\"). Pra isso, termine sua resposta com uma tag nesse formato exato pra cada registro, cada uma numa linha própria:\n[[CRIAR_REGISTRO: chave_da_tabela|{\"campo\":\"valor\"}]]\n\nTabelas e campos permitidos (use só esses nomes de campo, exatamente como estão escritos — nunca invente um campo novo nem uma tabela nova):\n" + tablesDesc + "\n\nRegras importantes: só use essa tag quando a pessoa pedir explicitamente pra criar/adicionar/cadastrar algo — nunca crie um registro por conta própria só porque o assunto foi mencionado de passagem. Pode incluir mais de uma tag na mesma resposta se a pessoa pedir vários registros de uma vez (ex: várias clínicas, ou uma clínica E um projeto de acompanhamento dela) — cada tag vira um registro separado, sempre dentro do mesmo limite de só criar, nunca editar/apagar o que já existe. O valor depois de \"chave_da_tabela|\" precisa ser um JSON válido de uma linha só, com aspas duplas. Antes das tags, sempre explique em texto normal o que você vai cadastrar (liste cada item se forem vários), pra pessoa confirmar visualmente o que aconteceu — as tags em si são removidas automaticamente e nunca aparecem pra ela. Se houver um documento anexado na conversa (ex: um PDF de proposta, contrato ou ficha cadastral de uma clínica) e a pessoa pedir pra cadastrar/extrair os dados dele, use o texto do anexo já disponível no seu contexto pra preencher os campos automaticamente (nome, cidade, contato, valor no período, status da conversão etc.) em vez de pedir pra ela retypar tudo — só pergunte pelo campo específico que realmente não aparece no documento, nunca peça a lista inteira de novo.";
 }
 
 function extractWorkspaceActionTags(text){
@@ -11892,7 +11546,7 @@ function buildWorkspaceDataContext(){
         'Valor total em jogo no período de referência: R$ ' + valorTotal.toFixed(2).replace('.', ',') + ', dos quais R$ ' + valorConvertido.toFixed(2).replace('.', ',') + ' já convertido.');
     }
 
-    parts.push('\nClínicas cadastradas (use isso pra responder perguntas sobre clínicas por região/cidade, status de negociação, preço, prazo, protocolo, conversão pra faturado ou quais exames cada uma realiza — são dados reais desta conta; se a pergunta for sobre uma clínica ou exame que não aparece aqui, diga isso claramente em vez de supor; com uma base grande, nem toda clínica cabe aqui — se não achar a que foi perguntada, diga que pode não estar entre as listadas em vez de afirmar que ela não existe):');
+    parts.push('\nClínicas cadastradas na campanha de conversão de Pagamento Antecipado para Faturado (use isso pra responder perguntas sobre clínicas por região/cidade, status da conversão, valor no período ou responsável — são dados reais desta conta; se a pergunta for sobre uma clínica que não aparece aqui, diga isso claramente em vez de supor; com uma base grande, nem toda clínica cabe aqui — se não achar a que foi perguntada, diga que pode não estar entre as listadas em vez de afirmar que ela não existe):');
     // Dentro do corte de 40 (pra não pesar o prompt), prioriza quem já tem
     // algum progresso na campanha de conversão — é o que mais se pergunta
     // no dia a dia — antes do resto, que segue na ordem normal (mais
@@ -11904,15 +11558,12 @@ function buildWorkspaceDataContext(){
     });
     clinicasOrdenadas.slice(0, 40).forEach(c => {
       parts.push('- ' + c.nome + (c.cidade ? ' (' + c.cidade + ')' : '') +
-        ' — status: ' + (CLINICA_STATUS_LABELS[c.status] || 'Prospecção') +
         (c.contato ? ', contato: ' + c.contato : '') +
-        (c.prazo_pagamento ? ', prazo: ' + c.prazo_pagamento : '') +
-        (c.protocolo ? ', protocolo: ' + c.protocolo : '') +
-        (c.proxima_acao ? ', próxima ação: ' + formatProjectDueDate(c.proxima_acao) : '') +
-        (c.tabela_precos ? ', tabela/exames: ' + c.tabela_precos : '') +
-        (c.historico ? ', histórico: ' + c.historico : '') +
-        (isPartOfPaCampaign(c) ? ', conversão p/ faturado: ' + (PA_STATUS_LABELS[c.pa_status] || 'Não contatado') +
-          (c.pa_valor_periodo ? ' (R$ ' + Number(c.pa_valor_periodo).toFixed(2).replace('.', ',') + ' no período)' : '') : ''));
+        ', conversão p/ faturado: ' + (PA_STATUS_LABELS[c.pa_status] || 'Não contatado') +
+        (c.pa_valor_periodo ? ' (R$ ' + Number(c.pa_valor_periodo).toFixed(2).replace('.', ',') + ' no período)' : '') +
+        (c.pa_qtd_periodo ? ', ' + c.pa_qtd_periodo + ' atendimento(s) no período' : '') +
+        (c.pa_responsavel ? ', responsável: ' + c.pa_responsavel : '') +
+        (c.pa_motivo_recusa ? ', motivo da recusa: ' + c.pa_motivo_recusa : ''));
     });
   }
   if(!parts.length) return '';

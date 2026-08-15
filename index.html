@@ -1702,6 +1702,19 @@
   .workspace-status-badge.status-negociacao{ background:rgba(251,146,60,.18); color:#fb923c; }
   .workspace-status-badge.status-credenciada{ background:rgba(52,211,153,.18); color:#34d399; }
   .workspace-status-badge.status-inativa{ background:rgba(148,163,184,.18); color:#94a3b8; }
+  /* Badge da campanha de conversão pra faturado — prefixo "pa-" pra nunca
+     colidir com os badges de status de credenciamento acima (são duas
+     dimensões diferentes, ver PA_STATUS_LABELS). */
+  .workspace-status-badge.pa-em_contato{ background:rgba(251,146,60,.18); color:#fb923c; }
+  .workspace-status-badge.pa-recusou{ background:rgba(248,113,113,.18); color:#f87171; }
+  .workspace-status-badge.pa-convertida{ background:rgba(52,211,153,.18); color:#34d399; }
+  .workspace-status-badge.pa-nao_contatado{ background:rgba(148,163,184,.18); color:#94a3b8; }
+  .clinicas-filter-row{
+    display:flex; flex-wrap:wrap; align-items:center; gap:8px;
+    margin:2px 0 10px 0; font-size:12.5px; color:var(--text-dim);
+  }
+  .clinicas-filter-row label{ white-space:nowrap; }
+  .clinicas-filter-select{ width:auto; min-width:0; flex:0 0 auto; padding:6px 8px; font-size:12.5px; }
   .workspace-delete-btn{
     background:none;
     border:none;
@@ -4452,6 +4465,29 @@ let overdueNudgeShownThisSession = false;
 
 let dataCache = { tasks: [], equipes: [], projetos: [], compartilhados: [], clinicas: [], loadedAt: 0 };
 
+// Estado do filtro/ordenação da aba Clínicas (campanha de conversão pra
+// faturado) — clinicasLastLoadedItems guarda a última lista CRUA (sem
+// filtro) trazida do banco, pra trocar o filtro/ordenação só re-renderizar
+// na hora, sem precisar buscar de novo no Supabase.
+let clinicasPaFilter = 'todas';
+let clinicasSortBy = 'recentes';
+let clinicasLastLoadedItems = [];
+
+function applyClinicasFilterSort(items){
+  let out = items || [];
+  if(clinicasPaFilter === 'campanha'){
+    out = out.filter(isPartOfPaCampaign);
+  } else if(clinicasPaFilter !== 'todas'){
+    out = out.filter(c => (c.pa_status || 'nao_contatado') === clinicasPaFilter);
+  }
+  if(clinicasSortBy === 'valor'){
+    out = out.slice().sort((a, b) => (Number(b.pa_valor_periodo) || 0) - (Number(a.pa_valor_periodo) || 0));
+  }
+  // 'recentes' não precisa reordenar — loadWorkspaceItems já busca
+  // com order('created_at', {ascending:false}).
+  return out;
+}
+
 /* Busca de uma vez só as tarefas e os 4 tipos de item do Workspace —
    dado compartilhado por Home Inteligente, IA Proativa e Pesquisa Global,
    pra essas três funcionalidades não ficarem cada uma fazendo sua própria
@@ -5819,6 +5855,77 @@ async function generateClinicasPipelineReport(){
     showToast('⚠️ Não consegui gerar o relatório agora.');
   }finally{
     if(btn){ btn.disabled = false; btn.textContent = '📊 Gerar relatório do funil'; }
+  }
+}
+
+/* Relatório da campanha "Redução de clínicas em Pagamento Antecipado" —
+   mesmo padrão de generateClinicasPipelineReport (PDF via
+   generateDashboardPdf), mas olhando só pra dimensão pa_status em vez do
+   status de credenciamento. Pensado pra virar o "prestar contas" do
+   andamento da campanha sem precisar manter planilha separada — sempre
+   que quiser um retrato atualizado, é só gerar de novo. */
+async function generatePaReducaoReport(){
+  if(!cloudUser){ showToast('⚠️ Faça login para gerar o relatório.'); return; }
+  const btn = document.getElementById('clinicasPaReportBtn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Gerando relatório...'; }
+  try{
+    await refreshDataCache(true);
+    const todas = dataCache.clinicas || [];
+    const emCampanha = todas.filter(isPartOfPaCampaign);
+    if(!emCampanha.length){
+      showToast('⚠️ Nenhuma clínica da campanha de conversão pra faturado cadastrada ainda (use o script de importação em massa, ou cadastre/edite manualmente).');
+      return;
+    }
+
+    const statusCount = { nao_contatado: 0, em_contato: 0, recusou: 0, convertida: 0 };
+    let valorTotal = 0, valorConvertido = 0, valorEmAberto = 0;
+    emCampanha.forEach(c => {
+      const s = c.pa_status || 'nao_contatado';
+      if(statusCount[s] !== undefined) statusCount[s]++;
+      const v = Number(c.pa_valor_periodo) || 0;
+      valorTotal += v;
+      if(s === 'convertida') valorConvertido += v;
+      else valorEmAberto += v;
+    });
+    const pctConvertido = valorTotal > 0 ? Math.round((valorConvertido / valorTotal) * 100) : 0;
+
+    const kpiValues = [
+      { label: 'Clínicas na campanha', formatted: String(emCampanha.length) },
+      { label: 'Não contatadas', formatted: String(statusCount.nao_contatado) },
+      { label: 'Em contato', formatted: String(statusCount.em_contato) },
+      { label: 'Recusaram', formatted: String(statusCount.recusou) },
+      { label: 'Já convertidas', formatted: String(statusCount.convertida) },
+      { label: 'Valor já convertido p/ faturado (período)', formatted: 'R$ ' + valorConvertido.toFixed(2).replace('.', ',') },
+      { label: 'Valor ainda em antecipado (período)', formatted: 'R$ ' + valorEmAberto.toFixed(2).replace('.', ',') },
+      { label: '% do valor já convertido', formatted: pctConvertido + '%' }
+    ];
+
+    // Prioridade: clínicas AINDA não contatadas, ordenadas pelo maior valor
+    // no período — é literalmente "por quem começar" pra maximizar o
+    // impacto do esforço de conversão.
+    const prioridade = emCampanha
+      .filter(c => (c.pa_status || 'nao_contatado') === 'nao_contatado' && Number(c.pa_valor_periodo) > 0)
+      .sort((a, b) => (Number(b.pa_valor_periodo) || 0) - (Number(a.pa_valor_periodo) || 0));
+
+    const summaryParts = [];
+    summaryParts.push('Campanha de conversão Pagamento Antecipado → Faturado: ' + emCampanha.length + ' clínica' + (emCampanha.length > 1 ? 's' : '') + ' envolvida' + (emCampanha.length > 1 ? 's' : '') + ', sendo ' + statusCount.nao_contatado + ' ainda não contatadas, ' + statusCount.em_contato + ' em contato, ' + statusCount.recusou + ' que recusaram e ' + statusCount.convertida + ' já convertidas. Do valor total em jogo no período (R$ ' + valorTotal.toFixed(2).replace('.', ',') + '), ' + pctConvertido + '% já está em faturado.');
+    if(prioridade.length){
+      summaryParts.push('\nMaior prioridade agora (não contatadas, maior valor primeiro):');
+      prioridade.slice(0, 20).forEach(c => {
+        summaryParts.push('- ' + c.nome + ' — R$ ' + Number(c.pa_valor_periodo).toFixed(2).replace('.', ',') + (c.pa_qtd_periodo ? ' (' + c.pa_qtd_periodo + ' atend.)' : '') + (c.cidade ? ' — ' + c.cidade : ''));
+      });
+      if(prioridade.length > 20) summaryParts.push('- ... e mais ' + (prioridade.length - 20) + ' clínica(s) não contatadas com valor no período.');
+    } else {
+      summaryParts.push('\nNenhuma clínica não-contatada com valor no período pendente — a lista de prioridade está em dia.');
+    }
+    const summary = summaryParts.join('\n');
+
+    const blob = await generateDashboardPdf('reducao_pa.pdf', kpiValues, summary);
+    addDownloadableFileMessage('📉 Relatório de redução de Pagamento Antecipado, pronto em PDF (o arquivo não fica salvo no histórico da conversa — baixe agora):', blob, 'reducao_pagamento_antecipado.pdf');
+  }catch(e){
+    showToast('⚠️ Não consegui gerar o relatório agora.');
+  }finally{
+    if(btn){ btn.disabled = false; btn.textContent = '📉 Relatório de redução de Pagamento Antecipado'; }
   }
 }
 
@@ -7543,13 +7650,27 @@ const WORKSPACE_TABLES = {
       { key: 'proxima_acao', label: 'Próxima ação/vencimento', type: 'date' },
       { key: 'documentos_pendentes', label: 'Documentos pendentes', type: 'textarea' },
       { key: 'tabela_precos', label: 'Tabela de preços / observações de valor', type: 'textarea' },
-      { key: 'historico', label: 'Histórico de contato/negociação', type: 'textarea' }
+      { key: 'historico', label: 'Histórico de contato/negociação', type: 'textarea' },
+      // Campanha de conversão Pagamento Antecipado → Faturado (pedido do
+      // usuário) — dimensão separada do "status" de credenciamento acima,
+      // por isso campos com prefixo pa_ (ver supabase_setup_reducao_pa.sql).
+      { key: 'pa_status', label: 'Conversão p/ faturado — status', type: 'select', options: [['nao_contatado', 'Não contatado'], ['em_contato', 'Em contato'], ['recusou', 'Recusou'], ['convertida', 'Convertida p/ faturado']] },
+      { key: 'pa_valor_periodo', label: 'Valor faturado em antecipado no período (R$)', type: 'text' },
+      { key: 'pa_qtd_periodo', label: 'Qtd. de atendimentos no período', type: 'text' },
+      { key: 'pa_aceitou_faturar', label: 'Aceitou faturar? (Sim/Não, deixe em branco se ainda não respondeu)', type: 'text' },
+      { key: 'pa_motivo_recusa', label: 'Motivo da recusa (se recusou)', type: 'textarea' },
+      { key: 'pa_data_conversao', label: 'Data da conversão p/ faturado', type: 'date' },
+      { key: 'pa_responsavel', label: 'Responsável por esta conversão', type: 'text' }
     ]
   }
 };
 
 const WORKSPACE_STATUS_LABELS = { nao_iniciado: 'Não iniciado', em_andamento: 'Em andamento', concluido: 'Concluído' };
 const CLINICA_STATUS_LABELS = { prospeccao: 'Prospecção', negociacao: 'Em negociação', credenciada: 'Credenciada', inativa: 'Inativa' };
+// Status da campanha de conversão de modelo de pagamento (Antecipado →
+// Faturado) — dimensão separada do status de credenciamento acima (uma
+// clínica já credenciada pode estar em qualquer fase desta conversão).
+const PA_STATUS_LABELS = { nao_contatado: 'Não contatado', em_contato: 'Em contato', recusou: 'Recusou', convertida: 'Convertida p/ faturado' };
 
 /* Traduz um erro técnico do Supabase (tabela/bucket inexistente, política de
    segurança, rede) numa mensagem que a pessoa realmente consegue agir a
@@ -7764,7 +7885,68 @@ async function renderWorkspaceView(key){
     reportBtn.onclick = generateClinicasPipelineReport;
     btnRow.appendChild(reportBtn);
 
+    const paReportBtn = document.createElement('button');
+    paReportBtn.type = 'button';
+    paReportBtn.id = 'clinicasPaReportBtn';
+    paReportBtn.className = 'vlow-share-btn';
+    paReportBtn.textContent = '📉 Relatório de redução de Pagamento Antecipado';
+    paReportBtn.onclick = generatePaReducaoReport;
+    btnRow.appendChild(paReportBtn);
+
     wrap.appendChild(btnRow);
+
+    // Filtro/ordenação da campanha de conversão pra faturado — não mexe no
+    // que já é buscado do banco (loadWorkspaceItems continua trazendo tudo
+    // de uma vez), só decide o que aparece na tela a partir do que já foi
+    // carregado (ver applyClinicasFilterSort/clinicasLastLoadedItems).
+    const filterRow = document.createElement('div');
+    filterRow.className = 'clinicas-filter-row';
+
+    const filterLabel = document.createElement('label');
+    filterLabel.textContent = 'Conversão p/ faturado:';
+    filterRow.appendChild(filterLabel);
+
+    const filterSelect = document.createElement('select');
+    filterSelect.className = 'workspace-input clinicas-filter-select';
+    filterSelect.id = 'clinicasPaFilterSelect';
+    [
+      ['todas', 'Todas as clínicas'],
+      ['campanha', 'Só as da campanha (qualquer status)'],
+      ['nao_contatado', 'Não contatadas'],
+      ['em_contato', 'Em contato'],
+      ['recusou', 'Recusaram'],
+      ['convertida', 'Já convertidas']
+    ].forEach(([val, label]) => {
+      const opt = document.createElement('option');
+      opt.value = val;
+      opt.textContent = label;
+      if(val === clinicasPaFilter) opt.selected = true;
+      filterSelect.appendChild(opt);
+    });
+    filterSelect.onchange = () => { clinicasPaFilter = filterSelect.value; renderWorkspaceItems('clinicas', clinicasLastLoadedItems); };
+    filterRow.appendChild(filterSelect);
+
+    const sortLabel = document.createElement('label');
+    sortLabel.textContent = 'Ordenar por:';
+    filterRow.appendChild(sortLabel);
+
+    const sortSelect = document.createElement('select');
+    sortSelect.className = 'workspace-input clinicas-filter-select';
+    sortSelect.id = 'clinicasSortSelect';
+    [
+      ['recentes', 'Mais recentes'],
+      ['valor', 'Maior valor no período']
+    ].forEach(([val, label]) => {
+      const opt = document.createElement('option');
+      opt.value = val;
+      opt.textContent = label;
+      if(val === clinicasSortBy) opt.selected = true;
+      sortSelect.appendChild(opt);
+    });
+    sortSelect.onchange = () => { clinicasSortBy = sortSelect.value; renderWorkspaceItems('clinicas', clinicasLastLoadedItems); };
+    filterRow.appendChild(sortSelect);
+
+    wrap.appendChild(filterRow);
   }
 
   wrap.appendChild(buildWorkspaceForm(key));
@@ -8022,6 +8204,10 @@ async function loadWorkspaceItems(key){
     const { data, error } = await client.from(cfg.table).select('*').order('created_at', { ascending: false });
     if(error) throw error;
     clearWorkspaceInlineError(key);
+    // Guarda a lista CRUA (sem filtro) da aba Clínicas — o filtro/
+    // ordenação por conversão pra faturado usa isso pra re-renderizar sem
+    // precisar buscar de novo (ver applyClinicasFilterSort).
+    if(key === 'clinicas') clinicasLastLoadedItems = data || [];
     renderWorkspaceItems(key, data || []);
   }catch(e){
     listWrap.innerHTML = '';
@@ -8033,9 +8219,9 @@ async function loadWorkspaceItems(key){
   }
 }
 
-/* Monta o texto de um item de Workspace pra copiar/mandar por WhatsApp/
-   exportar (PDF ou card) — cada aba tem campos diferentes, então o formato
-   muda conforme a chave (equipes/projetos/compartilhados). */
+/* Monta o texto de um item de Workspace pra copiar ou mandar por WhatsApp
+   — cada aba tem campos diferentes, então o formato muda conforme a chave
+   (equipes/projetos/compartilhados/clinicas). */
 /* Formata uma data "AAAA-MM-DD" (formato do <input type="date">/coluna
    "date" do Postgres) como "DD/MM/AAAA" — sem passar por new Date(), que
    interpretaria a string como UTC meia-noite e podia mostrar o dia errado
@@ -8076,6 +8262,18 @@ function itemShareText(key, item){
     if(item.prazo_pagamento) t += '\nPrazo de pagamento: ' + item.prazo_pagamento;
     if(item.protocolo) t += '\nProtocolo: ' + item.protocolo;
     if(item.proxima_acao) t += '\nPróxima ação: ' + formatProjectDueDate(item.proxima_acao);
+    // Campanha de conversão pra faturado: só entra no texto quando a
+    // clínica realmente faz parte dela (tem dado de uso ou já foi tocada),
+    // pra não poluir o texto de clínicas sem nenhuma relação com isso.
+    if(isPartOfPaCampaign(item)){
+      t += '\n\nConversão p/ faturado: ' + (PA_STATUS_LABELS[item.pa_status] || 'Não contatado');
+      if(item.pa_valor_periodo) t += '\nValor no período: R$ ' + Number(item.pa_valor_periodo).toFixed(2).replace('.', ',');
+      if(item.pa_qtd_periodo) t += '\nAtendimentos no período: ' + item.pa_qtd_periodo;
+      if(item.pa_aceitou_faturar) t += '\nAceitou faturar? ' + item.pa_aceitou_faturar;
+      if(item.pa_motivo_recusa) t += '\nMotivo da recusa: ' + item.pa_motivo_recusa;
+      if(item.pa_data_conversao) t += '\nData da conversão: ' + formatProjectDueDate(item.pa_data_conversao);
+      if(item.pa_responsavel) t += '\nResponsável: ' + item.pa_responsavel;
+    }
     if(item.documentos_pendentes) t += '\n\nDocumentos pendentes:\n' + item.documentos_pendentes;
     if(item.tabela_precos) t += '\n\nTabela de preços:\n' + item.tabela_precos;
     if(item.historico) t += '\n\nHistórico:\n' + item.historico;
@@ -8084,15 +8282,31 @@ function itemShareText(key, item){
   return '';
 }
 
+/* Uma clínica "faz parte" da campanha de conversão pra faturado quando tem
+   algum dado de uso no período OU já foi tocada (status diferente do
+   padrão "não contatado") — evita mostrar essa seção em clínicas sem
+   nenhuma relação com a campanha (a maioria continua com pa_status =
+   'nao_contatado' só porque é o valor padrão da coluna, não porque
+   alguém de fato as colocou nesta campanha). */
+function isPartOfPaCampaign(item){
+  return !!(item.pa_valor_periodo || item.pa_qtd_periodo || (item.pa_status && item.pa_status !== 'nao_contatado'));
+}
+
 function renderWorkspaceItems(key, items){
   const cfg = WORKSPACE_TABLES[key];
   const listWrap = document.getElementById('workspaceList_' + key);
   if(!listWrap) return;
+  // Aplica o filtro/ordenação da campanha de conversão pra faturado — só
+  // afeta o que é exibido, nunca o que foi buscado do banco (items sempre
+  // chega aqui com a lista completa, ver loadWorkspaceItems).
+  if(key === 'clinicas') items = applyClinicasFilterSort(items);
   listWrap.innerHTML = '';
   if(!items.length){
     const p = document.createElement('p');
     p.className = 'vlow-empty';
-    p.textContent = cfg.emptyText;
+    p.textContent = key === 'clinicas' && clinicasPaFilter !== 'todas'
+      ? 'Nenhuma clínica encontrada com esse filtro.'
+      : cfg.emptyText;
     listWrap.appendChild(p);
     return;
   }
@@ -8163,6 +8377,27 @@ function renderWorkspaceItems(key, items){
       if(item.documentos_pendentes){ const dp = document.createElement('p'); dp.className = 'workspace-item-desc'; dp.textContent = '📋 Pendente: ' + item.documentos_pendentes; info.appendChild(dp); }
       if(item.tabela_precos){ const t = document.createElement('p'); t.className = 'workspace-item-desc'; t.textContent = '💰 ' + item.tabela_precos; info.appendChild(t); }
       if(item.historico){ const h = document.createElement('p'); h.className = 'workspace-item-desc'; h.textContent = '🕘 ' + item.historico; info.appendChild(h); }
+      // Campanha de conversão Pagamento Antecipado → Faturado — só mostra
+      // esse bloco pra clínica que de fato faz parte dela (ver
+      // isPartOfPaCampaign), senão a maioria das clínicas (que nunca teve
+      // nada a ver com isso) ficaria com um badge cinza "Não contatado"
+      // sem sentido nenhum.
+      if(isPartOfPaCampaign(item)){
+        const paBadge = document.createElement('span');
+        paBadge.className = 'workspace-status-badge pa-' + (item.pa_status || 'nao_contatado');
+        paBadge.textContent = '💳 ' + (PA_STATUS_LABELS[item.pa_status] || 'Não contatado');
+        info.appendChild(paBadge);
+        const paLine = document.createElement('p');
+        paLine.className = 'workspace-item-desc';
+        const paBits = [];
+        if(item.pa_valor_periodo) paBits.push('R$ ' + Number(item.pa_valor_periodo).toFixed(2).replace('.', ',') + ' no período');
+        if(item.pa_qtd_periodo) paBits.push(item.pa_qtd_periodo + ' atendimento(s) no período');
+        if(item.pa_responsavel) paBits.push('responsável: ' + item.pa_responsavel);
+        if(item.pa_aceitou_faturar) paBits.push('aceitou faturar: ' + item.pa_aceitou_faturar);
+        if(item.pa_data_conversao) paBits.push('convertida em: ' + formatProjectDueDate(item.pa_data_conversao));
+        if(paBits.length){ paLine.textContent = '💳 ' + paBits.join(' · '); info.appendChild(paLine); }
+        if(item.pa_motivo_recusa){ const mr = document.createElement('p'); mr.className = 'workspace-item-desc'; mr.textContent = '❌ Motivo da recusa: ' + item.pa_motivo_recusa; info.appendChild(mr); }
+      }
     }
 
     const shareText = itemShareText(key, item);
@@ -11604,8 +11839,37 @@ function buildWorkspaceDataContext(){
     dataCache.compartilhados.slice(0, 30).forEach(i => parts.push('- ' + i.title + (i.description ? ': ' + i.description : '')));
   }
   if(dataCache.clinicas && dataCache.clinicas.length){
-    parts.push('\nClínicas cadastradas (use isso pra responder perguntas sobre clínicas por região/cidade, status de negociação, preço, prazo, protocolo ou quais exames cada uma realiza — são dados reais desta conta; se a pergunta for sobre uma clínica ou exame que não aparece aqui, diga isso claramente em vez de supor):');
-    dataCache.clinicas.slice(0, 40).forEach(c => {
+    // Resumo agregado da campanha de conversão Pagamento Antecipado →
+    // Faturado, calculado sobre TODAS as clínicas (não só as 40 do detalhe
+    // abaixo) — assim a Lumi responde certo "quantas já converteram" ou
+    // "quanto falta" mesmo com uma base grande, sem depender do corte.
+    const paClinicas = dataCache.clinicas.filter(isPartOfPaCampaign);
+    if(paClinicas.length){
+      const counts = { nao_contatado: 0, em_contato: 0, recusou: 0, convertida: 0 };
+      let valorTotal = 0, valorConvertido = 0;
+      paClinicas.forEach(c => {
+        const st = c.pa_status || 'nao_contatado';
+        counts[st] = (counts[st] || 0) + 1;
+        const v = Number(c.pa_valor_periodo) || 0;
+        valorTotal += v;
+        if(st === 'convertida') valorConvertido += v;
+      });
+      parts.push('\nResumo da campanha "Redução de clínicas em Pagamento Antecipado" (' + paClinicas.length + ' clínicas envolvidas ao todo): ' +
+        counts.nao_contatado + ' não contatadas, ' + counts.em_contato + ' em contato, ' + counts.recusou + ' recusaram, ' + counts.convertida + ' já convertidas pra faturado. ' +
+        'Valor total em jogo no período de referência: R$ ' + valorTotal.toFixed(2).replace('.', ',') + ', dos quais R$ ' + valorConvertido.toFixed(2).replace('.', ',') + ' já convertido.');
+    }
+
+    parts.push('\nClínicas cadastradas (use isso pra responder perguntas sobre clínicas por região/cidade, status de negociação, preço, prazo, protocolo, conversão pra faturado ou quais exames cada uma realiza — são dados reais desta conta; se a pergunta for sobre uma clínica ou exame que não aparece aqui, diga isso claramente em vez de supor; com uma base grande, nem toda clínica cabe aqui — se não achar a que foi perguntada, diga que pode não estar entre as listadas em vez de afirmar que ela não existe):');
+    // Dentro do corte de 40 (pra não pesar o prompt), prioriza quem já tem
+    // algum progresso na campanha de conversão — é o que mais se pergunta
+    // no dia a dia — antes do resto, que segue na ordem normal (mais
+    // recentes primeiro).
+    const clinicasOrdenadas = dataCache.clinicas.slice().sort((a, b) => {
+      const aTocada = isPartOfPaCampaign(a) && a.pa_status && a.pa_status !== 'nao_contatado' ? 1 : 0;
+      const bTocada = isPartOfPaCampaign(b) && b.pa_status && b.pa_status !== 'nao_contatado' ? 1 : 0;
+      return bTocada - aTocada;
+    });
+    clinicasOrdenadas.slice(0, 40).forEach(c => {
       parts.push('- ' + c.nome + (c.cidade ? ' (' + c.cidade + ')' : '') +
         ' — status: ' + (CLINICA_STATUS_LABELS[c.status] || 'Prospecção') +
         (c.contato ? ', contato: ' + c.contato : '') +
@@ -11613,7 +11877,9 @@ function buildWorkspaceDataContext(){
         (c.protocolo ? ', protocolo: ' + c.protocolo : '') +
         (c.proxima_acao ? ', próxima ação: ' + formatProjectDueDate(c.proxima_acao) : '') +
         (c.tabela_precos ? ', tabela/exames: ' + c.tabela_precos : '') +
-        (c.historico ? ', histórico: ' + c.historico : ''));
+        (c.historico ? ', histórico: ' + c.historico : '') +
+        (isPartOfPaCampaign(c) ? ', conversão p/ faturado: ' + (PA_STATUS_LABELS[c.pa_status] || 'Não contatado') +
+          (c.pa_valor_periodo ? ' (R$ ' + Number(c.pa_valor_periodo).toFixed(2).replace('.', ',') + ' no período)' : '') : ''));
     });
   }
   if(!parts.length) return '';

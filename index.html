@@ -9543,8 +9543,19 @@ function maybeNotifyDesktop(previewText){
   if(!('Notification' in window) || Notification.permission !== 'granted') return;
   if(!document.hidden) return;
   try{
-    const body = (previewText || 'Sua resposta está pronta.').replace(/\s+/g, ' ').trim().slice(0, 140) || 'Sua resposta está pronta.';
-    const n = new Notification('Lumi — AtlasIA', { body, tag: 'atlasia-resposta', icon: './icons/icon-192.png' });
+    // Igual ao app do ChatGPT: título é só o nome do app (não "Lumi —
+    // AtlasIA") e o corpo é a resposta de verdade em texto limpo — sem os
+    // símbolos de markdown crus (**negrito**, `código`, # título etc., que
+    // aqui ficariam feios/confusos numa notificação) — reaproveitando
+    // stripMarkdownForExport, já usado no PDF do BI. Corta em 140
+    // caracteres com reticências no final quando o texto é mais longo,
+    // igual a uma prévia de notificação de verdade.
+    const MAX_LEN = 140;
+    const clean = stripMarkdownForExport(previewText || '').replace(/\s+/g, ' ').trim();
+    const body = clean
+      ? (clean.length > MAX_LEN ? clean.slice(0, MAX_LEN).trim() + '…' : clean)
+      : 'Sua resposta está pronta.';
+    const n = new Notification('AtlasIA', { body, tag: 'atlasia-resposta', icon: './icons/icon-192.png' });
     n.onclick = () => { window.focus(); n.close(); };
   }catch(e){ /* alguns navegadores recusam Notification fora de contexto seguro — sem problema, o som (se ativado) já cobre esse caso */ }
 }
